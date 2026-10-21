@@ -204,6 +204,10 @@ catalogs:
 importers:
 
   .:
+    dependencies:
+      '@cyrus/dsh-context-insight':
+        specifier: workspace:^
+        version: link:plugins/context-insight
     devDependencies:
       '@tailwindcss/cli':
         specifier: ^4.3.3

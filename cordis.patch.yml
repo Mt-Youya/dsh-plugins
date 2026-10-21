@@ -1,0 +1,11 @@
+# Bundle patch for the dsh-plugins collection.
+# A top-level YAML array of loader patch entries; the Host applies it after the
+# profile's bundle layers and before the user's own cordis.patch.yml.
+#
+# One row per plugin in the collection. `name` is the plugin's npm package,
+# which this package depends on, so installing the collection installs every
+# plugin it lists. To add a plugin: add it to `dependencies` in package.json
+# and one `- id / name` row below.
+- insert:
+    - id: context-insight
+      name: "@cyrus/dsh-context-insight"

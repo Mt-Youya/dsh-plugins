@@ -13,8 +13,14 @@
     "observability",
     "tokens"
   ],
+  "homepage": "https://github.com/Mt-Youya/dsh-plugins/tree/main/plugins/context-insight",
   "license": "MIT",
   "author": "Cyrus Doyle",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mt-Youya/dsh-plugins.git",
+    "directory": "plugins/context-insight"
+  },
   "files": [
     "lib/**/*.js",
     "lib/**/*.js.map",
@@ -38,6 +44,9 @@
     },
     "./package.json": "./package.json",
     "./locale/*": "./locale/*"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "css": "node ../../scripts/build-css.mjs .",
