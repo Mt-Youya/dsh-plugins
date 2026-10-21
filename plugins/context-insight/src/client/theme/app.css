@@ -9,10 +9,16 @@
  * Isolation is done at build time by wrapping the generated utilities in
  * `@scope (.ci-panel)` (see scripts/build-css.mjs), so utility class names
  * cannot leak into the Host or into other plugins.
+ *
+ * The other direction needs `important`: other plugins inject unscoped,
+ * unlayered utilities of their own (dsh-context ships `.flex`, `.hidden`,
+ * `.grid`…), and an unlayered rule beats any layered one, so without it our
+ * `hidden @4xl:flex` stayed hidden and `flex @3xl:grid` never became a grid.
+ * The scope keeps the `!important` from reaching anything outside the panel.
  */
 
 @import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/utilities.css" layer(utilities);
+@import "tailwindcss/utilities.css" layer(utilities) important;
 
 @source "../../";
 
@@ -82,4 +88,17 @@
     color: inherit;
     font: inherit;
   }
+}
+
+/* Skins restyle headings page-wide (dsh-claude-style sets a serif face,
+   tracking and margins on h1–h4 at specificity 0,1,2), which a layered base
+   rule cannot outrank. Unlayered and at 0,2,1, this hands those properties back
+   to the UA defaults the panel was designed against; utilities still win
+   because they are !important. */
+:scope[data-dsh-context-insight-view] :is(h1, h2, h3, h4, h5, h6) {
+  font-family: revert;
+  font-weight: revert;
+  letter-spacing: revert;
+  line-height: revert;
+  margin: revert;
 }

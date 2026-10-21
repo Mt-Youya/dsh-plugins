@@ -1,6 +1,6 @@
 {
   "name": "@cyrus/dsh-context-insight",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Read-only context insight for the DSH Web GUI: what each turn actually fed the model, across Claude Code, DSH and Codex sessions.",
   "keywords": [
     "claude-code",
