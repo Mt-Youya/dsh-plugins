@@ -6,7 +6,7 @@ A read-only **context insight** panel for the DSH Web GUI. It parses session log
 
 > Read-only end to end: no writes to source data, no index, nothing persisted. The only cache is an in-process LRU.
 
-> **Scope of v0.1.0**: read-only insight plus the summary handoff. The handoff delivers a generated brief into a new DSH session and **only calls the official `session.create` / `session.prompt`** — it never hand-writes session events and never rewrites the source session ([docs/HANDOFF.md](./docs/HANDOFF.md), [ADR 0003](./docs/adr/0003-never-handwrite-session-events.md), [ADR 0007](./docs/adr/0007-accepted-is-not-success.md)).
+> **Scope of v0.1.0**: read-only insight plus the summary handoff. The handoff delivers a generated brief into a new DSH session and **only calls the official `session.create` / `session.prompt`** — it never hand-writes session events and never rewrites the source session (`docs/HANDOFF.md`, `docs/adr/0003-never-handwrite-session-events.md`, `docs/adr/0007-accepted-is-not-success.md`).
 
 ## What it answers
 
@@ -43,7 +43,7 @@ A missing or unreadable source never takes the others down: the strip at the top
 
 ## Install
 
-Requires DSH **0.2.1-rc.2 or newer** (the plugin is aligned with the behaviour of the running `app.asar`; see [ADR 0002](./docs/adr/0002-asar-021-is-the-contract.md)).
+Requires DSH **0.2.1-rc.2 or newer** (the plugin is aligned with the behaviour of the running `app.asar`; see `docs/adr/0002-asar-021-is-the-contract.md`).
 
 **Step 1 — install into the profile**
 
@@ -96,19 +96,62 @@ curl -sS http://127.0.0.1:<port>/api/dsh-context-insight/health
 ## Known limitations
 
 1. **Search has a 2.5 s budget.** Full-corpus search streams and stops at `SEARCH_DEADLINE_MS = 2500`: the response carries `truncated: true` and `remaining` (sessions not reached), and the UI says "not finished within budget, N sessions left". On a very large corpus, narrow the sources or drill down by workdir instead.
-2. **Claude sessions without `prompt_snapshot` show a large "unknown" slice.** Those sessions (56 of 121 files in this corpus) cannot see tool definitions or the system prompt, so that share stays in `residual` and is drawn as an explicit "unknown" slice — it is **never** smeared into the other categories on purpose. See [ADR 0005](./docs/adr/0005-honest-attribution-residual.md).
+2. **Claude sessions without `prompt_snapshot` show a large "unknown" slice.** Those sessions (56 of 121 files in this corpus) cannot see tool definitions or the system prompt, so that share stays in `residual` and is drawn as an explicit "unknown" slice — it is **never** smeared into the other categories on purpose. See `docs/adr/0005-honest-attribution-residual.md`.
 3. **Codex reasoning is unavailable.** `response_item.reasoning.encrypted_content` is ciphertext: countable, not measurable, so Codex turns show no "thinking" block.
-4. **Blocks are estimates; totals are exact.** Blocks use 2.6 chars/token, which runs ~23% high on instruction bodies; turns that were equalised carry a `reconciled.factor` (see [ADR 0006](./docs/adr/0006-projection-not-differencing.md)). Do not bill from block numbers.
+4. **Blocks are estimates; totals are exact.** Blocks use 2.6 chars/token, which runs ~23% high on instruction bodies; turns that were equalised carry a `reconciled.factor` (see `docs/adr/0006-projection-not-differencing.md`). Do not bill from block numbers.
 5. **DSH bodies require decoding the log.** The projcache holds metadata only, so opening a session still means frame-by-frame zstd decoding; multi-MB sessions pause noticeably on first open.
+
+## Layout
+
+This package owns the plugin's two halves; the capabilities live in the workspace packages it depends on. Dependencies point one way — `plugins/context-insight → packages/*` — and the mapping from package name to source lives in `tooling/aliases.ts`, mirrored by `paths` in `tsconfig.json`.
+
+**This package**, `plugins/context-insight/src/`:
+
+```
+src/
+├── index.ts          host entry: assembles the three sources, registers the routes (the only file that touches cordis)
+├── protocol.ts       this plugin's wire entry: route paths plus a re-export of the contract package's IR, types and guards
+├── version.ts        version constant, injected from package.json at build time
+├── host/             host half
+│   ├── http/         same-origin gate, envelope, route table (routes.ts + routes/)
+│   ├── sources/      the three sources, workdir merge, snapshot index, path allowlist
+│   ├── views/        search / cost / pricing / brief
+│   └── handoff/      handoff state machine (accepted ≠ success)
+└── client/           browser half
+    ├── index.tsx     entry: registers the sidebar/main slots and the dictionary
+    ├── api.ts        same-origin fetch + response decoding
+    ├── format.ts / labels.ts / locale.ts   formatting, label fallback, zh/en dictionaries
+    ├── styles.ts     injects the compiled CSS once
+    ├── state/        pure state logic: tree flattening, turn rows, stacked-bar arithmetic
+    ├── theme/        app.css, components.css and the generated.css.ts build artefact
+    └── ui/           components: panel, project tree, turn table, tool detail, handoff, search palette…
+```
+
+**The packages it depends on** (`packages/`, inlined into `lib/` at build time, never published on their own):
+
+```
+packages/
+├── plugin-kit/         zero-dependency base: the JSON envelope and URL spelling
+├── session-contract/   the unified IR, wire types and their guards      → plugin-kit
+├── session-readers/    Claude / Codex / DSH readers and measurement      → session-contract
+├── plugin-kit-host/    route table, same-origin gate, envelope, LRU      → plugin-kit
+└── plugin-kit-client/  decoding fetch, style injection, slot registration → plugin-kit
+```
 
 ## Development
 
+Run these from the **repository root** (this package is not a repository of its own):
+
 ```sh
 pnpm install
-pnpm typecheck   # tsc --noEmit
-pnpm test        # vitest
-pnpm build       # tsc -p tsconfig.build.json && tsdown → lib/
+npx tsc --noEmit                          # type gate: the packages and the host half
+npx tsc --noEmit -p tsconfig.client.json  # type gate: the browser half (types: [], no node types)
+npx vitest run                            # unit tests
+npx tsdown                                # builds lib/index.js and lib/client.js
+node scripts/check-bundle.mjs plugins/context-insight   # host loading contract
 ```
+
+Inside the package you can also build just this half: `pnpm --filter @cyrus/dsh-context-insight build` (that is `css + tsdown`).
 
 Two entries are produced:
 
@@ -128,12 +171,14 @@ dsh try --host 127.0.0.1 --port 49744 --no-open     # boot on its own port
 
 ## Documentation
 
-- [docs/PLAN.md](./docs/PLAN.md) — decisions and milestones
-- [docs/IR.md](./docs/IR.md) — the unified turn IR (adapter contract)
-- [docs/API.md](./docs/API.md) — host route contract
-- [docs/HANDOFF.md](./docs/HANDOFF.md) — handoff contract
-- [docs/adr](./docs/adr) — architecture decision records
-- [GLOSSARY.md](./GLOSSARY.md) — vocabulary
+These live at the **repository root**, not inside this package (the npm tarball only ships `docs/images`):
+
+- `docs/PLAN.md` — decisions and milestones
+- `docs/IR.md` — the unified turn IR (adapter contract)
+- `docs/API.md` — host route contract
+- `docs/HANDOFF.md` — handoff contract
+- `docs/adr` — architecture decision records
+- `GLOSSARY.md` — vocabulary
 
 ## License
 
