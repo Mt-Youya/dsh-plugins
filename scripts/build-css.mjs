@@ -25,7 +25,10 @@ const outDir = join(root, "src/client/theme")
 const tmp = mkdtempSync(join(tmpdir(), "ci-css-"))
 const raw = join(tmp, "app.out.css")
 
-execFileSync(join(repoRoot, "node_modules/.bin/tailwindcss"), ["--input", input, "--output", raw, "--minify"], {
+// Run the CLI's JS entry through node: `.bin/tailwindcss` is a shell shim that
+// Windows cannot spawn directly.
+const tailwindCli = join(repoRoot, "node_modules/@tailwindcss/cli/dist/index.mjs")
+execFileSync(process.execPath, [tailwindCli, "--input", input, "--output", raw, "--minify"], {
   cwd: root,
   stdio: "inherit",
 })
