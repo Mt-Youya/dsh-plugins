@@ -1,6 +1,6 @@
 {
   "name": "@cyrus/dsh-plugins",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "DeepSeek Harness plugin collection: installs and registers the plugins listed in cordis.patch.yml (currently Context Lens). Also the workspace root they are built from.",
   "keywords": [
     "deepseek-harness",
