@@ -1,61 +1,61 @@
-[English](./README.en.md) | 简体中文
+English | [简体中文](./README.zh.md)
 
-# Cyrus 插件集 · @cyrus/dsh-plugins
+# Cyrus Plugins · @cyrus/dsh-plugins
 
-给 DeepSeek Harness（DSH）用的插件合集。装这一个组合包，就装上下面列出的全部插件；每个插件也可以单独安装。
+A plugin collection for DeepSeek Harness (DSH). Install this one bundle to get every plugin listed below; each plugin can also be installed on its own.
 
-![上下文透视面板](plugins/context-insight/docs/images/01-merged-tree.png)
+![The Context Lens panel](plugins/context-insight/docs/images/01-merged-tree.png)
 
-## 包含的插件
+## Plugins
 
-| 插件                                                              | npm 包                       | 做什么                                                                                                        |
-| ----------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| [上下文透视（Context Lens）](./plugins/context-insight/README.md) | `@cyrus/dsh-context-insight` | 把 Claude Code / DSH / Codex 三源会话每一轮实际喂给模型的上下文拆开看：构成、工具调用、压缩点、费用，全程只读 |
+| Plugin                                                 | npm package                  | What it does                                                                                                                                  |
+| ------------------------------------------------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Context Lens](./plugins/context-insight/README.en.md) | `@cyrus/dsh-context-insight` | Opens up what each turn of a Claude Code, DSH or Codex session actually fed the model: composition, tool calls, compactions, cost. Read-only. |
 
-## 安装
+## Install
 
-需要 DSH 0.2.1-rc.2 或更高（见 `docs/adr/0002-asar-021-is-the-contract.md`）。先确认装进哪个 profile：双击桌面端是 `desktop`，命令行 `dsh web` 是 `web`。装错 profile 不报错，只是插件不出现。
+Requires DSH 0.2.1-rc.2 or newer (see `docs/adr/0002-asar-021-is-the-contract.md`). First decide which profile to install into: the desktop app uses `desktop`, `dsh web` on the command line uses `web`. Installing into the wrong profile does not error; the plugin just never shows up.
 
-**装组合包（推荐）**：一次装上全部插件，以后合集里加了新插件，升级组合包就能拿到。
+**Install the collection (recommended)** to get every plugin at once; when a plugin is added to the collection later, upgrading the collection brings it in.
 
 ```bash
 dsh plugin --profile desktop add @cyrus/dsh-plugins
 ```
 
-**只装某一个插件**：
+**Install a single plugin**:
 
 ```bash
 dsh plugin --profile desktop add @cyrus/dsh-context-insight
 ```
 
-装完**完全退出再重新打开** DSH；插件管理器里出现「Cyrus 插件集」或「上下文透视」即成功。
+Then **fully quit and reopen** DSH. "Cyrus Plugins" or "Context Lens" in the plugin manager means it worked.
 
-> **两种方式只能选一种。** 组合包和单独的插件会往加载树里插同一个 id，两个都在 `dsh.profile.bundles` 里时 DSH 启动会报 `duplicate loader entry id` 并退出。换方式前先 `dsh plugin --profile <name> remove` 掉另一个。
+> **Pick one of the two.** The collection and the standalone plugin insert the same id into the loader tree; with both in `dsh.profile.bundles`, DSH fails at boot with `duplicate loader entry id`. Run `dsh plugin --profile <name> remove` on one before switching to the other.
 >
-> 不要用 git 地址安装（`pnpm add https://github.com/...`）：仓库根的依赖写的是 `workspace:^`，只有发布到 npm 时才会被改写成版本号。
+> Do not install from the git URL (`pnpm add https://github.com/...`): the root depends on `workspace:^`, which is only rewritten to a version number when publishing to npm.
 
-每个插件的用法、权限边界和已知限制，看它自己的 README。
+Each plugin's usage, permission boundary and known limitations live in its own README.
 
-## 仓库结构
+## Repository layout
 
-这是一个 pnpm monorepo。对外发布的只有组合包和 `plugins/*`，其余在构建时内联进插件。
+This is a pnpm monorepo. Only the collection and `plugins/*` are published; the rest is inlined into the plugins at build time.
 
-| 目录                         | 内容                                           | 发布                                 |
-| ---------------------------- | ---------------------------------------------- | ------------------------------------ |
-| `/`（仓库根）                | 组合包：`cordis.patch.yml` + `locale/`         | **是**，`@cyrus/dsh-plugins`         |
-| `plugins/context-insight`    | 上下文透视插件：宿主半边 + 浏览器半边          | **是**，`@cyrus/dsh-context-insight` |
-| `packages/session-contract`  | 统一 IR、线上类型与解码守卫                    | 否                                   |
-| `packages/session-readers`   | Claude Code / Codex / DSH 三源适配             | 否                                   |
-| `packages/plugin-kit`        | 插件无关的 JSON 信封与 URL 约定                | 否                                   |
-| `packages/plugin-kit-host`   | 宿主半边管线：路由表、同源门、信封、LRU        | 否                                   |
-| `packages/plugin-kit-client` | 浏览器半边管线：解码 fetch、样式注入、槽位注册 | 否                                   |
-| `apps/preview`               | 本地预览 harness（`:5178`）                    | 否                                   |
-| `scripts`                    | 构建 CSS、校验打包契约、安装脚本、会话探针     | 否                                   |
-| `tooling`                    | 包名别名表、tsconfig base、tsdown 配置         | 否                                   |
+| Path                         | Contents                                                                  | Published                             |
+| ---------------------------- | ------------------------------------------------------------------------- | ------------------------------------- |
+| `/` (root)                   | The collection bundle: `cordis.patch.yml` + `locale/`                     | **yes**, `@cyrus/dsh-plugins`         |
+| `plugins/context-insight`    | The Context Lens plugin: host half and browser half                       | **yes**, `@cyrus/dsh-context-insight` |
+| `packages/session-contract`  | The unified IR, wire types and their guards                               | no                                    |
+| `packages/session-readers`   | Claude Code / Codex / DSH readers                                         | no                                    |
+| `packages/plugin-kit`        | Plugin-agnostic JSON envelope and URL spelling                            | no                                    |
+| `packages/plugin-kit-host`   | Host-half plumbing: route table, same-origin gate, envelope, LRU          | no                                    |
+| `packages/plugin-kit-client` | Browser-half plumbing: decoding fetch, style injection, slot registration | no                                    |
+| `apps/preview`               | Local preview harness on `:5178`                                          | no                                    |
+| `scripts`                    | CSS build, bundle-contract check, install script, session probes          | no                                    |
+| `tooling`                    | Package alias table, tsconfig base, tsdown config                         | no                                    |
 
-依赖只有一个方向：`plugins/* → packages/*`。包名到源码的映射集中在 `tooling/aliases.ts`，`tsconfig.json` 的 `paths` 与之对应，所以测试、预览、打包都不需要先构建内部包。
+Dependencies point one way only: `plugins/* → packages/*`. The package-name-to-source mapping lives in `tooling/aliases.ts`, and `tsconfig.json`'s `paths` mirrors it, so tests, the preview app and the build never need the internal packages built first.
 
-## 开发
+## Development
 
 ```bash
 pnpm install
@@ -65,34 +65,34 @@ pnpm install
 pnpm dev
 ```
 
-预览页在 <http://localhost:5178>，读本机真实会话；加 `?theme=light` 或 `?theme=dark` 切主题。
+The preview runs at <http://localhost:5178> and reads your real local sessions; add `?theme=light` or `?theme=dark` to switch themes.
 
-提交前跑一遍门禁：
+Run the gates before you commit:
 
 ```bash
 npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && npx tsdown && node scripts/check-bundle.mjs plugins/context-insight
 ```
 
-把当前工作区装进本机 DSH 验证（会打包、安装，并校验装进去的确实是新构建）：
+Install the working tree into your local DSH to try it (packs, installs, and checks that the installed copy really is the new build):
 
 ```bash
 pnpm install:plugin
 ```
 
-## 发布
+## Publishing
 
-按 [`docs/RELEASE.md`](./docs/RELEASE.md) 的步骤来：先发插件，再发组合包。
+Follow [`docs/RELEASE.en.md`](./docs/RELEASE.en.md): the plugin first, then the collection.
 
-## 文档
+## Documentation
 
-- [`docs/RELEASE.md`](./docs/RELEASE.md) — npm 发布步骤
-- `docs/PLAN.md` — 决策与里程碑
-- `docs/IR.md` — 三源统一的轮次 IR（adapter 契约）
-- `docs/API.md` — 宿主路由契约
-- `docs/HANDOFF.md` — 交接链路契约
-- `docs/adr/` — 架构决策记录
-- `GLOSSARY.md` — 词表
+- [`docs/RELEASE.en.md`](./docs/RELEASE.en.md) — publishing to npm
+- `docs/PLAN.md` — decisions and milestones (Chinese)
+- `docs/IR.md` — the unified turn IR, the adapter contract (Chinese)
+- `docs/API.md` — host route contract (Chinese)
+- `docs/HANDOFF.md` — handoff contract (Chinese)
+- `docs/adr/` — architecture decision records (Chinese)
+- `GLOSSARY.md` — vocabulary (Chinese)
 
-## 许可
+## License
 
 [MIT](./LICENSE)
