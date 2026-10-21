@@ -1,0 +1,24 @@
+{
+  "name": "@cyrus/dsh-plugin-kit-host",
+  "version": "0.0.0",
+  "private": false,
+  "type": "module",
+  "description": "Host-side plumbing for a DSH plugin's HTTP routes: route table, same-origin gate, envelopes, JSON body, LRU.",
+  "license": "MIT",
+  "files": ["lib"],
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsdown"
+  },
+  "dependencies": {
+    "@cyrus/dsh-plugin-kit": "workspace:*"
+  }
+}

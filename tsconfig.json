@@ -1,0 +1,20 @@
+{
+  "extends": "./tooling/tsconfig/base.json",
+  "compilerOptions": {
+    "paths": {
+      "@cyrus/dsh-plugin-kit": ["./packages/plugin-kit/src/index.ts"],
+      "@cyrus/dsh-session-contract": ["./packages/session-contract/src/index.ts"],
+      "@cyrus/dsh-session-readers": ["./packages/session-readers/src/index.ts"],
+      "@cyrus/dsh-plugin-kit-host": ["./packages/plugin-kit-host/src/index.ts"],
+      "@cyrus/dsh-plugin-kit-client": ["./packages/plugin-kit-client/src/index.ts"]
+    }
+  },
+  "include": [
+    "tooling",
+    "packages",
+    "plugins",
+    "apps",
+    "vitest.config.ts",
+    "tsdown.config.ts"
+  ]
+}

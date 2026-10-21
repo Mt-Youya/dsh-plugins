@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>上下文透视 · 本地预览</title>
+  </head>
+  <body>
+    <script>
+      const query = new URLSearchParams(location.search).get("theme") ?? "system";
+      const dark =
+        query === "dark" ||
+        (query === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.style.colorScheme = dark ? "dark" : "light";
+    </script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: var(--color-bg);
+        color: var(--color-fg);
+        font-family: -apple-system, system-ui, sans-serif;
+      }
+    </style>
+    <div id="root"></div>
+    <script type="module" src="/main.tsx"></script>
+  </body>
+</html>

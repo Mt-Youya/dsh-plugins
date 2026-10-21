@@ -1,0 +1,81 @@
+{
+  "name": "@cyrus/dsh-context-insight",
+  "version": "0.0.1",
+  "description": "Read-only context insight for the DSH Web GUI: what each turn actually fed the model, across Claude Code, DSH and Codex sessions.",
+  "keywords": [
+    "claude-code",
+    "codex",
+    "context",
+    "context-window",
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "observability",
+    "tokens"
+  ],
+  "license": "MIT",
+  "author": "Cyrus Doyle",
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.js.map",
+    "src",
+    "docs/images/**/*.png",
+    "cordis.patch.yml",
+    "icon.svg",
+    "README.md",
+    "README.en.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "css": "node ../../scripts/build-css.mjs .",
+    "build": "pnpm css && tsdown",
+    "typecheck": "tsc --noEmit -p ../../tsconfig.json",
+    "test": "vitest run --root ../..",
+    "prepack": "pnpm build && node ../../scripts/check-bundle.mjs .",
+    "release:patch": "pnpm version patch --no-git-tag-version && pnpm pack",
+    "release:minor": "pnpm version minor --no-git-tag-version && pnpm pack",
+    "prepublishOnly": "pnpm typecheck && pnpm test && pnpm build"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@cyrus/dsh-plugin-kit": "workspace:*",
+    "@cyrus/dsh-plugin-kit-client": "workspace:*",
+    "@cyrus/dsh-plugin-kit-host": "workspace:*",
+    "@cyrus/dsh-session-contract": "workspace:*",
+    "@cyrus/dsh-session-readers": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.3.1"
+  },
+  "icon": "icon.svg",
+  "engines": {
+    "node": ">=24.19.0"
+  },
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.2.0-rc.2"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
+    }
+  }
+}

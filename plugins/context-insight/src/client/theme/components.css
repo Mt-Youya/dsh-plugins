@@ -1,0 +1,217 @@
+/*
+ * The only component layer.
+ *
+ * A class earns a place here only when it is reused in three or more places AND
+ * needs a pseudo-element or a state selector; everything else is a utility.
+ * That leaves: the [data-part] colour table (one identity table, two consumers —
+ * the bar and its legend), the source mark, the tool-status chip, the user's own
+ * words, the output pane, and the tooltip bubble. Motion primitives live here
+ * too, because a @keyframes rule adds no selector.
+ */
+
+@layer components {
+  /* ---------- part colours: one table, two consumers ---------- */
+  .ci-stack__seg[data-part="system-prompt"] { background: var(--color-part-system-prompt); }
+
+  .ci-stack__seg[data-part="tool-definitions"] { background: var(--color-part-tool-definitions); }
+
+  .ci-stack__seg[data-part="memory-instructions"] { background: var(--color-part-memory-instructions); }
+
+  .ci-stack__seg[data-part="referenced-files"] { background: var(--color-part-referenced-files); }
+
+  .ci-stack__seg[data-part="history"] { background: var(--color-part-history); }
+
+  .ci-stack__seg[data-part="tool-results"] { background: var(--color-part-tool-results); }
+
+  .ci-stack__seg[data-part="images"] { background: var(--color-part-images); }
+
+  .ci-stack__seg[data-part="user-input"] { background: var(--color-part-user-input); }
+
+  .ci-stack__seg[data-part="assistant-output"] { background: var(--color-part-assistant-output); }
+
+  .ci-legend__swatch[data-part="system-prompt"] { background: var(--color-part-system-prompt); }
+
+  .ci-legend__swatch[data-part="tool-definitions"] { background: var(--color-part-tool-definitions); }
+
+  .ci-legend__swatch[data-part="memory-instructions"] { background: var(--color-part-memory-instructions); }
+
+  .ci-legend__swatch[data-part="referenced-files"] { background: var(--color-part-referenced-files); }
+
+  .ci-legend__swatch[data-part="history"] { background: var(--color-part-history); }
+
+  .ci-legend__swatch[data-part="tool-results"] { background: var(--color-part-tool-results); }
+
+  .ci-legend__swatch[data-part="images"] { background: var(--color-part-images); }
+
+  .ci-legend__swatch[data-part="user-input"] { background: var(--color-part-user-input); }
+
+  .ci-legend__swatch[data-part="assistant-output"] { background: var(--color-part-assistant-output); }
+
+  /* ---------- source mark: shape + colour, driven by an inline brand var ---------- */
+  .ci-src {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1875rem;
+    padding-block: 1px;
+    padding-inline: 0.3125rem;
+    border: 1px solid light-dark(color-mix(in oklch, var(--ci-src-brand) 55%, oklch(0.4 0 none)), color-mix(in oklch, var(--ci-src-brand) 45%, transparent));
+    border-radius: 999px;
+    background: light-dark(color-mix(in oklch, var(--ci-src-brand) 16%, oklch(1 0 none)), color-mix(in oklch, var(--ci-src-brand) 14%, transparent));
+    color: light-dark(color-mix(in oklch, var(--ci-src-brand) 55%, oklch(0.2 0 none)), var(--ci-src-color, var(--color-fg)));
+    font-size: 0.625rem;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .ci-src__word {
+    color: light-dark(color-mix(in oklch, var(--ci-src-brand) 55%, oklch(0.2 0 none)), var(--ci-src-color, var(--color-fg)));
+  }
+
+  /* ---------- tool status: colour plus a dot, breathing only in flight ---------- */
+  .ci-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding-block: 1px;
+    padding-inline: 0.375rem 0.3125rem;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    background: light-dark(color-mix(in oklch, currentColor 12%, oklch(1 0 none)), color-mix(in oklch, currentColor 14%, transparent));
+    font-size: 0.625rem;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ci-status::before {
+    content: "";
+    inline-size: 6px;
+    block-size: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .ci-status--ok {
+    color: var(--color-ok);
+  }
+
+  .ci-status--error {
+    color: var(--color-err);
+  }
+
+  .ci-status--unknown {
+    color: var(--color-warn);
+  }
+
+  .ci-status--running {
+    color: var(--color-info);
+  }
+
+  .ci-status--running::before {
+    animation: ci-breathe 1.6s var(--ease-in-out) infinite;
+  }
+
+  @keyframes ci-breathe {
+    0%,
+    100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 color-mix(in oklch, currentColor 55%, transparent);
+    }
+    50% {
+      opacity: 0.55;
+      box-shadow: 0 0 0 4px color-mix(in oklch, currentColor 0%, transparent);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ci-status--running::before {
+      animation: none;
+    }
+  }
+
+  /* ---------- the user's own words: the anchor of a turn ---------- */
+  .ci-ask {
+    margin-block: 0 0.75rem;
+    margin-inline: 1rem;
+  }
+
+  .ci-ask__label {
+    display: block;
+    margin-block-end: 0.25rem;
+    color: var(--color-fg-dim);
+    font-size: 0.65625rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .ci-ask__text {
+    margin: 0;
+    padding-block: 0.625rem;
+    padding-inline: 0.75rem;
+    border-inline-start: 3px solid var(--color-accent);
+    border-radius: 0.25rem;
+    background: color-mix(in oklch, var(--color-accent) 9%, var(--color-bg-1));
+    font-size: 0.90625rem;
+    line-height: 1.65;
+    color: var(--color-fg);
+    max-block-size: 13.75rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
+
+  /* ---------- output panes: three call sites share this frame ---------- */
+  .ci-pre {
+    margin-block: 2px 0;
+    padding: 6px 8px;
+    border: 0.5px solid var(--color-line-soft);
+    border-radius: 5px;
+    background: var(--color-bg-2);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    overflow-x: auto;
+  }
+
+  /* ---------- tooltip bubble: one rule set, four consumers ---------- */
+  [data-tip] {
+    cursor: help;
+  }
+
+  [data-tip]:hover::after,
+  [data-tip]:focus-visible::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 0;
+    top: calc(100% + 6px);
+    z-index: 20;
+    max-width: 340px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 0.5px solid var(--color-line);
+    background: var(--color-bg-2);
+    color: var(--color-fg);
+    font-family: inherit;
+    font-size: 10.5px;
+    font-style: normal;
+    line-height: 1.45;
+    box-shadow: 0 6px 18px rgb(0 0 0 / 35%);
+    pointer-events: none;
+    white-space: normal;
+  }
+
+  /* Skeleton shimmer: the animation is a utility (motion-safe:animate-[...]),
+     but its keyframes have to be declared somewhere — here, since it adds no
+     selector of its own. */
+  @keyframes ci-skel {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: -100% 0;
+    }
+  }
+}

@@ -1,0 +1,32 @@
+packages:
+  - "packages/*"
+  - "plugins/*"
+  - "apps/*"
+
+# One version per devDependency for the whole workspace; members depend on
+# `catalog:` instead of repeating ranges, so the plugin cannot build against a
+# different TypeScript than the packages it inlines.
+catalog:
+  "@tailwindcss/cli": "4.3.3"
+  "@types/node": "^26.6.5"
+  "@types/react": "^19.3.0"
+  "@types/react-dom": "^19.3.0"
+  "@vitejs/plugin-react": "^5.2.0"
+  oxfmt: "^0.73.0"
+  oxlint: "^1.88.0"
+  react: "^19.3.1"
+  react-dom: "^19.3.1"
+  tailwindcss: "4.3.3"
+  tsdown: "0.23.1"
+  typescript: "~7.0.2"
+  vite: "^7.3.7"
+  vitest: "^5.0.5"
+
+# pnpm 12 reads build-script approvals here (the package.json "pnpm" field is no
+# longer read, and the key is `allowBuilds` rather than pnpm 10's
+# `onlyBuiltDependencies`). Both entries are transitive native-postinstall
+# packages of vite/tailwind; without them `pnpm install` exits non-zero with
+# ERR_PNPM_IGNORED_BUILDS.
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true

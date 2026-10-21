@@ -1,0 +1,38 @@
+{
+  "name": "dsh-plugins",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Workspace root: the context-insight DSH plugin and the internal packages it is built from.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@12.11.2",
+  "engines": {
+    "node": ">=24.19.0"
+  },
+  "scripts": {
+    "dev": "vite --config apps/preview/vite.config.ts",
+    "css": "node scripts/build-css.mjs plugins/context-insight",
+    "build": "pnpm css && pnpm typecheck && pnpm typecheck:client && tsdown && pnpm build:libs",
+    "build:libs": "pnpm --filter './packages/*' -r run build",
+    "typecheck": "tsc --noEmit",
+    "typecheck:client": "tsc --noEmit -p tsconfig.client.json",
+    "test": "vitest run",
+    "fmt": "oxfmt --write ."
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "tailwindcss": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}
