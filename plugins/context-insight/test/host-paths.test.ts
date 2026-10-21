@@ -49,12 +49,18 @@ describe("containment", () => {
     expect(await resolveInside(root, join(project, "missing.jsonl"))).toBeUndefined()
   })
 
-  it("refuses a symlink whose target lives outside the root", async () => {
+  it("refuses a symlink whose target lives outside the root", async (ctx) => {
     const root = await mkdtemp(join(tmpdir(), "m5-sym-"))
     const outside = await mkdtemp(join(tmpdir(), "m5-out-"))
     const target = join(outside, "passwd")
     await writeFile(target, "root:x:0:0\n")
-    await symlink(target, join(root, "escape.jsonl"))
+    try {
+      await symlink(target, join(root, "escape.jsonl"))
+    } catch (err) {
+      // Windows only lets elevated users or Developer Mode create symlinks.
+      if ((err as NodeJS.ErrnoException).code === "EPERM") ctx.skip()
+      throw err
+    }
     expect(await resolveInside(root, join(root, "escape.jsonl"))).toBeUndefined()
   })
 })
