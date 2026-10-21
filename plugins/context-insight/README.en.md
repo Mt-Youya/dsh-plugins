@@ -69,7 +69,7 @@ dsh plugin --profile web     add @cyrus/dsh-context-insight   # dsh web
 # dsh plugin --profile <name> add /abs/path/cyrus-dsh-context-insight-<version>.tgz
 ```
 
-You can also install the collection `@cyrus/dsh-plugins`, which brings in every plugin of the collection (see the [repository README](../../README.en.md)).
+You can also install the collection `@cyrus/dsh-plugins`, which brings in every plugin of the collection (see the [repository README](../../README.md)).
 
 > **Pick one of the two.** The collection and this plugin both insert `id: context-insight` into the loader tree; with both in `dsh.profile.bundles`, DSH fails at boot with `duplicate loader entry id: context-insight`.
 
