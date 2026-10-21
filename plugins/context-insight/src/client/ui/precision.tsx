@@ -99,8 +99,16 @@ export function MeasureValue({
   const mark = measure.precision === "exact" ? "=" : "≈"
   const label = measureTip(measure)
   return (
-    <span className="inline-flex items-baseline gap-1 relative font-mono text-[11px] outline-offset-2" data-precision={measure.precision} data-tip={label} tabIndex={0} aria-label={label}>
-      <span className={measure.precision === "exact" ? "text-fg" : "text-fg-dim italic"}>{formatTokens(measure.tokens)}</span>
+    <span
+      className="inline-flex items-baseline gap-1 relative font-mono text-[11px] outline-offset-2"
+      data-precision={measure.precision}
+      data-tip={label}
+      tabIndex={0}
+      aria-label={label}
+    >
+      <span className={measure.precision === "exact" ? "text-fg" : "text-fg-dim italic"}>
+        {formatTokens(measure.tokens)}
+      </span>
       <span className="text-fg-dim text-[10px]" aria-hidden="true">
         {mark}
       </span>

@@ -14,6 +14,8 @@ import type { ReactElement } from "react"
 import type { SegmentInfo } from "../../protocol.ts"
 import { basename, formatBytes } from "../format.ts"
 import { t } from "../locale.ts"
+import { Glyph } from "./icons.tsx"
+import { Card, Chip, SectionTitle } from "./primitives.tsx"
 
 /**
  * @param props.segments - the session's physical files, main first.
@@ -29,12 +31,15 @@ export function SubagentTree({
 }): ReactElement {
   const attached = segments.slice(1)
   return (
-    <section className="px-4 pt-3 pb-1 border-b-[0.5px] border-line-soft" aria-label={t("subagents.title")}>
-      <h3 className="flex items-baseline gap-2 mt-0 mb-1.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-fg-dim">{t("subagents.title")}</h3>
-      {segments.length === 0 ? <p className="text-fg-dim text-[10.5px] my-1.5">{t("subagents.none")}</p> : null}
+    <Card label={t("subagents.title")}>
+      <SectionTitle count={turnSubagents.length}>{t("subagents.title")}</SectionTitle>
+      {segments.length === 0 ? <p className="m-0 text-[11.5px] text-fg-dim">{t("subagents.none")}</p> : null}
       {segments.length > 0 ? (
-        <details className="mt-1 mb-2" open={attached.length > 0 && attached.length <= 3}>
-          <summary className="text-[11px] text-fg-dim cursor-pointer">{t("subagents.files", { count: attached.length })}</summary>
+        <details className="ci-fold mt-1 mb-2" open={attached.length > 0 && attached.length <= 3}>
+          <summary className="inline-flex items-center gap-1 text-[11.5px] text-fg-dim">
+            <Glyph name="chevron" size={11} className="ci-chevron" />
+            {t("subagents.files", { count: attached.length })}
+          </summary>
           <ul className="mt-1.5 mb-0 p-0 list-none font-mono text-[11px]">
             <li className="flex items-baseline gap-1.5 py-0.5 ps-0">
               <span className="text-fg-dim" aria-hidden="true">
@@ -42,7 +47,7 @@ export function SubagentTree({
               </span>
               <span className="truncate">{basename(segments[0]?.name ?? "")}</span>
               <span className="text-fg-dim text-[10px]">{formatBytes(segments[0]?.bytes ?? 0)}</span>
-              <span className="inline-flex items-center gap-1 rounded-[4px] px-1.5 text-[10px] leading-[17px] whitespace-nowrap bg-transparent text-fg-dim border-[0.5px] border-line-soft">{t("subagents.main")}</span>
+              <Chip>{t("subagents.main")}</Chip>
             </li>
             {attached.map((segment) => (
               <li className="flex items-baseline gap-1.5 py-0.5 ps-3" key={segment.name}>
@@ -57,16 +62,19 @@ export function SubagentTree({
         </details>
       ) : null}
       {turnSubagents.length === 0 ? (
-        <p className="text-fg-dim text-[10.5px] my-1.5">{t("turns.noSubagents")}</p>
+        <p className="m-0 text-[11.5px] text-fg-dim">{t("turns.noSubagents")}</p>
       ) : (
         <ul className="flex flex-wrap gap-1.5 mt-1.5 mb-2 p-0 list-none">
           {turnSubagents.map((id) => (
-            <li key={id} className="inline-flex items-center gap-1 rounded-[4px] px-1.5 text-[10px] leading-[17px] whitespace-nowrap bg-transparent text-fg-dim border-[0.5px] border-line-soft">
-              {id}
+            <li key={id}>
+              <Chip tone="mono">
+                <Glyph name="branch" size={11} />
+                {id}
+              </Chip>
             </li>
           ))}
         </ul>
       )}
-    </section>
+    </Card>
   )
 }

@@ -101,13 +101,15 @@ function HitRow({
     <li>
       <button
         type="button"
-        className="flex w-full cursor-pointer flex-col gap-[3px] rounded-[6px] border-0 my-px px-2 py-[7px] text-inherit font-[inherit] text-left hover:bg-bg-2 data-[active=true]:bg-bg-2"
+        className="flex w-full cursor-pointer flex-col gap-[3px] rounded-md border-0 my-px px-2 py-[7px] text-inherit font-[inherit] text-left hover:bg-bg-2 data-[active=true]:bg-bg-2"
         data-active={active}
         onClick={onOpen}
         onMouseEnter={onHover}
       >
         <span className="flex items-baseline gap-2 min-w-0">
-          <span className="inline-flex items-center gap-1 rounded-[4px] px-1.5 text-[10px] leading-[17px] whitespace-nowrap bg-transparent text-fg border-[0.5px] border-line">{hit.source}</span>
+          <span className="inline-flex items-center gap-1 rounded-sm px-1.5 text-[10px] leading-4.25 whitespace-nowrap bg-transparent text-fg border-[0.5px] border-line">
+            {hit.source}
+          </span>
           <span className="truncate text-[12px]">{label.title}</span>
           <span className="ms-auto text-[10px] text-fg-dim whitespace-nowrap">
             {parts.leaf === "" ? hit.workdir : parts.leaf}
@@ -240,8 +242,17 @@ export function SearchPalette({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] bg-[rgb(0_0_0/55%)] flex items-start justify-center pt-[12vh]" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div className="w-[min(720px,92vw)] max-h-[70vh] grid grid-rows-[auto_minmax(0,1fr)_auto] rounded-[10px] border-[0.5px] border-line bg-bg-1 shadow-[0_18px_48px_rgb(0_0_0/50%)] overflow-hidden" role="dialog" aria-modal="true" aria-label={t("search.title")} onKeyDown={onKeyDown}>
+    <div
+      className="fixed inset-0 z-[60] bg-[rgb(0_0_0/55%)] flex items-start justify-center pt-[12vh]"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <div
+        className="w-[min(720px,92vw)] max-h-[70vh] grid grid-rows-[auto_minmax(0,1fr)_auto] rounded-[10px] border-[0.5px] border-line bg-bg-1 shadow-[0_18px_48px_rgb(0_0_0/50%)] overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("search.title")}
+        onKeyDown={onKeyDown}
+      >
         <div className="flex items-center gap-2 px-3 py-2.5 border-b-[0.5px] border-line">
           <label className="text-[11px] tracking-[0.06em] uppercase text-fg-dim whitespace-nowrap" htmlFor={inputId}>
             {t("search.title")}
@@ -262,10 +273,17 @@ export function SearchPalette({
             }}
             aria-describedby={`${inputId}-hint`}
           />
-          <span className="px-2 py-px rounded-full border-[0.5px] border-line text-[10px] text-fg-dim whitespace-nowrap" role="status">
+          <span
+            className="px-2 py-px rounded-full border-[0.5px] border-line text-[10px] text-fg-dim whitespace-nowrap"
+            role="status"
+          >
             {tier === "deep" ? t("search.tier.deep") : t("search.tier.fast")}
           </span>
-          <button type="button" className="px-2.5 py-1 rounded-[6px] border-[0.5px] border-line bg-transparent text-fg font-[inherit] text-[11px] cursor-pointer enabled:hover:border-accent disabled:opacity-50 disabled:cursor-default ms-auto" onClick={onClose}>
+          <button
+            type="button"
+            className="px-2.5 py-1 rounded-md border-[0.5px] border-line bg-transparent text-fg font-[inherit] text-[11px] cursor-pointer enabled:hover:border-accent disabled:opacity-50 disabled:cursor-default ms-auto"
+            onClick={onClose}
+          >
             Esc
           </button>
         </div>
@@ -276,17 +294,23 @@ export function SearchPalette({
               {t("search.hint")}
             </p>
           ) : null}
-          {state.kind === "loading" ? <p className="mx-1.5 my-2.5 text-[11px] text-fg-dim">{t("search.scanning")}</p> : null}
+          {state.kind === "loading" ? (
+            <p className="mx-1.5 my-2.5 text-[11px] text-fg-dim">{t("search.scanning")}</p>
+          ) : null}
           {state.kind === "failed" ? (
             <p className="mx-1.5 my-2.5 text-[11px] text-err">
               {t("session.error", { detail: state.failure.detail ?? state.failure.error })}
             </p>
           ) : null}
-          {state.kind === "ready" && hits.length === 0 ? <p className="mx-1.5 my-2.5 text-[11px] text-fg-dim">{t("search.empty")}</p> : null}
+          {state.kind === "ready" && hits.length === 0 ? (
+            <p className="mx-1.5 my-2.5 text-[11px] text-fg-dim">{t("search.empty")}</p>
+          ) : null}
           {grouped.map((group) => (
             <section className="mt-2" key={group.source} aria-label={group.source}>
               <h3 className="flex items-center gap-2 mb-1 px-1.5 text-[10px] font-semibold tracking-[0.06em] uppercase text-fg-dim">
-                <span className="inline-flex items-center gap-1 rounded-[4px] px-1.5 text-[10px] leading-[17px] whitespace-nowrap bg-transparent text-fg border-[0.5px] border-line">{group.source}</span>
+                <span className="inline-flex items-center gap-1 rounded-sm px-1.5 text-[10px] leading-4.25 whitespace-nowrap bg-transparent text-fg border-[0.5px] border-line">
+                  {group.source}
+                </span>
                 <span className="text-fg-dim text-[10.5px] my-1.5">{group.rows.length}</span>
               </h3>
               <ul className="m-0 p-0 list-none">
@@ -317,11 +341,13 @@ export function SearchPalette({
             <span className="text-fg-dim text-[10.5px] my-1.5">
               {t("search.meta", { scanned: state.value.scanned, elapsed: state.value.elapsedMs })}
             </span>
-            {state.value.tier === "fast" ? <span className="text-fg-dim text-[10.5px] my-1.5">{t("search.enterDeep")}</span> : null}
+            {state.value.tier === "fast" ? (
+              <span className="text-fg-dim text-[10.5px] my-1.5">{t("search.enterDeep")}</span>
+            ) : null}
             {state.value.tier === "deep" && state.value.truncated ? (
               <button
                 type="button"
-                className="px-2.5 py-1 rounded-[6px] border-[0.5px] border-line bg-bg-2 text-fg font-[inherit] text-[11px] cursor-pointer enabled:hover:border-accent disabled:opacity-50 disabled:cursor-default"
+                className="px-2.5 py-1 rounded-md border-[0.5px] border-line bg-bg-2 text-fg font-[inherit] text-[11px] cursor-pointer enabled:hover:border-accent disabled:opacity-50 disabled:cursor-default"
                 disabled={continuing}
                 onClick={() => setCursor(state.value.nextCursor ?? 0)}
               >

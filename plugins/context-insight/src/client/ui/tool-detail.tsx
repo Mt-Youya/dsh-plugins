@@ -13,6 +13,7 @@ import type { ReactElement } from "react"
 import type { ToolCall } from "@cyrus/dsh-session-contract"
 import { clip, formatDuration } from "../format.ts"
 import { t } from "../locale.ts"
+import { Glyph } from "./icons.tsx"
 
 /** Statuses a chip can show; `running` is derived, not read from the IR. */
 type ToolStatus = ToolCall["status"] | "running"
@@ -108,17 +109,23 @@ function DiffBlock({ before, after }: { before: string; after: string }): ReactE
   const removed = before === "" ? [] : before.split("\n")
   const added = after === "" ? [] : after.split("\n")
   return (
-    <div className="mt-1">
-      <span className="block text-[9.5px] uppercase tracking-[0.06em] text-fg-dim">{t("tools.diff")}</span>
-      <pre className="ci-pre max-h-[220px]">
+    <div>
+      <span className="block mb-1 text-[10.5px] text-fg-dim">{t("tools.diff")}</span>
+      <pre className="ci-pre max-h-55">
         {removed.map((line, index) => (
-          <span className="block bg-[color-mix(in_oklch,var(--color-err)_8%,transparent)] text-err" key={`d${String(index)}`}>
+          <span
+            className="block bg-[color-mix(in_oklch,var(--color-err)_8%,transparent)] text-err"
+            key={`d${String(index)}`}
+          >
             {line}
             {"\n"}
           </span>
         ))}
         {added.map((line, index) => (
-          <span className="block bg-[color-mix(in_oklch,var(--color-ok)_8%,transparent)] text-ok" key={`a${String(index)}`}>
+          <span
+            className="block bg-[color-mix(in_oklch,var(--color-ok)_8%,transparent)] text-ok"
+            key={`a${String(index)}`}
+          >
             {line}
             {"\n"}
           </span>
@@ -129,7 +136,11 @@ function DiffBlock({ before, after }: { before: string; after: string }): ReactE
 }
 
 /**
- * One call.
+ * One call: a one-line summary that folds open into the facts.
+ *
+ * The summary carries what a reader scans for — tool, status, the command or
+ * path, duration — and a failed call opens itself, because its error text is
+ * the reason to look.
  * @param props.call - the call.
  * @returns the entry.
  */
@@ -153,27 +164,45 @@ function ToolEntry({ call }: { call: ToolCall }): ReactElement {
           ? t("tools.status.error")
           : t("tools.status.unknown")
   return (
-    <li className={`border-b border-line-soft py-2${failed ? " ps-2 shadow-[inset_2px_0_0_var(--color-err)]" : ""}`}>
-      <div className="flex items-baseline gap-2 text-[11px]">
-        <span className="font-mono font-semibold">{call.name}</span>
-        <span className={STATUS_SKIN[status]}>{statusLabel}</span>
-        <span className="text-[10px] text-fg-dim">{formatDuration(call.startedAt, call.endedAt)}</span>
-      </div>
-      {fact === undefined ? null : (
-        <div className="mt-1">
-          <span className="block text-[9.5px] uppercase tracking-[0.06em] text-fg-dim">{fact.label}</span>
-          <pre className="ci-pre border-b border-line-soft py-2">
-            {clip(fact.body, PREVIEW_CHARS)}
-          </pre>
+    <li
+      className={
+        failed
+          ? "rounded-lg border border-err/40 bg-err/5"
+          : "rounded-lg border border-line-soft bg-bg"
+      }
+    >
+      <details className="ci-fold" open={failed}>
+        <summary className="flex items-center gap-2 min-w-0 px-2.5 py-2 text-[12px]">
+          <Glyph name="chevron" size={11} className="ci-chevron shrink-0 text-fg-3" />
+          <span className="font-mono font-semibold shrink-0">{call.name}</span>
+          <span className={STATUS_SKIN[status] + " shrink-0"}>{statusLabel}</span>
+          {fact === undefined ? null : (
+            <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-fg-dim" title={fact.body}>
+              {fact.body.split("\n")[0]}
+            </span>
+          )}
+          <span className="ms-auto shrink-0 text-[10.5px] text-fg-3 tabular-nums">
+            {formatDuration(call.startedAt, call.endedAt)}
+          </span>
+        </summary>
+        <div className="flex flex-col gap-2 px-2.5 pb-2.5">
+          {fact === undefined ? null : (
+            <div>
+              <span className="block mb-1 text-[10.5px] text-fg-dim">{fact.label}</span>
+              <pre className="ci-pre">{clip(fact.body, PREVIEW_CHARS)}</pre>
+            </div>
+          )}
+          {before === undefined && after === undefined ? null : <DiffBlock before={before ?? ""} after={after ?? ""} />}
+          {output === "" ? null : (
+            <div>
+              <span className={failed ? "block mb-1 text-[10.5px] text-err" : "block mb-1 text-[10.5px] text-fg-dim"}>
+                {failed ? `${t("tools.output")} · ${t("tools.status.error")}` : t("tools.output")}
+              </span>
+              <pre className="ci-pre max-h-80">{clip(output, PREVIEW_CHARS * 4)}</pre>
+            </div>
+          )}
         </div>
-      )}
-      {before === undefined && after === undefined ? null : <DiffBlock before={before ?? ""} after={after ?? ""} />}
-      {output === "" ? null : (
-        <details className="[&>summary]:mt-1 [&>summary]:cursor-pointer [&>summary]:text-[10.5px] [&>summary]:text-fg-dim" open={failed}>
-          <summary>{failed ? `${t("tools.output")} · ${t("tools.status.error")}` : t("tools.output")}</summary>
-          <pre className="ci-pre max-h-[320px]">{clip(output, PREVIEW_CHARS * 4)}</pre>
-        </details>
-      )}
+      </details>
     </li>
   )
 }
@@ -194,17 +223,17 @@ export function ToolCalls({
   expanded: boolean
   onToggleExpanded: (next: boolean) => void
 }): ReactElement {
-  if (calls.length === 0) return <p className="text-fg-dim text-[10.5px] my-1.5">{t("turns.noTools")}</p>
+  if (calls.length === 0) return <p className="m-0 text-[11.5px] text-fg-dim">{t("turns.noTools")}</p>
   const visible = expanded ? calls : calls.slice(0, VISIBLE_CALLS)
   return (
     <>
-      <ul className="m-0 list-none p-0">
+      <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
         {visible.map((call) => (
           <ToolEntry key={call.id} call={call} />
         ))}
       </ul>
       {calls.length > VISIBLE_CALLS ? (
-        <button type="button" className="px-2.5 py-1 rounded-[6px] border-[0.5px] border-line bg-transparent text-fg font-[inherit] text-[11px] cursor-pointer enabled:hover:border-accent disabled:opacity-50 disabled:cursor-default ms-auto" onClick={() => onToggleExpanded(!expanded)}>
+        <button type="button" className="ci-btn ci-btn--quiet mt-2" onClick={() => onToggleExpanded(!expanded)}>
           {expanded ? t("tools.showLess") : t("tools.showAll", { count: calls.length })}
         </button>
       ) : null}

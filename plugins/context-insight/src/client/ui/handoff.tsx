@@ -255,7 +255,7 @@ export function HandoffDialog({
  * @param props.cost - the Host's cost answer.
  * @returns the chip row.
  */
-export function CostBadge({ cost }: { cost: CostValue }): ReactElement {
+export function CostBadge({ cost, plain = false }: { cost: CostValue; plain?: boolean }): ReactElement {
   const groups = cost.groups ?? []
   function materialise(): ReactElement[] {
     return groups.map((group) => (
@@ -284,7 +284,11 @@ export function CostBadge({ cost }: { cost: CostValue }): ReactElement {
   const tip = lines.join(" · ")
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-sm px-1.5 text-[10px] leading-4.25 whitespace-nowrap bg-transparent text-fg-dim font-mono border-[0.5px] border-line data-[state=provisional]:border-dashed"
+      className={
+        plain
+          ? "relative inline-flex items-baseline gap-1.5 whitespace-nowrap [&>span+span]:text-[11px] [&>span+span]:font-normal [&>span+span]:text-fg-dim"
+          : "relative inline-flex items-center gap-1 rounded-sm px-1.5 text-[10px] leading-4.25 whitespace-nowrap bg-transparent text-fg-dim font-mono border-[0.5px] border-line data-[state=provisional]:border-dashed"
+      }
       data-tip={tip}
       tabIndex={0}
       aria-label={tip === "" ? "cost" : tip}
@@ -292,7 +296,7 @@ export function CostBadge({ cost }: { cost: CostValue }): ReactElement {
       {groups.length === 0 ? "—" : materialise()}
       {reference === undefined ? null : <span>{reference}</span>}
       {cost.provisional === true ? (
-        <span className="inline-flex items-center gap-1 rounded-sm px-1.25 text-[9.5px] leading-[17px] whitespace-nowrap bg-bg-2 text-fg-dim tracking-[0.02em] border-[0.5px] border-dashed border-line normal-case ms-1">
+        <span className="inline-flex items-center gap-1 rounded-sm px-1.25 text-[9.5px] leading-4.25 whitespace-nowrap bg-bg-2 text-fg-dim tracking-[0.02em] border-[0.5px] border-dashed border-line normal-case ms-1">
           {t("cost.provisional")}
         </span>
       ) : null}

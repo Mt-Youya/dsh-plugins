@@ -58,13 +58,15 @@ export function ContextInsightPanelIcon({ size }: { size: number; active: boolea
       height={size}
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.3}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M2 4.5h12M2 8h9M2 11.5h6" />
-      <circle cx="13" cy="11.5" r="1.6" />
+      <circle cx="6.72" cy="6.72" r="3.92" strokeWidth={1.12} />
+      <path d="M9.6 9.6 13.12 13.12" strokeWidth={1.28} />
+      <path d="M5.12 4.48h3.2" strokeWidth={1.12} />
+      <path d="M5.12 6.72h2.24" strokeWidth={1.12} />
+      <path d="M5.12 8.96h1.28" strokeWidth={1.12} />
     </svg>
   )
 }

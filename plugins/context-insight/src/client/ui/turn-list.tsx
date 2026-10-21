@@ -21,8 +21,10 @@
 import type { KeyboardEvent, ReactElement } from "react"
 import type { CompactionPoint, Turn } from "@cyrus/dsh-session-contract"
 import type { CostTurnValue } from "../../protocol.ts"
-import { compactTokens, formatShare, formatTime, formatUsd } from "../format.ts"
+import { compactTokens, formatShare, formatShortTime, formatUsd } from "../format.ts"
 import { t } from "../locale.ts"
+import { Glyph } from "./icons.tsx"
+import { Chip } from "./primitives.tsx"
 import { StackedBar, barLayout } from "./stacked-bar.tsx"
 import { buildTurnRows } from "../state/turn-rows.ts"
 
@@ -43,29 +45,27 @@ function CompactionsRow({ points, turn }: { points: CompactionPoint[]; turn: Tur
           after: compactTokens(last.after.tokens),
         })
   return (
-    <li className="py-0.5 pe-2 ps-[30px] text-[10px] text-fg-dim" data-turn={turn.index}>
-      <details className="border-s border-dashed border-warn ps-2">
-        <summary className="flex flex-wrap items-baseline gap-1.5 cursor-pointer min-w-0">
-          {/* Empty span kept on purpose: it is one of the summary's flex items,
-              so removing it would shift the row by one gap. */}
-          <span aria-hidden="true" />
-          <span className="text-warn font-semibold">{t("compactions.count", { count: points.length })}</span>
-          <span className="font-mono text-warn">{range}</span>
-          <span className="opacity-75">
+    <li className="my-1 px-1 text-[11px] text-warn" data-turn={turn.index}>
+      <details className="ci-fold rounded-lg border border-dashed border-warn/50 bg-warn/6">
+        <summary className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-2.5 py-1.5 min-w-0">
+          <Glyph name="chevron" size={10} className="ci-chevron" />
+          <span className="font-semibold">{t("compactions.count", { count: points.length })}</span>
+          <span className="font-mono tabular-nums">{range}</span>
+          <span className="text-fg-dim">
             {first?.replacedHistory === true ? t("turns.compactionReplaced") : t("turns.compactionContinued")}
           </span>
         </summary>
-        <ul className="mt-1 mb-0.5 p-0 list-none">
+        <ul className="m-0 px-2.5 pb-1.5 list-none text-fg-dim">
           {points.map((point, order) => (
-            <li className="flex flex-wrap gap-2 py-px" key={`${String(point.at)}-${String(order)}`}>
-              <span className="font-mono">{formatTime(point.at)}</span>
-              <span className="font-mono">
+            <li className="flex flex-wrap gap-2 py-0.5" key={`${String(point.at)}-${String(order)}`}>
+              <span className="font-mono">{formatShortTime(point.at)}</span>
+              <span className="font-mono tabular-nums">
                 {t("compactions.range", {
                   before: compactTokens(point.before.tokens),
                   after: compactTokens(point.after.tokens),
                 })}
               </span>
-              <span className="text-fg-dim text-[10.5px] my-1.5">
+              <span>
                 {point.replacedHistory ? t("turns.compactionReplaced") : t("turns.compactionContinued")}
                 {point.trigger === undefined ? "" : ` · ${point.trigger}`}
               </span>
@@ -78,13 +78,25 @@ function CompactionsRow({ points, turn }: { points: CompactionPoint[]; turn: Tur
 }
 
 /**
- * One turn row.
+ * Tooltip for one turn's price: model, cache hit rate, and whether it is a
+ * preview price.
+ * @param index - the turn index.
+ * @param cost - that turn's priced line.
+ */
+function costTip(index: number, cost: CostTurnValue): string {
+  const rate = cost.cacheHitRate === null ? "—" : String(Math.round(cost.cacheHitRate * 100)) + "%"
+  const line = t("cost.turnTip", { index, model: cost.model ?? "—", rate })
+  return cost.provisional === true ? line + " · " + t("cost.provisional") : line
+}
+
+/**
+ * One turn row: what was asked, how big the context was, what it held.
  * @param props.turn - the turn.
  * @param props.selected - whether this row is the open one.
  * @param props.onSelect - selection callback.
  * @param props.onKeyNav - arrow-key handler, shared by every row.
  * @param props.cost - this turn's priced line, when the Host returned one.
- * @returns the row button.
+ * @returns the row.
  */
 function TurnRow({
   turn,
@@ -103,15 +115,18 @@ function TurnRow({
   const unknown = layout.residual > 0 ? formatShare(layout.residual, layout.denominator) : undefined
   const tools = turn.toolCalls.length
   const summary = `${t("turns.selected", { index: turn.index })}: ${compactTokens(turn.attribution.total.tokens)}`
+  const ask = turn.userInput.join(" ").trim()
   return (
     <li data-turn={turn.index}>
-      <button
-        type="button"
-        className={
-          selected
-            ? "grid grid-cols-[26px_minmax(0,1fr)_auto] items-center gap-2 w-full border-0 rounded-[6px] px-2 py-1.5 my-px text-left cursor-pointer pointer-fine:hover:bg-bg-2 bg-bg-2 shadow-[inset_2px_0_0_var(--color-accent)]"
-            : "grid grid-cols-[26px_minmax(0,1fr)_auto] items-center gap-2 w-full border-0 rounded-[6px] px-2 py-1.5 my-px text-left cursor-pointer pointer-fine:hover:bg-bg-2"
-        }
+      {/* A div, not a button: role/tabIndex keep the keyboard and a11y
+          behaviour, and the surface comes from `.ci-row`, which nothing
+          outside the panel can repaint. */}
+      <div
+        role="button"
+        tabIndex={0}
+        data-turn-row=""
+        className="ci-row px-2.5 py-2"
+        data-selected={selected}
         aria-pressed={selected}
         onClick={() => onSelect(turn.index)}
         onKeyDown={(event) => {
@@ -119,59 +134,76 @@ function TurnRow({
           else if (event.key === "ArrowUp") onKeyNav(event, -1)
           else if (event.key === "Home") onKeyNav(event, "first")
           else if (event.key === "End") onKeyNav(event, "last")
+          else if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault()
+            onSelect(turn.index)
+          }
         }}
       >
-        <span className="font-mono text-[11px] text-fg-dim text-right">{turn.index}</span>
-        <span className="flex flex-col gap-[3px] min-w-0">
-          <span className="flex items-center gap-[5px] text-[10px] text-fg-dim overflow-hidden">
-            <span className="whitespace-nowrap">{formatTime(turn.startedAt)}</span>
-            {turn.userInput.length === 0 ? null : (
-              <span className="truncate opacity-80">{turn.userInput.join(" ").slice(0, 48)}</span>
-            )}
-            {unknown === undefined ? null : (
-              <span className="inline-flex items-center gap-1 rounded-[4px] px-1.5 text-[10px] leading-[17px] whitespace-nowrap bg-transparent text-warn border-[0.5px] border-dashed border-warn" title={t("turns.unknownNote")}>
-                {t("turns.unknown")} {unknown}
-              </span>
-            )}
-            {turn.attribution.reconciled === undefined ? null : (
-              <span
-                className="inline-flex items-center gap-1 rounded-[4px] px-1.5 text-[10px] leading-[17px] whitespace-nowrap bg-transparent text-fg-dim border-[0.5px] border-line"
-                title={t("turns.reconciled", { factor: turn.attribution.reconciled.factor.toFixed(3) })}
-              >
-                ×{turn.attribution.reconciled.factor.toFixed(2)}
-              </span>
-            )}
-            {tools === 0 ? null : (
-              <span className="inline-flex items-center gap-1 rounded-[4px] px-1.5 text-[10px] leading-[17px] whitespace-nowrap bg-transparent text-fg-dim border-[0.5px] border-line-soft">
-                {t("turns.tools")} {tools}
-              </span>
-            )}
-            {turn.subagents.length === 0 ? null : (
-              <span className="inline-flex items-center gap-1 rounded-[4px] px-1.5 text-[10px] leading-[17px] whitespace-nowrap bg-transparent text-fg-dim border-[0.5px] border-line-soft">
-                {t("turns.subagents")} {turn.subagents.length}
-              </span>
-            )}
-            {cost === undefined ? null : (
-              <span
-                className="inline-flex items-center gap-1 rounded-[4px] px-1.5 text-[10px] leading-[17px] whitespace-nowrap bg-transparent text-fg-dim font-mono border-[0.5px] border-line data-[state=provisional]:border-dashed"
-                data-state={cost.provisional === true ? "provisional" : "settled"}
-                data-tip={
-                  t("cost.turnTip", {
-                    index: turn.index,
-                    model: cost.model ?? "—",
-                    rate: cost.cacheHitRate === null ? "—" : Math.round(cost.cacheHitRate * 100) + "%",
-                  }) + (cost.provisional === true ? " · " + t("cost.provisional") : "")
-                }
-                tabIndex={0}
-              >
-                {cost.usd === null ? t("cost.null") : (cost.provisional === true ? "~" : "") + formatUsd(cost.usd)}
-              </span>
-            )}
+        {/* Three columns shared by every row — index | content | numbers — so
+            tokens and cost line up on the right edge, and the meta line's
+            cells keep fixed widths so they line up from row to row. */}
+        <span className="grid grid-cols-[22px_minmax(0,1fr)_64px] items-center gap-x-2 gap-y-1.5">
+          <span className="font-mono text-[11px] text-fg-3 tabular-nums">{turn.index}</span>
+          <span
+            className={ask === "" ? "min-w-0 truncate text-[12.5px] text-fg-3" : "min-w-0 truncate text-[12.5px]"}
+          >
+            {ask === "" ? t("turns.noInput") : ask}
           </span>
+          <span className="text-end text-[12.5px] font-semibold tabular-nums">
+            {compactTokens(turn.attribution.total.tokens)}
+          </span>
+
+          <span aria-hidden="true" />
           <StackedBar attribution={turn.attribution} label={summary} dense />
+          <span aria-hidden="true" />
+
+          <span aria-hidden="true" />
+          <span className="grid grid-cols-[var(--ci-time-w)_36px_44px_minmax(0,1fr)] items-center gap-x-1.5 text-[10.5px] text-fg-dim tabular-nums">
+            <span>{formatShortTime(turn.startedAt)}</span>
+            <span className="inline-flex items-center gap-0.5" title={t("turns.tools")}>
+              {tools === 0 ? null : (
+                <>
+                  <Glyph name="tool" size={11} />
+                  {tools}
+                </>
+              )}
+            </span>
+            <span
+              className="font-mono"
+              title={
+                turn.attribution.reconciled === undefined
+                  ? undefined
+                  : t("turns.reconciled", { factor: turn.attribution.reconciled.factor.toFixed(3) })
+              }
+            >
+              {turn.attribution.reconciled === undefined ? "" : "×" + turn.attribution.reconciled.factor.toFixed(2)}
+            </span>
+            <span className="flex min-w-0 items-center gap-1.5">
+              {turn.subagents.length === 0 ? null : (
+                <span className="inline-flex items-center gap-0.5" title={t("turns.subagents")}>
+                  <Glyph name="branch" size={11} />
+                  {turn.subagents.length}
+                </span>
+              )}
+              {unknown === undefined ? null : (
+                <Chip tone="warn" title={t("turns.unknownNote")}>
+                  {t("turns.unknown")} {unknown}
+                </Chip>
+              )}
+            </span>
+          </span>
+          <span
+            className="relative text-end font-mono text-[10.5px] text-fg-dim tabular-nums"
+            data-tip={cost === undefined || cost.usd === null ? undefined : costTip(turn.index, cost)}
+            tabIndex={cost === undefined || cost.usd === null ? undefined : 0}
+          >
+            {cost === undefined || cost.usd === null
+              ? ""
+              : (cost.provisional === true ? "~" : "") + formatUsd(cost.usd)}
+          </span>
         </span>
-        <span className="font-mono text-[11px] text-fg-dim">{compactTokens(turn.attribution.total.tokens)}</span>
-      </button>
+      </div>
     </li>
   )
 }
@@ -196,23 +228,31 @@ export function TurnList({
   costs?: ReadonlyMap<number, CostTurnValue>
 }): ReactElement {
   const rows = buildTurnRows(turns)
+  // One time-column width for the whole strip: wide only when some turn is not
+  // from today, so `HH:mm` rows are not padded for nothing.
+  const timeWidth = turns.some((turn) => formatShortTime(turn.startedAt).length > 5) ? "72px" : "34px"
   function move(event: KeyboardEvent<HTMLElement>, delta: number | "first" | "last"): void {
     event.preventDefault()
     const list = event.currentTarget.closest("ul")
     if (list === null) return
-    const buttons = [...list.querySelectorAll<HTMLButtonElement>("button[aria-pressed]")]
-    const current = buttons.indexOf(event.currentTarget as HTMLButtonElement)
+    const rows = [...list.querySelectorAll<HTMLElement>("[data-turn-row]")]
+    const current = rows.indexOf(event.currentTarget as HTMLElement)
     if (current < 0) return
     const target =
       delta === "first"
         ? 0
         : delta === "last"
-          ? buttons.length - 1
-          : Math.min(buttons.length - 1, Math.max(0, current + delta))
-    buttons[target]?.focus()
+          ? rows.length - 1
+          : Math.min(rows.length - 1, Math.max(0, current + delta))
+    rows[target]?.focus()
   }
   return (
-    <ul className="m-0 pt-1 px-2 pb-2 list-none overflow-y-auto min-h-0" role="list" aria-label={t("turns.title")}>
+    <ul
+      className="m-0 flex flex-col gap-0.5 p-1.5 list-none"
+      role="list"
+      aria-label={t("turns.title")}
+      style={{ ["--ci-time-w" as string]: timeWidth }}
+    >
       {rows.map((row) => {
         if (row.kind === "compactions") {
           return <CompactionsRow key={row.key} points={row.points} turn={row.turn} />

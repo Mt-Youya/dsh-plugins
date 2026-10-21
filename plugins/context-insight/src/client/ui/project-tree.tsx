@@ -12,14 +12,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ReactElement } from "react"
-import type { ContextSource, SessionSummary, WorkdirEntry } from "../../protocol.ts"
+import type { ContextSource, WorkdirEntry } from "../../protocol.ts"
 import type { Api } from "../api.ts"
-import { formatBytes, formatTime, splitPath } from "../format.ts"
-import { SourceIcon, SOURCE_MARKS } from "./icons.tsx"
+import { formatBytes, formatShortTime, splitPath, tildePath } from "../format.ts"
+import { Glyph, SourceIcon, SOURCE_MARKS } from "./icons.tsx"
+import { TreeSkeleton } from "./states.tsx"
 import { t } from "../locale.ts"
 import {
   DEFAULT_SESSION_LIMIT,
   buildProjects,
+  filterProjects,
   flattenTree,
   nextIndex,
   readExpanded,
@@ -29,10 +31,6 @@ import {
   type TreeRow,
   type TreeSession,
 } from "../state/tree.ts"
-
-/** One skeleton bar; the two shapes differ only in width, height and margin. */
-const SKEL =
-  "rounded-md bg-[linear-gradient(90deg,var(--color-bg-1),var(--color-bg-2),var(--color-bg-1))] bg-[length:200%_100%] motion-safe:animate-[ci-skel_1.4s_var(--ease-in-out)_infinite]"
 
 /** What the panel needs to open a session. */
 export interface TreeSelection {
@@ -51,22 +49,65 @@ function storageOf(): Storage | undefined {
   }
 }
 
-/** One source chip: glyph plus count or label. */
-function SourceChip({ source, count }: { source: ContextSource; count?: number }): ReactElement {
+/** One source count: glyph plus number, tinted by the source's brand. */
+function SourceCount({ source, count }: { source: ContextSource; count: number }): ReactElement {
   const mark = SOURCE_MARKS[source]
   return (
     <span
       className="ci-src"
       style={{ ["--ci-src-color" as string]: mark.text, ["--ci-src-brand" as string]: mark.brand }}
-      data-tip={mark.label.zh}
+      title={`${mark.label.zh} · ${t("sources.sessions", { count })}`}
     >
-      <SourceIcon source={source} size={11} />
-      <span>{count === undefined ? mark.label.zh : String(count)}</span>
+      <SourceIcon source={source} size={10} />
+      <span>{String(count)}</span>
     </span>
   )
 }
 
-/** A session row. */
+/** A project row. */
+function ProjectRow({
+  row,
+  index,
+  onToggle,
+  onFocus,
+}: {
+  row: Extract<TreeRow, { kind: "project" }>
+  index: number
+  onToggle: () => void
+  onFocus: () => void
+}): ReactElement {
+  const project: TreeProject = row.project
+  return (
+    <button
+      type="button"
+      className="ci-row px-2 py-1.5"
+      data-focus={index}
+      aria-expanded={row.expanded}
+      onClick={onToggle}
+      onFocus={onFocus}
+      title={project.workdir}
+    >
+      <span className="flex min-w-0 items-center gap-1.5">
+        <Glyph name="chevron" size={11} className="ci-chevron shrink-0 text-fg-3" />
+        <Glyph name="folder" size={14} className={row.expanded ? "shrink-0 text-accent" : "shrink-0 text-fg-dim"} />
+        <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold">{project.leaf}</span>
+        <span className="shrink-0 text-[10.5px] text-fg-3 tabular-nums">{formatShortTime(project.lastUpdatedAt)}</span>
+      </span>
+      <span className="mt-1 flex min-w-0 items-center gap-1.5 ps-[37px]">
+        <span className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-fg-3">
+          {project.parent === "" ? "" : tildePath(project.parent)}
+        </span>
+        <span className="flex shrink-0 items-center gap-1">
+          {project.counts.map((group) => (
+            <SourceCount key={group.source} source={group.source} count={group.sessions} />
+          ))}
+        </span>
+      </span>
+    </button>
+  )
+}
+
+/** A session row, hung under its project by a guide line. */
 function SessionRow({
   row,
   index,
@@ -80,46 +121,47 @@ function SessionRow({
 }): ReactElement {
   const mark = SOURCE_MARKS[row.session.source]
   return (
-    <button
-      type="button"
-      className="flex w-full min-w-0 cursor-pointer flex-col items-stretch gap-0.5 rounded-md border-0 bg-transparent px-1.5 py-1.5 text-start font-[inherit] text-fg transition-colors duration-150 ease-out hover:bg-bg-1 active:bg-fg/10 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent data-[selected=true]:bg-accent/15"
-      data-key={row.key}
-      data-selected={row.selected}
-      data-focus={index}
-      aria-current={row.selected}
-      onClick={onOpen}
-      onFocus={onFocus}
-      title={row.session.title}
-      style={{
-        ["--ci-src-brand" as string]: mark.brand,
-        ["--ci-src-color" as string]: mark.text,
-      }}
-    >
-      <span className="flex min-w-0 items-center gap-1.5">
-        <span className="inline-flex w-3.5 shrink-0 justify-center">
-          <SourceIcon source={row.session.source} size={13} />
+    <div className="ms-[13px] border-s border-line-soft ps-1.5">
+      <button
+        type="button"
+        className="ci-row px-2 py-1.5"
+        data-key={row.key}
+        data-selected={row.selected}
+        data-focus={index}
+        aria-current={row.selected}
+        onClick={onOpen}
+        onFocus={onFocus}
+        title={row.session.title}
+      >
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="inline-flex w-3.5 shrink-0 justify-center">
+            <SourceIcon source={row.session.source} size={12} />
+          </span>
+          <span className="min-w-0 flex-1 truncate text-[12.5px]">{row.session.title}</span>
         </span>
-        <span className="min-w-0 flex-1 truncate">{row.session.title}</span>
-      </span>
-      <span className="flex min-w-0 items-center gap-1.5 text-[10px] text-fg-dim">
-        <span className="ci-src__word">{mark.label.zh}</span>
-        <span className="shrink-0 whitespace-nowrap text-[10px] tabular-nums text-fg-dim">
-          {formatTime(row.session.updatedAt)} · {formatBytes(row.session.bytes)}
+        <span className="mt-0.5 flex min-w-0 items-center gap-1.5 ps-5 text-[10.5px] text-fg-3 tabular-nums">
+          <span style={{ color: mark.text }} className="ci-src__word">
+            {mark.label.zh}
+          </span>
+          <span aria-hidden="true">·</span>
+          <span>{formatShortTime(row.session.updatedAt)}</span>
+          <span aria-hidden="true">·</span>
+          <span>{formatBytes(row.session.bytes)}</span>
         </span>
-      </span>
-    </button>
+      </button>
+    </div>
   )
 }
 
 /**
- * The tree.
+ * The tree column: a header with the project count and a filter, then the
+ * scrolling rows.
  * @param props.api - client API.
  * @param props.workdirs - project rows from `/workdirs`.
  * @param props.selected - currently open session.
  * @param props.onSelect - open one session.
  * @param props.loading - true while the first `/workdirs` answer is pending.
- * @param props.refreshing - true while a cached answer is being revalidated.
- * @returns the tree column.
+ * @returns the tree column, filling its parent's height.
  */
 export function ProjectTree({
   api,
@@ -134,13 +176,15 @@ export function ProjectTree({
   onSelect: (selection: TreeSelection) => void
   loading: boolean
 }): ReactElement {
-  const projects = useMemo(() => buildProjects(workdirs, splitPath), [workdirs])
+  const allProjects = useMemo(() => buildProjects(workdirs, splitPath), [workdirs])
+  const [query, setQuery] = useState("")
+  const projects = useMemo(() => filterProjects(allProjects, query), [allProjects, query])
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(readExpanded(storageOf())))
   const [sessions, setSessions] = useState<Map<string, TreeSession[]>>(() => new Map())
   const [loadingWorkdirs, setLoadingWorkdirs] = useState<Set<string>>(() => new Set())
   const [limits, setLimits] = useState<Map<string, number>>(() => new Map())
   const [focus, setFocus] = useState(-1)
-  const navRef = useRef<HTMLElement | null>(null)
+  const navRef = useRef<HTMLDivElement | null>(null)
   const requested = useRef(new Set<string>())
 
   // Default: open the project that holds the selection, else the first one.
@@ -165,7 +209,11 @@ export function ProjectTree({
         next.delete(workdir)
         return next
       })
-      if (!result.ok) return
+      // A failed read leaves the project empty rather than skeletal forever.
+      if (!result.ok) {
+        setSessions((current) => new Map(current).set(workdir, []))
+        return
+      }
       const rows: TreeSession[] = result.value.sessions.map((summary) => ({
         source: summary.source,
         id: summary.id,
@@ -252,95 +300,95 @@ export function ProjectTree({
     }
   }
 
-  const skeletonProjects = Array.from({ length: 3 }, (_, index) => index)
-  const skeletonSessions = Array.from({ length: 6 }, (_, index) => index)
-
-  if (loading && projects.length === 0) {
+  if (loading && allProjects.length === 0) {
     return (
-      <nav className="flex flex-col min-h-0 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] px-2 pb-3" aria-label={t("workdirs.title")} aria-busy="true">
-        <p className="mx-1 my-2 text-xs leading-relaxed text-fg-dim">{t("tree.loadingIndex")}</p>
-        {skeletonProjects.map((index) => (
-          <div className={`${SKEL} w-[78%] h-7 my-1`} key={"p" + String(index)} />
-        ))}
-        {skeletonSessions.map((index) => (
-          <div className={`${SKEL} w-[62%] h-[1.375rem] my-0.5 ms-[1.125rem]`} key={"s" + String(index)} />
-        ))}
-      </nav>
-    )
-  }
-
-  if (projects.length === 0) {
-    return (
-      <nav className="flex flex-col min-h-0 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] px-2 pb-3" aria-label={t("workdirs.title")}>
-        <p className="mx-1 my-2 text-xs leading-relaxed text-fg-dim">{t("tree.emptyAll")}</p>
+      <nav className="ci-scroll h-full overflow-y-auto" aria-label={t("workdirs.title")} aria-busy="true">
+        <TreeSkeleton label={t("tree.loadingIndex")} />
       </nav>
     )
   }
 
   return (
-    <nav className="flex flex-col min-h-0 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] px-2 pb-3" aria-label={t("workdirs.title")} ref={navRef} onKeyDown={onKeyDown} role="tree">
-      <h2 className="m-0 px-3.5 pt-2.5 pb-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase text-fg-dim flex flex-col gap-0.5">{t("tree.title")}</h2>
-      {rows.map((row, index) => {
-        if (row.kind === "project") {
-          const project: TreeProject = row.project
+    <nav className="flex h-full min-h-0 flex-col" aria-label={t("workdirs.title")}>
+      <div className="flex shrink-0 flex-col gap-2 px-3 pt-3 pb-2">
+        <div className="flex items-center gap-2 text-[12px] font-semibold">
+          <span>{t("tree.title")}</span>
+          <span className="rounded-full bg-bg-2 px-1.5 text-[10.5px] font-medium leading-[17px] text-fg-dim tabular-nums">
+            {query.trim() === "" ? allProjects.length : `${String(projects.length)} / ${String(allProjects.length)}`}
+          </span>
+        </div>
+        <label className="flex h-7 items-center gap-1.5 rounded-[7px] border border-line-soft bg-bg px-2 text-fg-3 focus-within:border-accent">
+          <Glyph name="search" size={12} />
+          <input
+            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[12px] text-fg outline-none placeholder:text-fg-3"
+            value={query}
+            onChange={(event) => setQuery(event.currentTarget.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setQuery("")
+            }}
+            placeholder={t("tree.filter")}
+            aria-label={t("tree.filter")}
+            type="search"
+          />
+        </label>
+      </div>
+      <div className="ci-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-3" ref={navRef} onKeyDown={onKeyDown} role="tree">
+        {projects.length === 0 ? (
+          <p className="m-0 px-2 py-3 text-[12px] leading-relaxed text-fg-dim">
+            {allProjects.length === 0 ? t("tree.emptyAll") : t("tree.noMatch", { query: query.trim() })}
+          </p>
+        ) : null}
+        {rows.map((row, index) => {
+          if (row.kind === "project") {
+            return (
+              <div className="mt-1 first:mt-0" key={row.key}>
+                <ProjectRow
+                  row={row}
+                  index={index}
+                  onToggle={() => toggle(row.project.workdir)}
+                  onFocus={() => setFocus(index)}
+                />
+              </div>
+            )
+          }
+          if (row.kind === "skeleton") {
+            return (
+              <div className="ms-[13px] flex flex-col gap-1 border-s border-line-soft py-1 ps-2.5" key={row.key}>
+                {Array.from({ length: row.rows }, (_, order) => (
+                  <div
+                    className="h-8 rounded-[8px] bg-[linear-gradient(90deg,var(--color-bg-1),var(--color-bg-2),var(--color-bg-1))] bg-[length:200%_100%] motion-safe:animate-[ci-skel_1.4s_var(--ease-in-out)_infinite]"
+                    key={row.key + String(order)}
+                  />
+                ))}
+              </div>
+            )
+          }
+          if (row.kind === "more") {
+            return (
+              <div className="ms-[13px] border-s border-line-soft ps-1.5 py-0.5" key={row.key}>
+                <button
+                  type="button"
+                  className="ci-btn ci-btn--quiet h-7 w-full justify-start"
+                  data-focus={index}
+                  onClick={() => openRow(row)}
+                  onFocus={() => setFocus(index)}
+                >
+                  {t("tree.showAll", { count: row.hidden + DEFAULT_SESSION_LIMIT })}
+                </button>
+              </div>
+            )
+          }
           return (
-            <button
-              type="button"
+            <SessionRow
               key={row.key}
-              className="flex w-full min-w-0 cursor-pointer flex-col items-stretch gap-0.5 rounded-md border-0 bg-transparent px-1.5 py-1.5 text-start font-[inherit] text-fg transition-colors duration-150 ease-out hover:bg-bg-1 active:bg-fg/10 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent aria-expanded:bg-bg-1/70"
-              data-focus={index}
-              aria-expanded={row.expanded}
-              onClick={() => toggle(project.workdir)}
+              row={row}
+              index={index}
+              onOpen={() => openRow(row)}
               onFocus={() => setFocus(index)}
-              title={project.workdir}
-            >
-              <span className="flex min-w-0 items-center gap-1.5">
-                <span className={`w-3 shrink-0 text-center text-[10px] text-fg-dim${row.expanded ? " w-3 shrink-0 text-center text-[10px] text-fg-dim--open" : ""}`} aria-hidden="true">
-                  ▸
-                </span>
-                <span className="min-w-0 flex-1 truncate font-semibold">{project.leaf}</span>
-                <span className="flex shrink-0 items-center gap-1">
-                  {project.counts.map((group) => (
-                    <SourceChip key={group.source} source={group.source} count={group.sessions} />
-                  ))}
-                </span>
-              </span>
-              <span className="flex min-w-0 items-center gap-1.5 text-[10px] text-fg-dim">
-                {project.parent === "" ? null : <span className="min-w-0 flex-1 truncate">{project.parent}</span>}
-                <span className="shrink-0 whitespace-nowrap text-[10px] tabular-nums text-fg-dim">{formatTime(project.lastUpdatedAt)}</span>
-              </span>
-            </button>
+            />
           )
-        }
-        if (row.kind === "skeleton") {
-          return (
-            <div className="ms-2.5 flex min-w-0 flex-col gap-px border-s border-line-soft ps-1.5" key={row.key}>
-              {Array.from({ length: row.rows }, (_, index_) => (
-                <div className={`${SKEL} w-[62%] h-[1.375rem] my-0.5 ms-[1.125rem]`} key={row.key + String(index_)} />
-              ))}
-            </div>
-          )
-        }
-        if (row.kind === "more") {
-          return (
-            <button
-              type="button"
-              key={row.key}
-              className="ms-6 self-start rounded px-1.5 py-0.5 text-[11px] text-accent"
-              data-focus={index}
-              onClick={() => openRow(row)}
-              onFocus={() => setFocus(index)}
-            >
-              {t("tree.showAll", { count: row.hidden + DEFAULT_SESSION_LIMIT })}
-            </button>
-          )
-        }
-        return (
-          <div className="ms-2.5 flex min-w-0 flex-col gap-px border-s border-line-soft ps-1.5" key={row.key}>
-            <SessionRow row={row} index={index} onOpen={() => openRow(row)} onFocus={() => setFocus(index)} />
-          </div>
-        )
-      })}
+        })}
+      </div>
     </nav>
   )
 }
