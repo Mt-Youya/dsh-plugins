@@ -164,13 +164,7 @@ function ToolEntry({ call }: { call: ToolCall }): ReactElement {
           ? t("tools.status.error")
           : t("tools.status.unknown")
   return (
-    <li
-      className={
-        failed
-          ? "rounded-lg border border-err/40 bg-err/5"
-          : "rounded-lg border border-line-soft bg-bg"
-      }
-    >
+    <li className={failed ? "rounded-lg border border-err/40 bg-err/5" : "rounded-lg border border-line-soft bg-bg"}>
       <details className="ci-fold" open={failed}>
         <summary className="flex items-center gap-2 min-w-0 px-2.5 py-2 text-[12px]">
           <Glyph name="chevron" size={11} className="ci-chevron shrink-0 text-fg-3" />

@@ -332,7 +332,12 @@ export function ProjectTree({
           />
         </label>
       </div>
-      <div className="ci-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-3" ref={navRef} onKeyDown={onKeyDown} role="tree">
+      <div
+        className="ci-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-3"
+        ref={navRef}
+        onKeyDown={onKeyDown}
+        role="tree"
+      >
         {projects.length === 0 ? (
           <p className="m-0 px-2 py-3 text-[12px] leading-relaxed text-fg-dim">
             {allProjects.length === 0 ? t("tree.emptyAll") : t("tree.noMatch", { query: query.trim() })}

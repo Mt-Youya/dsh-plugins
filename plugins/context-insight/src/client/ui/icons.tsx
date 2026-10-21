@@ -102,7 +102,15 @@ export type GlyphName = keyof typeof GLYPHS
  * @param props.className - extra classes (e.g. `ci-chevron`).
  * @returns a decorative inline SVG.
  */
-export function Glyph({ name, size = 14, className }: { name: GlyphName; size?: number; className?: string }): ReactElement {
+export function Glyph({
+  name,
+  size = 14,
+  className,
+}: {
+  name: GlyphName
+  size?: number
+  className?: string
+}): ReactElement {
   return (
     <svg
       className={className}
@@ -134,7 +142,14 @@ export function BrandMark({ size = 24 }: { size?: number }): ReactElement {
       style={{ inlineSize: size, blockSize: size }}
       aria-hidden="true"
     >
-      <svg width={size * 0.62} height={size * 0.62} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeLinecap="round">
+      <svg
+        width={size * 0.62}
+        height={size * 0.62}
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+      >
         <circle cx="6.7" cy="6.7" r="4.2" strokeWidth="1.5" />
         <path d="M9.9 9.9 13.6 13.6" strokeWidth="1.7" />
         <path d="M4.9 5.3h3.4M4.9 7.1h2.4M4.9 8.9h1.4" strokeWidth="1.2" />

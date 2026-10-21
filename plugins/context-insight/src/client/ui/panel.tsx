@@ -85,7 +85,6 @@ type DetailState =
   | { kind: "failed"; ref: SessionRef; failure: ApiFailure }
   | ({ kind: "ready"; ref: SessionRef } & LoadedSession)
 
-
 /**
  * The root's own box, as an inline style.
  *
@@ -408,9 +407,7 @@ export function ContextInsightPanel(): ReactElement {
             : "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)]"
         }
       >
-        {sidebarOpen ? (
-          <aside className="min-h-0 min-w-0 border-e border-line-soft bg-sidebar">{tree}</aside>
-        ) : null}
+        {sidebarOpen ? <aside className="min-h-0 min-w-0 border-e border-line-soft bg-sidebar">{tree}</aside> : null}
         <main className="@container min-h-0 min-w-0">{pane}</main>
       </div>
 

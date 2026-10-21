@@ -70,51 +70,51 @@ export function TurnDetail({
       </div>
 
       <div className="flex min-w-0 flex-col gap-3 p-4">
-      <Card label={t("detail.composition")}>
-        <SectionTitle
-          end={
-            attribution.reconciled === undefined ? undefined : (
-              <Chip tone="mono" title={t("turns.reconciled", { factor: attribution.reconciled.factor.toFixed(3) })}>
-                {formatFactor(attribution.reconciled.factor)}
-              </Chip>
-            )
-          }
-        >
-          {t("detail.composition")}
-        </SectionTitle>
-        <StackedBar attribution={attribution} label={t("turns.selected", { index: turn.index })} />
-        <PartLegend attribution={attribution} />
-      </Card>
-
-      {turn.compactions.length === 0 ? null : (
-        <Card label={t("turns.compaction")}>
-          <SectionTitle count={turn.compactions.length}>{t("turns.compaction")}</SectionTitle>
-          <ul className="m-0 p-0 list-none">
-            {turn.compactions.map((point, order) => (
-              <li
-                className="flex flex-wrap items-baseline gap-2 py-1.5 text-[11.5px] border-t border-line-soft first:border-t-0"
-                key={`${String(point.at)}-${String(order)}`}
-              >
-                <span className="font-mono text-[10.5px] text-fg-dim">{formatTime(point.at)}</span>
-                <MeasureValue measure={point.before} dense />
-                <span aria-hidden="true" className="text-warn">
-                  →
-                </span>
-                <MeasureValue measure={point.after} dense />
-                <span className="text-fg-dim">
-                  {point.replacedHistory ? t("turns.compactionReplaced") : t("turns.compactionContinued")}
-                </span>
-                {point.trigger === undefined ? null : <Chip tone="soft">{point.trigger}</Chip>}
-              </li>
-            ))}
-          </ul>
+        <Card label={t("detail.composition")}>
+          <SectionTitle
+            end={
+              attribution.reconciled === undefined ? undefined : (
+                <Chip tone="mono" title={t("turns.reconciled", { factor: attribution.reconciled.factor.toFixed(3) })}>
+                  {formatFactor(attribution.reconciled.factor)}
+                </Chip>
+              )
+            }
+          >
+            {t("detail.composition")}
+          </SectionTitle>
+          <StackedBar attribution={attribution} label={t("turns.selected", { index: turn.index })} />
+          <PartLegend attribution={attribution} />
         </Card>
-      )}
 
-      <Card label={t("turns.tools")}>
-        <SectionTitle count={turn.toolCalls.length}>{t("turns.tools")}</SectionTitle>
-        <ToolCalls calls={turn.toolCalls} expanded={expandedTools} onToggleExpanded={onToggleTools} />
-      </Card>
+        {turn.compactions.length === 0 ? null : (
+          <Card label={t("turns.compaction")}>
+            <SectionTitle count={turn.compactions.length}>{t("turns.compaction")}</SectionTitle>
+            <ul className="m-0 p-0 list-none">
+              {turn.compactions.map((point, order) => (
+                <li
+                  className="flex flex-wrap items-baseline gap-2 py-1.5 text-[11.5px] border-t border-line-soft first:border-t-0"
+                  key={`${String(point.at)}-${String(order)}`}
+                >
+                  <span className="font-mono text-[10.5px] text-fg-dim">{formatTime(point.at)}</span>
+                  <MeasureValue measure={point.before} dense />
+                  <span aria-hidden="true" className="text-warn">
+                    →
+                  </span>
+                  <MeasureValue measure={point.after} dense />
+                  <span className="text-fg-dim">
+                    {point.replacedHistory ? t("turns.compactionReplaced") : t("turns.compactionContinued")}
+                  </span>
+                  {point.trigger === undefined ? null : <Chip tone="soft">{point.trigger}</Chip>}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+
+        <Card label={t("turns.tools")}>
+          <SectionTitle count={turn.toolCalls.length}>{t("turns.tools")}</SectionTitle>
+          <ToolCalls calls={turn.toolCalls} expanded={expandedTools} onToggleExpanded={onToggleTools} />
+        </Card>
 
         <SubagentTree segments={segments} turnSubagents={turn.subagents} />
       </div>

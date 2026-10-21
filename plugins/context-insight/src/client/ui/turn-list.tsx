@@ -145,9 +145,7 @@ function TurnRow({
             cells keep fixed widths so they line up from row to row. */}
         <span className="grid grid-cols-[22px_minmax(0,1fr)_64px] items-center gap-x-2 gap-y-1.5">
           <span className="font-mono text-[11px] text-fg-3 tabular-nums">{turn.index}</span>
-          <span
-            className={ask === "" ? "min-w-0 truncate text-[12.5px] text-fg-3" : "min-w-0 truncate text-[12.5px]"}
-          >
+          <span className={ask === "" ? "min-w-0 truncate text-[12.5px] text-fg-3" : "min-w-0 truncate text-[12.5px]"}>
             {ask === "" ? t("turns.noInput") : ask}
           </span>
           <span className="text-end text-[12.5px] font-semibold tabular-nums">

@@ -47,7 +47,10 @@ export function Waterfall({
   /** Vertical position from the top, 0..1. */
   const yOf = (value: number): number => 1 - (value / peak) * (1 - HEADROOM)
   const line = values
-    .map((value, index) => `${index === 0 ? "M" : "L"}${(xOf(index) * WIDTH).toFixed(1)},${(yOf(value) * HEIGHT).toFixed(1)}`)
+    .map(
+      (value, index) =>
+        `${index === 0 ? "M" : "L"}${(xOf(index) * WIDTH).toFixed(1)},${(yOf(value) * HEIGHT).toFixed(1)}`
+    )
     .join(" ")
   const area = `${line} L${(xOf(turns.length - 1) * WIDTH).toFixed(1)},${HEIGHT} L${(xOf(0) * WIDTH).toFixed(1)},${HEIGHT} Z`
   const compactions = turns.flatMap((turn, index) => turn.compactions.map((point) => ({ index, point })))
@@ -60,7 +63,11 @@ export function Waterfall({
         <span className="tabular-nums">{t("waterfall.peak", { tokens: compactTokens(peak) })}</span>
         <span className="ms-auto truncate text-fg-3">{t("waterfall.hint")}</span>
       </figcaption>
-      <div className="relative mt-2.5 h-24" role="group" aria-label={`${t("waterfall.title")} — ${t("waterfall.caption")}`}>
+      <div
+        className="relative mt-2.5 h-24"
+        role="group"
+        aria-label={`${t("waterfall.title")} — ${t("waterfall.caption")}`}
+      >
         <svg
           className="absolute inset-0 block h-full w-full overflow-visible"
           viewBox={`0 0 ${String(WIDTH)} ${String(HEIGHT)}`}

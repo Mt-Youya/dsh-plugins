@@ -39,9 +39,7 @@ export function TreeSkeleton({ label }: { label: string }): ReactElement {
         <div className="flex flex-col gap-1.5 py-1" key={group}>
           <Skeleton className="h-9 w-[86%] rounded-[8px]" />
           {group === 0
-            ? [72, 64, 70, 58].map((width) => (
-                <Skeleton className="ms-5 h-8 rounded-[8px]" key={width} />
-              ))
+            ? [72, 64, 70, 58].map((width) => <Skeleton className="ms-5 h-8 rounded-[8px]" key={width} />)
             : null}
         </div>
       ))}
@@ -155,10 +153,7 @@ export function ErrorBlock({
  */
 export function Notice({ children }: { children: ReactNode }): ReactElement {
   return (
-    <p
-      className="m-0 rounded-[8px] border border-warn/40 bg-warn/8 px-3 py-2 text-[11.5px] text-warn"
-      role="note"
-    >
+    <p className="m-0 rounded-[8px] border border-warn/40 bg-warn/8 px-3 py-2 text-[11.5px] text-warn" role="note">
       {children}
     </p>
   )
