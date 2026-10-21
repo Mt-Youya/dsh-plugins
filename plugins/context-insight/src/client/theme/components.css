@@ -3,50 +3,12 @@
  *
  * A class earns a place here only when it is reused in three or more places AND
  * needs a pseudo-element or a state selector; everything else is a utility.
- * That leaves: the [data-part] colour table (one identity table, two consumers —
- * the bar and its legend), the source mark, the tool-status chip, the user's own
+ * That leaves: the source mark, the tool-status chip, the user's own
  * words, the output pane, and the tooltip bubble. Motion primitives live here
  * too, because a @keyframes rule adds no selector.
  */
 
 @layer components {
-  /* ---------- part colours: one table, two consumers ---------- */
-  .ci-stack__seg[data-part="system-prompt"] { background: var(--color-part-system-prompt); }
-
-  .ci-stack__seg[data-part="tool-definitions"] { background: var(--color-part-tool-definitions); }
-
-  .ci-stack__seg[data-part="memory-instructions"] { background: var(--color-part-memory-instructions); }
-
-  .ci-stack__seg[data-part="referenced-files"] { background: var(--color-part-referenced-files); }
-
-  .ci-stack__seg[data-part="history"] { background: var(--color-part-history); }
-
-  .ci-stack__seg[data-part="tool-results"] { background: var(--color-part-tool-results); }
-
-  .ci-stack__seg[data-part="images"] { background: var(--color-part-images); }
-
-  .ci-stack__seg[data-part="user-input"] { background: var(--color-part-user-input); }
-
-  .ci-stack__seg[data-part="assistant-output"] { background: var(--color-part-assistant-output); }
-
-  .ci-legend__swatch[data-part="system-prompt"] { background: var(--color-part-system-prompt); }
-
-  .ci-legend__swatch[data-part="tool-definitions"] { background: var(--color-part-tool-definitions); }
-
-  .ci-legend__swatch[data-part="memory-instructions"] { background: var(--color-part-memory-instructions); }
-
-  .ci-legend__swatch[data-part="referenced-files"] { background: var(--color-part-referenced-files); }
-
-  .ci-legend__swatch[data-part="history"] { background: var(--color-part-history); }
-
-  .ci-legend__swatch[data-part="tool-results"] { background: var(--color-part-tool-results); }
-
-  .ci-legend__swatch[data-part="images"] { background: var(--color-part-images); }
-
-  .ci-legend__swatch[data-part="user-input"] { background: var(--color-part-user-input); }
-
-  .ci-legend__swatch[data-part="assistant-output"] { background: var(--color-part-assistant-output); }
-
   /* ---------- source mark: shape + colour, driven by an inline brand var ---------- */
   .ci-src {
     display: inline-flex;
@@ -54,10 +16,20 @@
     gap: 0.1875rem;
     padding-block: 1px;
     padding-inline: 0.3125rem;
-    border: 1px solid light-dark(color-mix(in oklch, var(--ci-src-brand) 55%, oklch(0.4 0 none)), color-mix(in oklch, var(--ci-src-brand) 45%, transparent));
+    border: 1px solid
+      light-dark(
+        color-mix(in oklch, var(--ci-src-brand) 55%, oklch(0.4 0 none)),
+        color-mix(in oklch, var(--ci-src-brand) 45%, transparent)
+      );
     border-radius: 999px;
-    background: light-dark(color-mix(in oklch, var(--ci-src-brand) 16%, oklch(1 0 none)), color-mix(in oklch, var(--ci-src-brand) 14%, transparent));
-    color: light-dark(color-mix(in oklch, var(--ci-src-brand) 55%, oklch(0.2 0 none)), var(--ci-src-color, var(--color-fg)));
+    background: light-dark(
+      color-mix(in oklch, var(--ci-src-brand) 16%, oklch(1 0 none)),
+      color-mix(in oklch, var(--ci-src-brand) 14%, transparent)
+    );
+    color: light-dark(
+      color-mix(in oklch, var(--ci-src-brand) 55%, oklch(0.2 0 none)),
+      var(--ci-src-color, var(--color-fg))
+    );
     font-size: 0.625rem;
     line-height: 1.4;
     font-variant-numeric: tabular-nums;
@@ -65,7 +37,10 @@
   }
 
   .ci-src__word {
-    color: light-dark(color-mix(in oklch, var(--ci-src-brand) 55%, oklch(0.2 0 none)), var(--ci-src-color, var(--color-fg)));
+    color: light-dark(
+      color-mix(in oklch, var(--ci-src-brand) 55%, oklch(0.2 0 none)),
+      var(--ci-src-color, var(--color-fg))
+    );
   }
 
   /* ---------- tool status: colour plus a dot, breathing only in flight ---------- */
@@ -77,7 +52,10 @@
     padding-inline: 0.375rem 0.3125rem;
     border: 1px solid currentColor;
     border-radius: 999px;
-    background: light-dark(color-mix(in oklch, currentColor 12%, oklch(1 0 none)), color-mix(in oklch, currentColor 14%, transparent));
+    background: light-dark(
+      color-mix(in oklch, currentColor 12%, oklch(1 0 none)),
+      color-mix(in oklch, currentColor 14%, transparent)
+    );
     font-size: 0.625rem;
     line-height: 1.5;
     font-variant-numeric: tabular-nums;
@@ -131,30 +109,29 @@
 
   /* ---------- the user's own words: the anchor of a turn ---------- */
   .ci-ask {
-    margin-block: 0 0.75rem;
-    margin-inline: 1rem;
+    margin: 0;
   }
 
   .ci-ask__label {
     display: block;
-    margin-block-end: 0.25rem;
+    margin-block-end: 0.375rem;
     color: var(--color-fg-dim);
-    font-size: 0.65625rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: 11px;
+    font-weight: 500;
   }
 
   .ci-ask__text {
     margin: 0;
     padding-block: 0.625rem;
-    padding-inline: 0.75rem;
+    padding-inline: 0.875rem;
+    border: 1px solid color-mix(in oklch, var(--color-accent) 22%, transparent);
     border-inline-start: 3px solid var(--color-accent);
-    border-radius: 0.25rem;
-    background: color-mix(in oklch, var(--color-accent) 9%, var(--color-bg-1));
-    font-size: 0.90625rem;
+    border-radius: 10px;
+    background: color-mix(in oklch, var(--color-accent) 7%, var(--color-bg-1));
+    font-size: 13.5px;
     line-height: 1.65;
     color: var(--color-fg);
-    max-block-size: 13.75rem;
+    max-block-size: 7.5rem;
     overflow-y: auto;
     overscroll-behavior: contain;
     white-space: pre-wrap;
@@ -213,5 +190,214 @@
     to {
       background-position: -100% 0;
     }
+  }
+}
+
+/*
+ * Control surfaces, pinned outside every layer.
+ *
+ * The reset in app.css lives in @layer base, and any unlayered rule from the
+ * Host or another plugin wins over a layered one. Buttons and selectable rows
+ * therefore own their whole surface here, unlayered, and never mix utilities
+ * for the same properties.
+ *
+ * No @scope wrapper: scripts/build-css.mjs scopes the whole output to
+ * `.ci-panel`, and a nested @scope (.ci-panel) only matches a panel inside the
+ * panel — which is exactly how these rules once silently never applied.
+ */
+.ci-btn,
+.ci-icon-btn,
+.ci-row,
+.ci-search {
+  appearance: none;
+  margin: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-fg);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition:
+    background-color 140ms var(--ease-out),
+    border-color 140ms var(--ease-out),
+    color 140ms var(--ease-out);
+}
+
+.ci-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  block-size: 28px;
+  padding-inline: 10px;
+  border-color: var(--color-line);
+  border-radius: 7px;
+  background: var(--color-bg-1);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ci-btn:hover:not(:disabled) {
+  background: var(--color-bg-2);
+}
+
+.ci-btn--primary {
+  border-color: transparent;
+  background: var(--color-accent);
+  color: white;
+}
+
+.ci-btn--primary:hover:not(:disabled) {
+  background: color-mix(in oklch, var(--color-accent) 86%, black);
+}
+
+.ci-btn--quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-accent);
+}
+
+.ci-btn--quiet:hover:not(:disabled) {
+  background: color-mix(in oklch, var(--color-accent) 10%, transparent);
+}
+
+.ci-btn:disabled,
+.ci-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ci-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 28px;
+  block-size: 28px;
+  padding: 0;
+  border-radius: 7px;
+  color: var(--color-fg-dim);
+}
+
+.ci-icon-btn:hover:not(:disabled),
+.ci-icon-btn[aria-pressed="true"] {
+  background: var(--color-hover);
+  color: var(--color-fg);
+}
+
+/* The search trigger reads as a field: it is where a reader expects to type. */
+.ci-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  block-size: 30px;
+  padding-inline: 10px 6px;
+  border-color: var(--color-line-soft);
+  border-radius: 8px;
+  background: var(--color-bg-1);
+  color: var(--color-fg-3);
+  font-size: 12px;
+}
+
+.ci-search:hover {
+  border-color: var(--color-line);
+  color: var(--color-fg-dim);
+}
+
+/* One selectable row skin for the tree and the turn strip. */
+.ci-row {
+  display: block;
+  inline-size: 100%;
+  min-inline-size: 0;
+  border-radius: 8px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ci-row:hover {
+    background: var(--color-hover);
+  }
+}
+
+.ci-row[data-selected="true"] {
+  background: color-mix(in oklch, var(--color-accent) 14%, transparent);
+  box-shadow: inset 2px 0 0 var(--color-accent);
+}
+
+.ci-row:focus-visible,
+.ci-btn:focus-visible,
+.ci-icon-btn:focus-visible,
+.ci-search:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+.ci-chevron {
+  transition: transform 160ms var(--ease-out);
+}
+
+[aria-expanded="true"] > * > .ci-chevron,
+[aria-expanded="true"] > .ci-chevron {
+  transform: rotate(90deg);
+}
+
+/* Tool cards fold with <details>; the marker is ours, not the UA triangle. */
+.ci-fold > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.ci-fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.ci-fold[open] > summary .ci-chevron {
+  transform: rotate(90deg);
+}
+
+/* Chart points: HTML, so they stay round however the chart is stretched. */
+.ci-dot {
+  position: absolute;
+  inline-size: 7px;
+  block-size: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  padding: 0;
+  border: 1.5px solid var(--color-bg);
+  border-radius: 50%;
+  background: var(--color-accent);
+  cursor: pointer;
+  transition: transform 140ms var(--ease-out);
+}
+
+.ci-dot::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+}
+
+.ci-dot:hover {
+  transform: scale(1.5);
+}
+
+.ci-dot[data-selected="true"] {
+  inline-size: 11px;
+  block-size: 11px;
+  margin: -5.5px 0 0 -5.5px;
+  border-width: 2px;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-accent) 30%, transparent);
+}
+
+/* Scrollbar skin only: whether a box scrolls is decided by utilities, so a
+   container query can switch it. */
+.ci-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ci-btn,
+  .ci-icon-btn,
+  .ci-row,
+  .ci-search,
+  .ci-chevron {
+    transition: none;
   }
 }

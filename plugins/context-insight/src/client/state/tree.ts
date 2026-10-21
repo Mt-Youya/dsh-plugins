@@ -183,3 +183,18 @@ export function writeExpanded(storage: Pick<Storage, "setItem"> | undefined, wor
     // A full or blocked store must not break the tree.
   }
 }
+
+/**
+ * Keep the projects whose name or path contains the query.
+ *
+ * Case-insensitive and whitespace-trimmed; an empty query keeps everything, so
+ * clearing the field restores the full tree without a second code path.
+ * @param projects - all projects, in display order.
+ * @param query - what the reader typed.
+ * @returns the matching projects, order preserved.
+ */
+export function filterProjects(projects: readonly TreeProject[], query: string): TreeProject[] {
+  const needle = query.trim().toLowerCase()
+  if (needle === "") return [...projects]
+  return projects.filter((project) => project.workdir.toLowerCase().includes(needle))
+}

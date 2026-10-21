@@ -78,3 +78,67 @@ export function SourceIcon({
     </svg>
   )
 }
+
+/** The interface glyphs the panel draws; 16-unit grid, stroked in currentColor. */
+const GLYPHS = {
+  search: "M7.2 12.4a5.2 5.2 0 1 0 0-10.4 5.2 5.2 0 0 0 0 10.4ZM11 11l3.2 3.2",
+  refresh: "M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.6 2.4v2.9h-2.9",
+  chevron: "M6 3.8 10.2 8 6 12.2",
+  sidebar: "M2.5 3.5h11v9h-11zM6.2 3.5v9",
+  folder: "M2 4.5c0-.6.4-1 1-1h3.1l1.4 1.5H13c.6 0 1 .4 1 1v6c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1z",
+  tool: "M10.4 2.6a3 3 0 0 0-3.7 3.9L2.6 10.6a1.3 1.3 0 0 0 1.8 1.8l4.1-4.1a3 3 0 0 0 3.9-3.7l-1.8 1.8-1.6-.4-.4-1.6z",
+  branch: "M4.5 2.5v11M4.5 9.5c0-2.5 7-1.5 7-5M11.5 2.5v2",
+  handoff: "M3 8h9M9 4.5 12.5 8 9 11.5",
+  close: "M4 4l8 8M12 4l-8 8",
+} as const
+
+/** Names of {@link GLYPHS}. */
+export type GlyphName = keyof typeof GLYPHS
+
+/**
+ * One interface glyph.
+ * @param props.name - which glyph.
+ * @param props.size - pixel edge, default 14.
+ * @param props.className - extra classes (e.g. `ci-chevron`).
+ * @returns a decorative inline SVG.
+ */
+export function Glyph({ name, size = 14, className }: { name: GlyphName; size?: number; className?: string }): ReactElement {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d={GLYPHS[name]} />
+    </svg>
+  )
+}
+
+/**
+ * The product mark: a magnifier over three context lines, on an accent tile.
+ * @param props.size - tile edge in pixels.
+ * @returns the mark.
+ */
+export function BrandMark({ size = 24 }: { size?: number }): ReactElement {
+  return (
+    <span
+      className="inline-grid shrink-0 place-items-center rounded-[7px] bg-[color-mix(in_oklch,var(--color-accent)_16%,transparent)] text-accent"
+      style={{ inlineSize: size, blockSize: size }}
+      aria-hidden="true"
+    >
+      <svg width={size * 0.62} height={size * 0.62} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeLinecap="round">
+        <circle cx="6.7" cy="6.7" r="4.2" strokeWidth="1.5" />
+        <path d="M9.9 9.9 13.6 13.6" strokeWidth="1.7" />
+        <path d="M4.9 5.3h3.4M4.9 7.1h2.4M4.9 8.9h1.4" strokeWidth="1.2" />
+      </svg>
+    </span>
+  )
+}

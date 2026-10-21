@@ -13,7 +13,7 @@
  * @module @cyrus/dsh-context-insight/client/api
  */
 
-import { requestJson, type ApiResult } from "@cyrus/dsh-plugin-kit-client"
+import { requestJson, type ApiFailure, type ApiResult } from "@cyrus/dsh-plugin-kit-client"
 import type {
   BriefValue,
   CostValue,
@@ -134,4 +134,13 @@ export function createApi(base = ""): Api {
     handoffStatus: (sessionId, signal) =>
       get(`${base}${HANDOFF_STATUS_URL}?sessionId=${encodeURIComponent(sessionId)}`, isHandoffStatusValue, signal),
   }
+}
+
+/**
+ * One line for a failed request: the classified error, then its detail.
+ * @param failure - the failed result.
+ * @returns printable text.
+ */
+export function failureText(failure: ApiFailure): string {
+  return failure.detail === undefined ? failure.error : `${failure.error}: ${failure.detail}`
 }

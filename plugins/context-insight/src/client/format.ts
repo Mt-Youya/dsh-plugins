@@ -97,22 +97,31 @@ export function formatTime(epoch: number): string {
 }
 
 /**
+ * A row has one narrow line to share with the title, so the timestamp keeps
+ * only the parts that still tell two neighbours apart: `HH:mm` today, `MM-DD
+ * HH:mm` this year, `YYYY-MM-DD` before that.
+ * @param epoch - milliseconds since the Unix epoch.
+ * @param now - reference time, injectable for tests.
+ * @returns the shortest unambiguous local form, or `—` for an invalid epoch.
+ */
+export function formatShortTime(epoch: number, now: number = Date.now()): string {
+  if (!Number.isFinite(epoch) || epoch <= 0) return "—"
+  const date = new Date(epoch)
+  const today = new Date(now)
+  const pad = (value: number): string => String(value).padStart(2, "0")
+  const clock = `${pad(date.getHours())}:${pad(date.getMinutes())}`
+  if (date.getFullYear() !== today.getFullYear()) {
+    return `${String(date.getFullYear())}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+  }
+  if (date.getMonth() === today.getMonth() && date.getDate() === today.getDate()) return clock
+  return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${clock}`
+}
+
+/**
  * Duration between two epoch values, in the unit a reader scans fastest.
  * @param from - start, epoch milliseconds.
  * @param to - end, epoch milliseconds; omitted means "unknown".
  */
-/**
- * A tree row has one narrow line to share with the title, so the timestamp is
- * reduced to the parts that still tell two sessions apart.
- * @param epoch - milliseconds since the Unix epoch.
- * @returns `MM-DD HH:mm` in local time.
- */
-export function formatShortTime(epoch: number): string {
-  const date = new Date(epoch)
-  const pad = (value: number): string => String(value).padStart(2, '0')
-  return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
-
 export function formatDuration(from: number, to?: number): string {
   if (to === undefined || !Number.isFinite(to) || to < from) return "—"
   const ms = to - from
@@ -164,4 +173,13 @@ export function basename(path: string): string {
  */
 export function clip(text: string, limit: number): string {
   return text.length <= limit ? text : text.slice(0, limit)
+}
+
+/**
+ * Collapse the home directory to `~`, the way a terminal prints it.
+ * @param path - a filesystem path (POSIX or Windows).
+ * @returns the path with `/Users/<me>`, `/home/<me>` or `C:\Users\<me>` as `~`.
+ */
+export function tildePath(path: string): string {
+  return path.replace(/^(\/Users\/[^/]+|\/home\/[^/]+|[A-Za-z]:\\Users\\[^\\]+)(?=[\\/]|$)/, "~")
 }

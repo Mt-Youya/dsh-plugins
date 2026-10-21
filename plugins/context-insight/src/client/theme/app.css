@@ -22,11 +22,14 @@
   --color-bg: var(--dsw-alias-bg-base, light-dark(oklch(1 0 none), oklch(0.19 0 none)));
   --color-bg-1: var(--dsw-alias-bg-layer-1, light-dark(oklch(0.97 0 none), oklch(0.23 0 none)));
   --color-bg-2: var(--dsw-alias-bg-layer-2, light-dark(oklch(0.94 0 none), oklch(0.27 0 none)));
+  --color-bg-3: var(--dsw-alias-bg-layer-3, light-dark(oklch(0.91 0 none), oklch(0.31 0 none)));
+  --color-fg-3: var(--dsw-alias-label-tertiary, light-dark(oklch(0.6 0 none), oklch(0.56 0 none)));
+  --color-hover: var(--dsw-alias-interactive-bg-hover, light-dark(oklch(0.22 0 none / 6%), oklch(1 0 none / 7%)));
   --color-line: var(--dsw-alias-border-l2, light-dark(oklch(0.86 0 none), oklch(0.34 0 none)));
   --color-line-soft: var(--dsw-alias-border-l1, light-dark(oklch(0.91 0 none), oklch(0.28 0 none)));
   --color-code-block: var(--dsw-alias-markdown-code-block, light-dark(oklch(0.95 0 none), oklch(0.28 0 none)));
   --color-accent: var(--dsw-alias-brand-primary, light-dark(oklch(0.52 0.17 264), oklch(0.62 0.15 264)));
-  --color-ok: var(--dsw-alias-state-success-primary, light-dark(oklch(0.50 0.14 152), oklch(0.72 0.15 152)));
+  --color-ok: var(--dsw-alias-state-success-primary, light-dark(oklch(0.5 0.14 152), oklch(0.72 0.15 152)));
   --color-warn: var(--dsw-alias-state-warn-primary, light-dark(oklch(0.55 0.12 82), oklch(0.78 0.13 82)));
   --color-err: var(--dsw-alias-state-error-primary, light-dark(oklch(0.52 0.18 22), oklch(0.68 0.17 22)));
   --color-info: light-dark(oklch(0.55 0.16 262), oklch(0.72 0.15 264)); /* 宿主无 info 档：插件自有颜色 */
@@ -53,31 +56,30 @@
 @import "./components.css";
 
 /* Preflight is off (it would reset the Host's page), so the few UA defaults the
-   panel relies on are restored here, inside @layer base so utilities win. */
+   panel relies on are restored here, inside @layer base so utilities win.
+   No @scope here: scripts/build-css.mjs wraps the whole output in one, and a
+   nested @scope (.ci-panel) would only match a panel inside the panel. */
 @layer base {
-  @scope (.ci-panel) {
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-    }
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 
-    :focus-visible {
-      outline: var(--dsw-focus-ring-width, 2px) solid
-        var(--dsw-focus-ring-color, var(--color-accent));
-      outline-offset: 1px;
-      border-radius: 6px;
-    }
+  :focus-visible {
+    outline: var(--dsw-focus-ring-width, 2px) solid var(--dsw-focus-ring-color, var(--color-accent));
+    outline-offset: 1px;
+    border-radius: 6px;
+  }
 
-    button,
-    a,
-    input,
-    select,
-    textarea {
-      border: 0;
-      background: transparent;
-      color: inherit;
-      font: inherit;
-    }
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
   }
 }
