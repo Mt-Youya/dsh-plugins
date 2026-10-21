@@ -21,7 +21,13 @@ import {
   projectedMeasure,
   type CharCounts,
 } from "../attribution.ts"
-import { estimateMeasure, residualMeasure, type Attribution, type ContextPart, type Measure } from "@cyrus/dsh-session-contract"
+import {
+  estimateMeasure,
+  residualMeasure,
+  type Attribution,
+  type ContextPart,
+  type Measure,
+} from "@cyrus/dsh-session-contract"
 import { reconcile } from "./reconcile.ts"
 import { arrayField, isObject, objectField, stringField, type JsonObject } from "./records.ts"
 
@@ -87,7 +93,6 @@ function renderedText(record: JsonObject): string[] {
  * treated as describing another tool set rather than as estimation noise.
  */
 const STALE_PREFIX_RATIO = 1.2
-
 
 export class ContextWindow {
   private system: CharCounts = emptyCharCounts()

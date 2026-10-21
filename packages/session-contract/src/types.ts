@@ -227,4 +227,3 @@ export interface TurnWindow {
   offset: number
   limit: number
 }
-

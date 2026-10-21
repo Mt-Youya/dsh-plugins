@@ -15,7 +15,8 @@ const host = readFileSync(join(root, "lib/index.js"), "utf8")
 const failures = []
 
 const id = client.match(/__ModuleLoader__\.load\(\{\s*id:\s*"([^"]+)"/)
-if (id === null || id[1] !== "@cyrus/dsh-context-insight") failures.push("client bundle does not register the package id")
+if (id === null || id[1] !== "@cyrus/dsh-context-insight")
+  failures.push("client bundle does not register the package id")
 if (!client.includes("factory:")) failures.push("client bundle has no factory")
 if (!client.includes("@scope (.ci-panel)")) failures.push("client bundle carries no scoped stylesheet")
 if (/import\s+[^;]*from\s*["']react["']/.test(client)) failures.push("client bundle left a bare ESM react import")
@@ -29,13 +30,28 @@ for (const name of ["apply", "handleHealth", "createRoutes", "createSources"]) {
 // Evaluate the client bundle the way the shell does: one global, one factory.
 let registered
 const sandbox = {
-  window: { __ModuleLoader__: { load: (entry) => { registered = entry } } },
+  window: {
+    __ModuleLoader__: {
+      load: (entry) => {
+        registered = entry
+      },
+    },
+  },
 }
 new Function("window", client.replace(/^/, "\n"))(sandbox.window)
 if (registered === undefined) failures.push("client bundle did not call __ModuleLoader__.load")
 else {
   const exports = registered.factory((name) => {
-    if (name === "react") return { createElement: () => null, Fragment: Symbol("fragment"), useState: () => [undefined, () => {}], useEffect: () => {}, useMemo: (fn) => fn(), useCallback: (fn) => fn, useRef: () => ({ current: null }) }
+    if (name === "react")
+      return {
+        createElement: () => null,
+        Fragment: Symbol("fragment"),
+        useState: () => [undefined, () => {}],
+        useEffect: () => {},
+        useMemo: (fn) => fn(),
+        useCallback: (fn) => fn,
+        useRef: () => ({ current: null }),
+      }
     // The shell resolves React from its own copy; the factory may also pull the
     // automatic JSX runtime, which the same copy provides.
     if (name === "react/jsx-runtime") {

@@ -25,7 +25,7 @@ createRoot(root).render(
     <div style={{ blockSize: "100vh", inlineSize: "100vw", overflow: "hidden" }}>
       <ContextInsightPanel />
     </div>
-  </StrictMode>,
+  </StrictMode>
 )
 
 if (new URLSearchParams(location.search).get("probe") === "1") reportProbe()

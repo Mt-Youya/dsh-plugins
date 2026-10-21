@@ -10,7 +10,7 @@
 import type { Attribution, Basis, ContextPart, Measure, Precision } from "../ir.ts"
 import { isRecord } from "./shared.ts"
 
-const PRECISIONS: readonly Precision[] = ["exact", "estimate"]
+const PRECISIONS: ReadonlySet<Precision> = new Set(["exact", "estimate"])
 const BASES: readonly Basis[] = ["usage", "harness-projection", "chars-per-token", "byte-length", "unattributed"]
 
 /** Context parts, duplicated from the IR as a closed set for the guard. */
@@ -39,7 +39,7 @@ export function isMeasure(value: unknown): value is Measure {
   return (
     typeof tokens === "number" &&
     Number.isFinite(tokens) &&
-    PRECISIONS.includes(precision as Precision) &&
+    PRECISIONS.has(precision as Precision) &&
     BASES.includes(basis as Basis)
   )
 }

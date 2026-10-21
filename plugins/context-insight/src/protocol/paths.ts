@@ -18,7 +18,6 @@
 
 import { browserUrl } from "@cyrus/dsh-plugin-kit"
 
-
 /** Root every route hangs off. The listener mounts it at the site root. */
 export const API_ROOT = "/api/dsh-context-insight"
 
@@ -73,4 +72,3 @@ export const HANDOFF_APPLY_URL: string = browserUrl(HANDOFF_APPLY_PATH)
 export const HANDOFF_STATUS_URL: string = browserUrl(HANDOFF_STATUS_PATH)
 /** Cost, spelled for the browser. */
 export const COST_URL: string = browserUrl(COST_PATH)
-

@@ -12,8 +12,7 @@ import { join } from "node:path"
 
 const ROOT = process.argv[2] ?? "."
 const PORT = Number(process.env.PREVIEW_PORT ?? 5178)
-const CHROME =
-  process.env.CHROME_PATH ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+const CHROME = process.env.CHROME_PATH ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 const ORIGIN = `http://localhost:${PORT}`
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -55,7 +54,7 @@ function measure(theme) {
       "--dump-dom",
       url,
     ],
-    { encoding: "utf8", timeout: 60_000 },
+    { encoding: "utf8", timeout: 60_000 }
   )
   if (run.status !== 0) throw new Error(`chrome exited ${run.status} for ${theme}`)
   const title = run.stdout.match(/<title>([^<]*)<\/title>/)?.[1] ?? ""

@@ -2,10 +2,12 @@
   "name": "@cyrus/dsh-session-contract",
   "version": "0.0.0",
   "private": false,
-  "type": "module",
   "description": "The context-insight IR and the session wire contract: types, guards and versioned payloads.",
   "license": "MIT",
-  "files": ["lib"],
+  "files": [
+    "lib"
+  ],
+  "type": "module",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "exports": {

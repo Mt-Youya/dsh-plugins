@@ -36,7 +36,9 @@ function hostRoutes(): Plugin {
         void (async () => {
           try {
             const host = (await server.ssrLoadModule(HOST_ENTRY)) as {
-              createRoutes: (deps: unknown) => { kind: string; path: string; handler: (req: unknown, res: unknown) => void }[]
+              createRoutes: (
+                deps: unknown
+              ) => { kind: string; path: string; handler: (req: unknown, res: unknown) => void }[]
               createSources: () => unknown
               handleHealth: (req: unknown, res: unknown) => void
             }
@@ -47,7 +49,7 @@ function hostRoutes(): Plugin {
             }
             const routes = host.createRoutes({ sources: host.createSources(), version: "preview" })
             const match = routes.find((route) =>
-              route.kind === "exact" ? route.path === pathname : pathname.startsWith(route.path),
+              route.kind === "exact" ? route.path === pathname : pathname.startsWith(route.path)
             )
             if (match === undefined) {
               res.statusCode = 404

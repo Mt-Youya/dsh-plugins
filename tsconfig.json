@@ -9,12 +9,5 @@
       "@cyrus/dsh-plugin-kit-client": ["./packages/plugin-kit-client/src/index.ts"]
     }
   },
-  "include": [
-    "tooling",
-    "packages",
-    "plugins",
-    "apps",
-    "vitest.config.ts",
-    "tsdown.config.ts"
-  ]
+  "include": ["tooling", "packages", "plugins", "apps", "vitest.config.ts", "tsdown.config.ts"]
 }

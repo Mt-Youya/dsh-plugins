@@ -19,13 +19,7 @@ import type { Turn } from "@cyrus/dsh-session-contract"
 import { DshAttributionWindow } from "./attribution.ts"
 import { isCompactionConsistent, isCompactionEvent, readCompaction } from "./compaction.ts"
 import type { DshProjection, ProjectionRequest } from "./projection.ts"
-import {
-  arrayField,
-  numberField,
-  objectField,
-  stringField,
-  type LogEvent,
-} from "./records.ts"
+import { arrayField, numberField, objectField, stringField, type LogEvent } from "./records.ts"
 import { readSessionTitle } from "./session-meta.ts"
 import { SubagentTracker } from "./subagents.ts"
 import { DshToolLedger } from "./tools.ts"
@@ -340,8 +334,7 @@ export class SessionFold {
     if (!hasUsage) this.dataQuality.add("turn-without-usage")
     if (open.endSeq < open.startSeq) open.endSeq = open.startSeq
 
-    const picked =
-      this.usable && this.projection !== undefined ? requestsForTurn(this.projection.requests, open) : {}
+    const picked = this.usable && this.projection !== undefined ? requestsForTurn(this.projection.requests, open) : {}
     const attribution = this.window.attribution(usage === undefined ? 0 : usage.totalContext, {
       ...(picked.peak === undefined ? {} : { request: picked.peak }),
       ...(picked.previous === undefined ? {} : { previous: picked.previous }),

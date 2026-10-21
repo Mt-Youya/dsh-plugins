@@ -2,10 +2,12 @@
   "name": "@cyrus/dsh-plugin-kit-client",
   "version": "0.0.0",
   "private": false,
-  "type": "module",
   "description": "Browser-side plumbing for a DSH plugin: envelope-decoding fetch, one-shot style injection, slot and locale registration.",
   "license": "MIT",
-  "files": ["lib"],
+  "files": [
+    "lib"
+  ],
+  "type": "module",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "exports": {

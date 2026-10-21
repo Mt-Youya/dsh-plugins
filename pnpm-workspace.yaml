@@ -28,5 +28,5 @@ catalog:
 # packages of vite/tailwind; without them `pnpm install` exits non-zero with
 # ERR_PNPM_IGNORED_BUILDS.
 allowBuilds:
-  '@parcel/watcher': true
+  "@parcel/watcher": true
   esbuild: true

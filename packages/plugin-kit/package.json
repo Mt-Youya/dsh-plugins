@@ -2,10 +2,12 @@
   "name": "@cyrus/dsh-plugin-kit",
   "version": "0.0.0",
   "private": false,
-  "type": "module",
   "description": "Plugin-agnostic wire primitives: the JSON envelope, its decoder, and URL spelling.",
   "license": "MIT",
-  "files": ["lib"],
+  "files": [
+    "lib"
+  ],
+  "type": "module",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "exports": {

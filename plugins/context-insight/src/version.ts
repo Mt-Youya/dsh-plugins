@@ -13,5 +13,4 @@
 declare const __DSH_PLUGIN_VERSION__: string | undefined
 
 /** Version the health route reports; inlined from `package.json` when bundled. */
-export const PLUGIN_VERSION: string =
-  typeof __DSH_PLUGIN_VERSION__ === "string" ? __DSH_PLUGIN_VERSION__ : "0.0.0-dev"
+export const PLUGIN_VERSION: string = typeof __DSH_PLUGIN_VERSION__ === "string" ? __DSH_PLUGIN_VERSION__ : "0.0.0-dev"

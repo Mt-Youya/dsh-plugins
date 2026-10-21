@@ -7,11 +7,9 @@
   </head>
   <body>
     <script>
-      const query = new URLSearchParams(location.search).get("theme") ?? "system";
-      const dark =
-        query === "dark" ||
-        (query === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
-      document.documentElement.style.colorScheme = dark ? "dark" : "light";
+      const query = new URLSearchParams(location.search).get("theme") ?? "system"
+      const dark = query === "dark" || (query === "system" && matchMedia("(prefers-color-scheme: dark)").matches)
+      document.documentElement.style.colorScheme = dark ? "dark" : "light"
     </script>
     <style>
       html,

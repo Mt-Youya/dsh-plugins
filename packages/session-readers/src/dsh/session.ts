@@ -23,12 +23,7 @@ import { homedir } from "node:os"
 import type { Session } from "@cyrus/dsh-session-contract"
 import { SessionFold } from "./fold.ts"
 import { decodeSessionLog, splitLogLines } from "./frames.ts"
-import {
-  isProjectionFresh,
-  readProjection,
-  type DshProjection,
-  type ProjectionAbsence,
-} from "./projection.ts"
+import { isProjectionFresh, readProjection, type DshProjection, type ProjectionAbsence } from "./projection.ts"
 import { parseLogLine, type LogEvent } from "./records.ts"
 import { readSessionHeader } from "./session-meta.ts"
 

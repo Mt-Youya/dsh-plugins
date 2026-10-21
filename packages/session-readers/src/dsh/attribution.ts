@@ -32,7 +32,13 @@ import {
   projectedMeasure,
   type CharCounts,
 } from "../attribution.ts"
-import { exactMeasure, residualMeasure, type Attribution, type ContextPart, type Measure } from "@cyrus/dsh-session-contract"
+import {
+  exactMeasure,
+  residualMeasure,
+  type Attribution,
+  type ContextPart,
+  type Measure,
+} from "@cyrus/dsh-session-contract"
 import type { ProjectionRequest } from "./projection.ts"
 
 /**

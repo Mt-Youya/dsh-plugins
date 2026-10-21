@@ -66,9 +66,7 @@ export function createPluginConfig(options: PluginBuildOptions) {
    * keeps the health route in step with whatever the release bumped, with no
    * second file to forget.
    */
-  const manifestVersion = (
-    JSON.parse(readFileSync(options.manifestPath, "utf8")) as { version: string }
-  ).version
+  const manifestVersion = (JSON.parse(readFileSync(options.manifestPath, "utf8")) as { version: string }).version
 
   return defineConfig([
     {
