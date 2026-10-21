@@ -5,22 +5,22 @@
   "description": "Workspace root: the context-insight DSH plugin and the internal packages it is built from.",
   "license": "MIT",
   "type": "module",
-  "packageManager": "pnpm@12.11.2",
-  "engines": {
-    "node": ">=24.19.0"
-  },
   "scripts": {
     "dev": "vite --config apps/preview/vite.config.ts",
     "css": "node scripts/build-css.mjs plugins/context-insight",
     "build": "pnpm css && pnpm typecheck && pnpm typecheck:client && tsdown && pnpm build:libs",
     "build:libs": "pnpm --filter './packages/*' -r run build",
+    "pack:insight": "pnpm --filter '@cyrus/dsh-context-insight' release:patch",
     "typecheck": "tsc --noEmit",
     "typecheck:client": "tsc --noEmit -p tsconfig.client.json",
     "test": "vitest run",
-    "fmt": "oxfmt --write ."
+    "fmt": "oxfmt --write .",
+    "lint": "oxlint --fix",
+    "dsh:remove-insight": "dsh plugin --profile desktop remove @cyrus/dsh-context-insight",
+    "install:plugin": "bash scripts/install-plugin.sh"
   },
   "devDependencies": {
-    "@tailwindcss/cli": "catalog:",
+    "@tailwindcss/cli": "^4.3.3",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
@@ -29,10 +29,14 @@
     "oxlint": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "tailwindcss": "catalog:",
+    "tailwindcss": "^4.3.3",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
-  }
+  },
+  "engines": {
+    "node": ">=24.19.0"
+  },
+  "packageManager": "pnpm@12.11.2"
 }
