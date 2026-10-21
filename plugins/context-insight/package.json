@@ -1,6 +1,6 @@
 {
   "name": "@cyrus/dsh-context-insight",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Read-only context insight for the DSH Web GUI: what each turn actually fed the model, across Claude Code, DSH and Codex sessions.",
   "keywords": [
     "claude-code",
@@ -22,6 +22,7 @@
     "docs/images/**/*.png",
     "cordis.patch.yml",
     "icon.svg",
+    "locale",
     "README.md",
     "README.en.md",
     "LICENSE"
@@ -35,7 +36,8 @@
     "./client": {
       "default": "./lib/client.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*": "./locale/*"
   },
   "scripts": {
     "css": "node ../../scripts/build-css.mjs .",
