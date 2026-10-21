@@ -1,3 +1,5 @@
+[English](./README.en.md) | 简体中文
+
 # 上下文透视 · dsh-context-insight（Context Lens）
 
 DSH Web GUI 的只读「上下文透视」面板：解析 **Claude Code / DSH / Codex** 三个来源的会话日志，把**模型每一轮实际收到的上下文**拆开给人看——系统提示、工具定义、记忆与指令、历史、工具结果、图片各占多少，以及每个数字是精确的 usage 还是按字符折算的估算。
@@ -6,7 +8,7 @@ DSH Web GUI 的只读「上下文透视」面板：解析 **Claude Code / DSH / 
 
 > 全程只读：不写源数据、不建索引、不落盘。唯一的缓存是进程内 LRU，进程结束即消失。
 
-> **v0.1.0 的范围**：只读洞察 + 摘要交接。交接把生成好的简报投递进 DSH 新会话，**只调官方 `session.create` / `session.prompt`**，不手写会话事件、不改写原会话（`docs/HANDOFF.md`、`docs/adr/0003-never-handwrite-session-events.md`、`docs/adr/0007-accepted-is-not-success.md`）。
+> **当前范围**：只读洞察 + 摘要交接。交接把生成好的简报投递进 DSH 新会话，**只调官方 `session.create` / `session.prompt`**，不手写会话事件、不改写原会话（`docs/HANDOFF.md`、`docs/adr/0003-never-handwrite-session-events.md`、`docs/adr/0007-accepted-is-not-success.md`）。
 
 ## 它能回答什么
 
@@ -17,16 +19,15 @@ DSH Web GUI 的只读「上下文透视」面板：解析 **Claude Code / DSH / 
 
 ![单轮构成与工具明细](docs/images/02-dsh-session.png)
 
-## 导航模型
+## 界面
 
-**工作目录是唯一主轴，来源只是徽标。**
+**工作目录是唯一主轴，来源只是徽标。** `工作目录 → 会话 → 轮次`
 
-`工作目录 → 会话 → 轮次`
-
-- 会话列表**只读文件头**，点开才解析正文；首开大文件需要解压与解码。
-- 轮次分页，每页 40 轮，底部「加载更多轮次」。
-- 顶部「累计水位」折线是该会话每轮总上下文的走势，虚线竖条是压缩点。
-- 右侧单轮面板：构成分块、数据质量标记、工具调用明细（名称 / 状态 / 耗时 / 输入输出）、子代理树。
+- **顶栏**：三个来源各自的可读状态和会话数（读不到会变暗，悬停看原因）、搜索、刷新、收起左栏。
+- **左栏项目树**：按工作目录分组，可以筛选；会话挂在项目下，带来源标记、时间和文件大小。列表只读文件头，点开会话才解析正文，所以大文件首开要等解压与解码。
+- **会话头部**：标题、来源、路径，以及四个指标卡：当前上下文（占窗口的比例，超过 80% 变黄）、峰值（出现在第几轮）、轮次（压缩点与工具调用数）、费用。
+- **轮次列**：顶部「累计水位」折线是每轮总上下文的走势，虚线竖条是压缩点，点任一点跳到那一轮。下面每行一轮：用户输入、token 数、构成条、时间、工具调用数、缩放系数和费用，各列上下对齐。每页 40 轮，底部「加载更多轮次」。
+- **详情列**：「第 N 轮」和用户输入固定在顶部，下面依次是上下文构成（每个分区带 `精确` / `估算` 徽标）、压缩点、工具调用（默认折叠成一行摘要，报错的自动展开）、子代理会话。
 - `⌘K`（Windows/Linux 上 `Ctrl+K`）打开全库搜索，命中后直接跳到那一轮。
 
 ![全库搜索](docs/images/03-search-palette.png)
@@ -58,13 +59,19 @@ DSH Web GUI 的只读「上下文透视」面板：解析 **Claude Code / DSH / 
 
 **第 1 步：把包装进 profile**
 
+单独安装本插件：
+
 ```sh
 dsh plugin --profile desktop add @cyrus/dsh-context-insight   # 桌面端
 dsh plugin --profile web     add @cyrus/dsh-context-insight   # dsh web
 # 本地开发时换成目录或打包产物：
 # dsh plugin --profile <name> add link:$PWD
-# dsh plugin --profile <name> add /abs/path/cyrus-dsh-context-insight-0.1.0.tgz
+# dsh plugin --profile <name> add /abs/path/cyrus-dsh-context-insight-<版本>.tgz
 ```
+
+也可以装组合包 `@cyrus/dsh-plugins`，它会把合集里的插件一起装上（见[仓库根 README](../../README.md)）。
+
+> **两种方式只能选一种。** 组合包和本插件都会往加载树里插 `id: context-insight`，两个都在 `dsh.profile.bundles` 里时，DSH 启动会报 `duplicate loader entry id: context-insight` 并退出。
 
 **第 2 步：确认包名在 `dsh.profile.bundles` 里**
 
@@ -90,8 +97,8 @@ dsh web
 
 ```sh
 curl -sS http://127.0.0.1:<port>/api/dsh-context-insight/health
-# {"ok":true,"value":{"version":"0.0.1","sources":["claude","dsh","codex"]}}
-# value.version 来自宿主侧常量 PLUGIN_VERSION，不读 package.json
+# {"ok":true,"value":{"version":"<版本号>","sources":["claude","dsh","codex"]}}
+# value.version 是宿主侧常量 PLUGIN_VERSION，构建时从 package.json 注入
 ```
 
 > loader 行只在 boot 时组合，**改完必须重启**；浏览器热重载只覆盖「客户端 bundle 被重建」这一种情况。
@@ -143,7 +150,7 @@ src/
     ├── styles.ts     注入编译好的 CSS（一次）
     ├── state/        纯状态逻辑：树展平、轮次行、堆叠条算术
     ├── theme/        app.css、components.css、构建产物 generated.css.ts
-    └── ui/           组件：面板、项目树、轮次表、工具明细、交接、搜索面板…
+    └── ui/           组件：面板、工具栏、项目树、会话头部、轮次列表与详情、工具明细、交接、搜索面板…
 ```
 
 **它依赖的包**（`packages/`，构建时内联进 `lib/`，不单独发布）：
@@ -192,6 +199,7 @@ dsh try --host 127.0.0.1 --port 49744 --no-open     # 独立端口 boot
 
 这些文档都在**仓库根**，不在本包目录内（npm tarball 只带 `docs/images`）：
 
+- `docs/RELEASE.md` — npm 发布步骤
 - `docs/PLAN.md` — 决策与里程碑
 - `docs/IR.md` — 三源统一的轮次 IR（adapter 契约）
 - `docs/API.md` — 宿主路由契约
