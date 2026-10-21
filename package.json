@@ -3,10 +3,16 @@
   "version": "0.0.3",
   "description": "DeepSeek Harness plugin collection: installs and registers the plugins listed in cordis.patch.yml (currently Context Lens). Also the workspace root they are built from.",
   "keywords": [
+    "deepseek",
     "deepseek-harness",
+    "deepseek-plugin",
+    "deepseek-plugins",
+    "deepseek-plugins-collection",
     "dsh",
     "dsh-bundle",
-    "dsh-plugin"
+    "dsh-plugin",
+    "dsh-plugins",
+    "dsh-plugins-collection"
   ],
   "homepage": "https://github.com/Mt-Youya/dsh-plugins",
   "license": "MIT",
@@ -65,12 +71,12 @@
     "vitest": "catalog:"
   },
   "engines": {
-    "node": ">=24.19.0"
+    "node": ">=24.22.1"
   },
-  "packageManager": "pnpm@12.11.2",
+  "packageManager": "pnpm@12.14.0",
   "dsh": {
     "engines": {
-      "dsh": ">=0.2.0-rc.2"
+      "dsh": ">=0.2.1-rc.2"
     },
     "bundle": {
       "patch": "./cordis.patch.yml"
