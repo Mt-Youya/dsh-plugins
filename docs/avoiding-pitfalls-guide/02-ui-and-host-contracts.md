@@ -3,6 +3,7 @@
 以下记录来自完整会话审阅。`source` 使用原始 Claude Code JSONL 文件名和行号定位；时间均为 UTC。历史验证结果只适用于当时产物，不能替代当前版本的回归验证。
 
 <a id="data-01"></a>
+
 ### DATA-01 · 根节点布局不要依赖包在自身 scope 内的工具类
 
 `batch` 2026-10-22 · `severity` 中 · `status` 代码与产物检查通过，视觉未验收 · `source` Claude Code `803d1bd2-861f-4b07-8abf-13e6a9d5868d.jsonl`，原始 565–647 行，2026-10-21T08:36:05.094Z–08:44:10.612Z；后续反馈见原始 733 行，2026-10-21T09:26:06.746Z。
@@ -32,6 +33,7 @@
 > `scope wrapper at 3943 root rule at 35054 inside wrapper`
 
 <a id="data-02"></a>
+
 ### DATA-02 · 构建器统一包 scope 后，源码不能再套同名 scope
 
 `batch` 2026-10-22 · `severity` 中 · `status` 结构检查与客户端测试通过，视觉未验收 · `source` Claude Code `803d1bd2-861f-4b07-8abf-13e6a9d5868d.jsonl`，原始 733–814 行，2026-10-21T09:26:06.746Z–09:31:34.980Z。
@@ -59,6 +61,7 @@
 > `nested scope: 1 | @property inside scope: False`
 
 <a id="data-03"></a>
+
 ### DATA-03 · 有 data-part 不等于类别颜色选择器会命中
 
 `batch` 2026-10-22 · `severity` 中 · `status` 代码与产物检查通过，颜色视觉未验收 · `source` Claude Code `803d1bd2-861f-4b07-8abf-13e6a9d5868d.jsonl`，原始 112 行，2026-10-21T07:51:00.870Z；733–814 行，2026-10-21T09:26:06.746Z–09:31:34.980Z。
@@ -86,6 +89,7 @@
 > `class="h-full flex-none bg-[var(--color-part-thinking)]"`
 
 <a id="data-04"></a>
+
 ### DATA-04 · apply 中途注册失败时，要撤销已经注册的路由
 
 `batch` 2026-10-22 · `severity` 高 · `status` 回归测试证实并修复，首次碰撞原因与宿主冷启动未闭合 · `source` Claude Code `117bc152-78c4-49a0-bd41-9762cc6a3110.jsonl`，原始 364–517 行，2026-10-22T03:21:39.196Z–03:27:10.317Z。
