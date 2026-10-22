@@ -7,39 +7,8 @@
  * both colour schemes. The page reports its own measurements under ?probe=1;
  * this script only starts the dev server, reads them, and decides.
  */
-import { spawn, spawnSync } from "node:child_process"
-import { join } from "node:path"
-
-const ROOT = process.argv[2] ?? "."
-const PORT = Number(process.env.PREVIEW_PORT ?? 5178)
-const CHROME = process.env.CHROME_PATH ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-const ORIGIN = `http://localhost:${PORT}`
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-
-async function reachable() {
-  try {
-    const response = await fetch(`${ORIGIN}/api/dsh-context-insight/health`, { signal: AbortSignal.timeout(1500) })
-    return response.ok
-  } catch {
-    return false
-  }
-}
-
-async function ensureServer() {
-  if (await reachable()) return undefined
-  const child = spawn("npx", ["vite", "--config", "vite.config.ts"], {
-    cwd: ROOT,
-    stdio: "ignore",
-    detached: true,
-  })
-  child.unref()
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    await sleep(500)
-    if (await reachable()) return child
-  }
-  throw new Error("preview dev server did not become reachable")
-}
+import { spawnSync } from "node:child_process"
+import { CHROME, ORIGIN, ensureServer } from "./preview-server.mjs"
 
 function measure(theme) {
   const url = `${ORIGIN}/?theme=${theme}&probe=1`
@@ -77,17 +46,10 @@ function judge(theme, probe) {
   return failures.map((line) => `${theme}: ${line}`)
 }
 
-const started = await ensureServer()
+const stop = await ensureServer()
 const failures = []
 for (const theme of ["light", "dark"]) failures.push(...judge(theme, measure(theme)))
-
-if (started !== undefined) {
-  try {
-    process.kill(-started.pid)
-  } catch {
-    // the dev server was already running under another owner
-  }
-}
+stop()
 
 if (failures.length > 0) {
   console.error("preview smoke FAILED")

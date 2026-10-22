@@ -12,6 +12,7 @@ import { fillParams, setRuntimeTranslate, zh } from "../../plugins/context-insig
 import { injectStyles } from "../../plugins/context-insight/src/client/styles.ts"
 import { ContextInsightPanel } from "../../plugins/context-insight/src/client/ui/panel.tsx"
 import { reportProbe } from "./probe.ts"
+import { stageShot } from "./shot.ts"
 
 // The preview asks the dictionary directly (there is no locale service here),
 // and only for the keys it renders, so the key is narrowed to the dictionary's.
@@ -28,4 +29,7 @@ createRoot(root).render(
   </StrictMode>
 )
 
-if (new URLSearchParams(location.search).get("probe") === "1") reportProbe()
+const query = new URLSearchParams(location.search)
+if (query.get("probe") === "1") reportProbe()
+const scene = query.get("shot")
+if (scene !== null) stageShot(scene)

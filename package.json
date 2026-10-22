@@ -38,6 +38,7 @@
   },
   "scripts": {
     "dev": "vite --config apps/preview/vite.config.ts",
+    "screenshots": "node scripts/screenshots.mjs",
     "css": "node scripts/build-css.mjs plugins/context-insight",
     "build": "pnpm css && pnpm typecheck && pnpm typecheck:client && tsdown && pnpm build:libs",
     "build:libs": "pnpm --filter './packages/*' -r run build",

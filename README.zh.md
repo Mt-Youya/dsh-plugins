@@ -79,6 +79,12 @@ npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run &
 pnpm install:plugin
 ```
 
+从预览页重新生成 README 截图（headless Chrome，1440×900；要浅色主题就加 `-- --theme light`）。截图里是你本机的真实会话，提交前看一眼：
+
+```bash
+pnpm screenshots
+```
+
 ## 发布
 
 按 [`docs/RELEASE.md`](./docs/RELEASE.md) 的步骤来：先发插件，再发组合包。

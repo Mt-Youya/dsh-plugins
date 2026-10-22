@@ -79,6 +79,12 @@ Install the working tree into your local DSH to try it (packs, installs, and che
 pnpm install:plugin
 ```
 
+Regenerate the README screenshots from the preview (headless Chrome, 1440×900; add `-- --theme light` for the light theme). They show the sessions on your machine, so look at them before committing:
+
+```bash
+pnpm screenshots
+```
+
 ## Publishing
 
 Follow [`docs/RELEASE.en.md`](./docs/RELEASE.en.md): the plugin first, then the collection.
