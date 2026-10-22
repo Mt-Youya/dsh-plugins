@@ -22,6 +22,7 @@ import type { Api, ApiFailure } from "../api.ts"
 import { splitPath } from "../format.ts"
 import { sessionLabel } from "../labels.ts"
 import { t } from "../locale.ts"
+import { SOURCE_MARKS, SourceIcon } from "./icons.tsx"
 
 /** Milliseconds between a keystroke and the first scan. */
 export const SEARCH_DEBOUNCE_MS = 250
@@ -101,17 +102,17 @@ function HitRow({
     <li>
       <button
         type="button"
-        className="flex w-full cursor-pointer flex-col gap-[3px] rounded-md border-0 my-px px-2 py-[7px] text-inherit font-[inherit] text-left hover:bg-bg-2 data-[active=true]:bg-bg-2"
+        className="flex w-full cursor-pointer flex-col gap-1 rounded-md border-0 my-px px-2 py-2.5 text-inherit font-[inherit] text-left hover:bg-bg-2 data-[active=true]:bg-bg-2"
         data-active={active}
         onClick={onOpen}
         onMouseEnter={onHover}
       >
-        <span className="flex items-baseline gap-2 min-w-0">
-          <span className="inline-flex items-center gap-1 rounded-sm px-1.5 text-[10px] leading-4.25 whitespace-nowrap bg-transparent text-fg border-[0.5px] border-line">
-            {hit.source}
+        <span className="flex w-full items-center gap-3 min-w-0">
+          <SourceIcon source={hit.source} size={12} />
+          <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-fg">
+            {highlight(label.title, query)}
           </span>
-          <span className="truncate text-[12px]">{label.title}</span>
-          <span className="ms-auto text-[10px] text-fg-dim whitespace-nowrap">
+          <span className="max-w-[40%] truncate text-[10px] text-fg-dim" title={hit.workdir}>
             {parts.leaf === "" ? hit.workdir : parts.leaf}
             {hit.turnIndex === 0 ? "" : " · " + t("turns.selected", { index: hit.turnIndex })}
           </span>
@@ -307,11 +308,10 @@ export function SearchPalette({
           ) : null}
           {grouped.map((group) => (
             <section className="mt-2" key={group.source} aria-label={group.source}>
-              <h3 className="flex items-center gap-2 mb-1 px-1.5 text-[10px] font-semibold tracking-[0.06em] uppercase text-fg-dim">
-                <span className="inline-flex items-center gap-1 rounded-sm px-1.5 text-[10px] leading-4.25 whitespace-nowrap bg-transparent text-fg border-[0.5px] border-line">
-                  {group.source}
-                </span>
-                <span className="text-fg-dim text-[10.5px] my-1.5">{group.rows.length}</span>
+              <h3 className="flex items-center gap-2 m-0 mb-1 px-2 py-1 text-[11px] font-medium text-fg-dim">
+                <SourceIcon source={group.source} size={12} />
+                <span>{SOURCE_MARKS[group.source].label.zh}</span>
+                <span className="tabular-nums">{group.rows.length}</span>
               </h3>
               <ul className="m-0 p-0 list-none">
                 {group.rows.map(({ hit, index }) => (
