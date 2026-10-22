@@ -5,7 +5,7 @@
  * ask the browser what it actually computed, and a plain headless dump of the
  * DOM cannot answer that.
  *
- * @module @cyrus/dsh-context-insight/preview/probe
+ * @module @cyrus/dsh-sessions-insight/preview/probe
  */
 
 type Probe = {

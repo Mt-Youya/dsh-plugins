@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Cyrus Plugins",
-    "description": "A collection of read-only observability plugins for DeepSeek Harness. Currently ships Context Lens: see what each turn of a Claude Code, DSH or Codex session actually fed the model."
+    "description": "A collection of read-only observability plugins for DeepSeek Harness. Currently ships Sessions Insight: see what each turn of a Claude Code, DSH or Codex session actually fed the model."
   }
 }

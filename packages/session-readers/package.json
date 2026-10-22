@@ -2,7 +2,7 @@
   "name": "@cyrus/dsh-session-readers",
   "version": "0.0.0",
   "private": false,
-  "description": "Filesystem readers that turn Claude Code, Codex and DSH session logs into the context-insight IR.",
+  "description": "Filesystem readers that turn Claude Code, Codex and DSH session logs into the sessions-insight IR.",
   "license": "MIT",
   "files": [
     "lib"

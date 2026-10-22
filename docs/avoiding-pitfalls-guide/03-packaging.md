@@ -26,7 +26,7 @@
 
 **1. 现象**：桌面日志同时出现根包 `import failed` 和成员 factory 重复注册。
 
-> `duplicate factory registration for "@cyrus/dsh-context-insight"`
+> `duplicate factory registration for "@cyrus/dsh-sessions-insight"`
 
 **2. 诊断**：根包 exports 复用成员 client 字节，banner 却固定注册成员 ID。宿主按根包名等待 factory，首次执行后仍认为根模块没注册，fallback 再执行同一产物便撞重复 factory。隔离 Host health 200 没有加载前端，不能推翻这条客户端证据；“旧 HMR”当时只是推断。
 

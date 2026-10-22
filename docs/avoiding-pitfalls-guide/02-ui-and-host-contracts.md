@@ -20,7 +20,7 @@
 
 **3.方案**
 
-在 [panel.tsx](../../plugins/context-insight/src/client/ui/panel.tsx) 使用 `ROOT_STYLE` 明确设置根布局，移除无效的根 CSS 规则。内部滚动区继续由 CSS 管理，没有增加 JavaScript 高度测量。
+在 [panel.tsx](../../plugins/sessions-insight/src/client/ui/panel.tsx) 使用 `ROOT_STYLE` 明确设置根布局，移除无效的根 CSS 规则。内部滚动区继续由 CSS 管理，没有增加 JavaScript 高度测量。
 
 **4.实现与验证**
 
@@ -48,7 +48,7 @@
 
 **3.方案**
 
-删除 [app.css](../../plugins/context-insight/src/client/theme/app.css) 与 [components.css](../../plugins/context-insight/src/client/theme/components.css) 中重复的同名 scope，由 [build-css.mjs](../../scripts/build-css.mjs) 统一管理包裹层。构建器增加重复 scope 检查，并把 `@property` 提到顶层，防止以后重新引入相同结构。
+删除 [app.css](../../plugins/sessions-insight/src/client/theme/app.css) 与 [components.css](../../plugins/sessions-insight/src/client/theme/components.css) 中重复的同名 scope，由 [build-css.mjs](../../scripts/build-css.mjs) 统一管理包裹层。构建器增加重复 scope 检查，并把 `@property` 提到顶层，防止以后重新引入相同结构。
 
 **4.实现与验证**
 
@@ -76,7 +76,7 @@
 
 **3.方案**
 
-在 [stacked-bar.tsx](../../plugins/context-insight/src/client/ui/stacked-bar.tsx) 增加 `partColor`，按 `segment.part` 和 `slice.part` 返回 `var(--color-part-*)`，条形和图例都显式设置背景。移除已知类别的 thinking 兜底背景及失效颜色表；未知段继续使用原有纹理表达。
+在 [stacked-bar.tsx](../../plugins/sessions-insight/src/client/ui/stacked-bar.tsx) 增加 `partColor`，按 `segment.part` 和 `slice.part` 返回 `var(--color-part-*)`，条形和图例都显式设置背景。移除已知类别的 thinking 兜底背景及失效颜色表；未知段继续使用原有纹理表达。
 
 **4.实现与验证**
 
@@ -106,11 +106,11 @@
 
 **3.方案**
 
-在 [插件入口](../../plugins/context-insight/src/index.ts) 逐项保存 disposer，注册过程用 `try/catch` 包住：任何一步失败都先释放本次已经注册的路由、清理预热 timer、失效缓存，再重新抛错；正常卸载复用同一清理函数。不要吞掉冲突，也不要删除其他实例预先占用的路由。
+在 [插件入口](../../plugins/sessions-insight/src/index.ts) 逐项保存 disposer，注册过程用 `try/catch` 包住：任何一步失败都先释放本次已经注册的路由、清理预热 timer、失效缓存，再重新抛错；正常卸载复用同一清理函数。不要吞掉冲突，也不要删除其他实例预先占用的路由。
 
 **4.实现与验证**
 
-原始 495 行修改实现，503 行新增 [host-apply.test.ts](../../plugins/context-insight/test/host-apply.test.ts) 两个场景：正常卸载后可再注册，以及预占后一条路由时回滚本次前序注册。505–511 行先验证新实现 2 个测试通过，再临时还原旧实现得到 1 失败、1 通过，随后恢复修复。516–517 行记录构建、bundle 检查及安装路径/hash校验通过。
+原始 495 行修改实现，503 行新增 [host-apply.test.ts](../../plugins/sessions-insight/test/host-apply.test.ts) 两个场景：正常卸载后可再注册，以及预占后一条路由时回滚本次前序注册。505–511 行先验证新实现 2 个测试通过，再临时还原旧实现得到 1 失败、1 通过，随后恢复修复。516–517 行记录构建、bundle 检查及安装路径/hash校验通过。
 
 这些证据覆盖回滚缺陷与构建产物；历史未完成真实宿主重启后启用插件的验收，也未复现首次碰撞的完整触发链。
 

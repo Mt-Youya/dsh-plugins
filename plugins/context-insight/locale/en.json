@@ -1,6 +1,0 @@
-{
-  "meta": {
-    "title": "Context Lens",
-    "description": "See what each turn actually fed the model: Claude Code, DSH and Codex sessions, per-turn composition, tool calls, compaction points and handoff — read-only throughout."
-  }
-}

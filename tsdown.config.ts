@@ -5,8 +5,8 @@
  * this package's manifest and keys the client module graph by
  * `@cyrus/dsh-plugins`. It therefore builds the plugin sources into its own
  * `lib/` under its own name rather than pointing `exports` into
- * `plugins/context-insight/lib`, whose client bundle registers as
- * `@cyrus/dsh-context-insight` and would never arrive under this package.
+ * `plugins/sessions-insight/lib`, whose client bundle registers as
+ * `@cyrus/dsh-sessions-insight` and would never arrive under this package.
  *
  * @see tooling/tsdown/plugin-config.ts
  * @module tsdown.config
@@ -20,7 +20,7 @@ import { createPluginConfig } from "./tooling/tsdown/plugin-config.ts"
 const root = fileURLToPath(new URL(".", import.meta.url))
 
 export default createPluginConfig({
-  srcDir: root + "plugins/context-insight/src/",
+  srcDir: root + "plugins/sessions-insight/src/",
   outDir: root + "lib/",
   manifestPath: root + "package.json",
   alias: workspaceAlias(),

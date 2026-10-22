@@ -4,13 +4,13 @@
 
 给 DeepSeek Harness（DSH）用的插件合集。装这一个组合包，就装上下面列出的全部插件；每个插件也可以单独安装。
 
-![上下文透视面板](plugins/context-insight/docs/images/01-merged-tree.png)
+![会话洞察面板](plugins/sessions-insight/docs/images/01-merged-tree.png)
 
 ## 包含的插件
 
 | 插件                                                              | npm 包                       | 做什么                                                                                                        |
 | ----------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| [上下文透视（Context Lens）](./plugins/context-insight/README.md) | `@cyrus/dsh-context-insight` | 把 Claude Code / DSH / Codex 三源会话每一轮实际喂给模型的上下文拆开看：构成、工具调用、压缩点、费用，全程只读 |
+| [会话洞察（Sessions Insight）](./plugins/sessions-insight/README.md) | `@cyrus/dsh-sessions-insight` | 把 Claude Code / DSH / Codex 三源会话每一轮实际喂给模型的上下文拆开看：构成、工具调用、压缩点、费用，全程只读 |
 
 ## 安装
 
@@ -25,14 +25,22 @@ dsh plugin --profile desktop add @cyrus/dsh-plugins
 **只装某一个插件**：
 
 ```bash
-dsh plugin --profile desktop add @cyrus/dsh-context-insight
+dsh plugin --profile desktop add @cyrus/dsh-sessions-insight
 ```
 
-装完**完全退出再重新打开** DSH；插件管理器里出现「Cyrus 插件集」或「上下文透视」即成功。
+装完**完全退出再重新打开** DSH；插件管理器里出现「Cyrus 插件集」或「会话洞察」即成功。
 
 > **两种方式只能选一种。** 组合包和单独的插件会往加载树里插同一个 id，两个都在 `dsh.profile.bundles` 里时 DSH 启动会报 `duplicate loader entry id` 并退出。换方式前先 `dsh plugin --profile <name> remove` 掉另一个。
 >
 > 不要用 git 地址安装（`pnpm add https://github.com/...`）：仓库根的依赖写的是 `workspace:^`，只有发布到 npm 时才会被改写成版本号。
+
+**从当前工作区安装（开发这个合集时）**：桌面端插件管理器的「添加插件」也接受本地目录，填本仓库的绝对路径即可。DSH 会把它记成 `"@cyrus/dsh-plugins": "link:<那个路径>"` —— 一条指向你工作区的软链，不是拷贝，也不会替你做任何构建。宿主就是通过这条软链读 `lib/index.js`，而 `lib/` 在 .gitignore 里，所以先构建：
+
+```bash
+npx tsdown
+```
+
+然后完全退出再重新打开 DSH。之后改代码只需要重建 + 重启，不用重新安装。
 
 每个插件的用法、权限边界和已知限制，看它自己的 README。
 
@@ -43,7 +51,7 @@ dsh plugin --profile desktop add @cyrus/dsh-context-insight
 | 目录                         | 内容                                           | 发布                                 |
 | ---------------------------- | ---------------------------------------------- | ------------------------------------ |
 | `/`（仓库根）                | 组合包：`cordis.patch.yml` + `locale/`         | **是**，`@cyrus/dsh-plugins`         |
-| `plugins/context-insight`    | 上下文透视插件：宿主半边 + 浏览器半边          | **是**，`@cyrus/dsh-context-insight` |
+| `plugins/sessions-insight`    | 会话洞察插件：宿主半边 + 浏览器半边          | **是**，`@cyrus/dsh-sessions-insight` |
 | `packages/session-contract`  | 统一 IR、线上类型与解码守卫                    | 否                                   |
 | `packages/session-readers`   | Claude Code / Codex / DSH 三源适配             | 否                                   |
 | `packages/plugin-kit`        | 插件无关的 JSON 信封与 URL 约定                | 否                                   |
@@ -70,10 +78,10 @@ pnpm dev
 提交前跑一遍门禁：
 
 ```bash
-npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && npx tsdown && node scripts/check-bundle.mjs plugins/context-insight
+npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && npx tsdown && node scripts/check-bundle.mjs plugins/sessions-insight
 ```
 
-把当前工作区装进本机 DSH 验证（会打包、安装，并校验装进去的确实是新构建）：
+重建产物，并校验 profile 里那条软链确实指向你的构建（这一步不安装 —— 安装走 DSH 插件管理器）：
 
 ```bash
 pnpm install:plugin

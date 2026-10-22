@@ -42,7 +42,7 @@ Status: ready-for-agent
 - **元素基础样式**：在 @layer base 的 @scope 内补 button/a/input/select/textarea 的 border/background/color/font 继承，约 6 行。
 - **迁移单位**：一个界面一次提交，迁完删除对应 surface file（shell/chart/misc/palette/detail/tools/handoff/rail）。
 - **终局形态**：theme/ = app.css（token + import）+ components.css（上面那两类胶囊），其余全部删除。
-- **预览 harness 入仓**：vite.config.ts 用 ssrLoadModule 加载宿主入口并把 createRoutes 的真实路由挂到 /api/dsh-context-insight/*，同一进程服务页面；pnpm dev 一条命令启动；?theme= 控制配色。
+- **预览 harness 入仓**：vite.config.ts 用 ssrLoadModule 加载宿主入口并把 createRoutes 的真实路由挂到 /api/dsh-sessions-insight/*，同一进程服务页面；pnpm dev 一条命令启动；?theme= 控制配色。
 - **打包契约守卫**：scripts/check-bundle.mjs 对 lib/ 实物断言：注册 id 为包名、factory 存在、内联了 @scope 样式、没有裸 ESM react import、宿主导出 apply/handleHealth/createRoutes/createSources、factory 在桩环境里执行后返回可调用导出。挂进 prepack。
 - **体积预算**：lib/client.js ≤ 200 KB、CSS 产物 ≤ 40 KB；超限先停下查因。
 - **不改的东西**：对外 API、IR、三个 adapter、host 路由语义一律不动；本次只动样式与开发工具。

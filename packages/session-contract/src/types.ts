@@ -3,7 +3,7 @@
  *
  * The envelope shape itself is not this package's: it is generic over the code
  * vocabulary and lives in `@cyrus/dsh-plugin-kit`. What stays here is the vocabulary —
- * the codes a context-insight route may answer with — and the payload types.
+ * the codes a sessions-insight route may answer with — and the payload types.
  *
  * @module @cyrus/dsh-session-contract/types
  */

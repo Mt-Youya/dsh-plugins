@@ -24,7 +24,7 @@ export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 async function reachable() {
   try {
-    const response = await fetch(`${ORIGIN}/api/dsh-context-insight/health`, { signal: AbortSignal.timeout(1500) })
+    const response = await fetch(`${ORIGIN}/api/dsh-sessions-insight/health`, { signal: AbortSignal.timeout(1500) })
     return response.ok
   } catch {
     return false

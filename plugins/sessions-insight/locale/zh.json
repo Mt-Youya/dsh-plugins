@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "会话洞察",
+    "description": "把模型每一轮实际收到的上下文拆开看：Claude Code / DSH / Codex 三源会话、轮次构成、工具调用、压缩点与交接，全部只读。"
+  }
+}

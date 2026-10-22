@@ -6,7 +6,7 @@
 
 | 包                           | 目录                      | 是什么                                                     |
 | ---------------------------- | ------------------------- | ---------------------------------------------------------- |
-| `@cyrus/dsh-context-insight` | `plugins/context-insight` | 上下文透视插件本体（成员包）                               |
+| `@cyrus/dsh-sessions-insight` | `plugins/sessions-insight` | 会话洞察插件本体（成员包）                               |
 | `@cyrus/dsh-plugins`         | 仓库根                    | 组合包：只有 `cordis.patch.yml` 和 `locale/`，依赖各成员包 |
 
 `packages/*` 在构建时被内联进成员包的 `lib/`，**不要发布**。它们现在没有标 `private`，所以**永远不要用 `pnpm -r publish`**，那会把它们一并发上去。
@@ -51,7 +51,7 @@ pnpm install
 ```
 
 ```bash
-npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && npx tsdown && node scripts/check-bundle.mjs plugins/context-insight
+npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && npx tsdown && node scripts/check-bundle.mjs plugins/sessions-insight
 ```
 
 ### 3. 升版本号
@@ -59,7 +59,7 @@ npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run &
 成员改过就升成员；**成员升了，组合包也要升**（原因见下面的「版本规则」）。
 
 ```bash
-pnpm --filter @cyrus/dsh-context-insight version patch --no-git-tag-version
+pnpm --filter @cyrus/dsh-sessions-insight version patch --no-git-tag-version
 ```
 
 ```bash
@@ -71,11 +71,11 @@ pnpm version patch --no-git-tag-version
 ### 4. 提交并打 tag
 
 ```bash
-git commit -am "release: dsh-context-insight 0.0.3, dsh-plugins 0.0.2"
+git commit -am "release: dsh-sessions-insight 0.0.3, dsh-plugins 0.0.2"
 ```
 
 ```bash
-git tag dsh-context-insight@0.0.3 && git tag dsh-plugins@0.0.2
+git tag dsh-sessions-insight@0.0.3 && git tag dsh-plugins@0.0.2
 ```
 
 ### 5. 预演
@@ -83,7 +83,7 @@ git tag dsh-context-insight@0.0.3 && git tag dsh-plugins@0.0.2
 只打包、不上传，看清楚 tarball 里有什么：
 
 ```bash
-pnpm --filter @cyrus/dsh-context-insight publish --dry-run
+pnpm --filter @cyrus/dsh-sessions-insight publish --dry-run
 ```
 
 ```bash
@@ -97,7 +97,7 @@ pnpm publish --dry-run
 `prepublishOnly` 会再跑一遍 typecheck、测试和构建，`prepack` 会校验加载契约，任何一步失败都不会上传。开了 2FA 就在末尾加 `--otp=<6 位码>`。
 
 ```bash
-pnpm --filter @cyrus/dsh-context-insight publish --registry=https://registry.npmjs.org/
+pnpm --filter @cyrus/dsh-sessions-insight publish --registry=https://registry.npmjs.org/
 ```
 
 ### 7. 发布组合包
@@ -109,7 +109,7 @@ pnpm publish --registry=https://registry.npmjs.org/
 ### 8. 核对
 
 ```bash
-npm view @cyrus/dsh-context-insight version --registry=https://registry.npmjs.org/
+npm view @cyrus/dsh-sessions-insight version --registry=https://registry.npmjs.org/
 ```
 
 ```bash
@@ -130,7 +130,7 @@ npmmirror 通常几分钟内同步。想立刻同步，打开 <https://npmmirror
 dsh plugin --profile desktop add @cyrus/dsh-plugins
 ```
 
-完全退出再重新打开 DeepSeek Harness，插件管理器里应出现「Cyrus 插件集」，侧边栏出现「上下文透视」。
+完全退出再重新打开 DeepSeek Harness，插件管理器里应出现「Cyrus 插件集」，侧边栏出现「会话洞察」。
 
 ## 版本规则
 
@@ -140,15 +140,15 @@ dsh plugin --profile desktop add @cyrus/dsh-plugins
 
 ## 两种安装方式只能选一种
 
-组合包和成员包各自带一份 `cordis.patch.yml`，都往加载树里插 `id: context-insight` 这一行：
+组合包和成员包各自带一份 `cordis.patch.yml`，都往加载树里插 `id: sessions-insight` 这一行：
 
 - 装组合包 `@cyrus/dsh-plugins`：一次装上全部插件；
-- 单独装成员 `@cyrus/dsh-context-insight`：只要这一个插件。
+- 单独装成员 `@cyrus/dsh-sessions-insight`：只要这一个插件。
 
-**两个同时出现在 `dsh.profile.bundles` 里，DSH 启动时会报 `duplicate loader entry id: context-insight` 并退出。** 换安装方式前先把另一个移除：
+**两个同时出现在 `dsh.profile.bundles` 里，DSH 启动时会报 `duplicate loader entry id: sessions-insight` 并退出。** 换安装方式前先把另一个移除：
 
 ```bash
-dsh plugin --profile desktop remove @cyrus/dsh-context-insight
+dsh plugin --profile desktop remove @cyrus/dsh-sessions-insight
 ```
 
 ## 往组合包里加一个新插件
@@ -170,4 +170,4 @@ dsh plugin --profile desktop remove @cyrus/dsh-context-insight
 | `ERR_PNPM_GIT_BRANCH`                               | 不在 `main` 上                             | 切回 `main`；或加 `--publish-branch <分支>`                              |
 | `Cannot resolve workspace protocol…`                | 在仓库根没 `pnpm install` 过               | 先 `pnpm install`                                                        |
 | DSH 启动报 `duplicate loader entry id`              | 组合包和成员包同时在 `dsh.profile.bundles` | 移除其中一个，见上面「两种安装方式只能选一种」                           |
-| 插件管理器提示「没有声明组合包」                    | 装的不是带 `dsh.bundle` 的那个包           | 装 `@cyrus/dsh-plugins` 或 `@cyrus/dsh-context-insight`，不要装 git 地址 |
+| 插件管理器提示「没有声明组合包」                    | 装的不是带 `dsh.bundle` 的那个包           | 装 `@cyrus/dsh-plugins` 或 `@cyrus/dsh-sessions-insight`，不要装 git 地址 |

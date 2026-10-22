@@ -23,7 +23,7 @@ const PREVIEW_ROOT = fileURLToPath(new URL(".", import.meta.url))
 const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url))
 
 /** The Host entry, resolved against this file rather than the preview root. */
-const HOST_ENTRY = fileURLToPath(new URL("../../plugins/context-insight/src/index.ts", import.meta.url))
+const HOST_ENTRY = fileURLToPath(new URL("../../plugins/sessions-insight/src/index.ts", import.meta.url))
 
 /** Mount the plugin's own routes on the dev server, under the same paths. */
 function hostRoutes(): Plugin {
@@ -32,7 +32,7 @@ function hostRoutes(): Plugin {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = req.url ?? ""
-        if (!url.startsWith("/api/dsh-context-insight")) return next()
+        if (!url.startsWith("/api/dsh-sessions-insight")) return next()
         void (async () => {
           try {
             const host = (await server.ssrLoadModule(HOST_ENTRY)) as {

@@ -3,7 +3,7 @@
  *
  * Each shot loads the preview with `?shot=<scene>` (see apps/preview/shot.ts),
  * waits until the page reports `shot:ready` in its title, then captures the
- * viewport as PNG into plugins/context-insight/docs/images/ and mirrors it to
+ * viewport as PNG into plugins/sessions-insight/docs/images/ and mirrors it to
  * docs/images/. Chrome is driven over the DevTools protocol so the capture
  * happens after the page says it is ready, not after a guessed delay.
  *
@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url"
 import { CHROME, ORIGIN, ensureServer, sleep } from "./preview-server.mjs"
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url))
-const OUT = join(ROOT, "plugins/context-insight/docs/images")
+const OUT = join(ROOT, "plugins/sessions-insight/docs/images")
 const MIRROR = join(ROOT, "docs/images")
 const WIDTH = 1440
 const HEIGHT = 900

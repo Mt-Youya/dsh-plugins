@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Cyrus 插件集",
-    "description": "给 DeepSeek Harness 用的只读观测插件合集。目前包含「上下文透视」：把 Claude Code / DSH / Codex 三源会话每一轮实际喂给模型的上下文拆开看。"
+    "description": "给 DeepSeek Harness 用的只读观测插件合集。目前包含「会话洞察」：把 Claude Code / DSH / Codex 三源会话每一轮实际喂给模型的上下文拆开看。"
   }
 }

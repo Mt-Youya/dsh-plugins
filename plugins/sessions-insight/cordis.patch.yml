@@ -1,0 +1,6 @@
+# Bundle patch for the dsh-sessions-insight plugin.
+# A top-level YAML array of loader patch entries; the Host applies it after the
+# profile's bundle layers and before the user's own cordis.patch.yml.
+- insert:
+    - id: sessions-insight
+      name: "@cyrus/dsh-sessions-insight"

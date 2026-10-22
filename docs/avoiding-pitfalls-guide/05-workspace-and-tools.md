@@ -114,11 +114,11 @@
 
 **1. 实际现象**
 
-插件迁移后，原始1220记录 `CSS=1`，同次类型检查、测试、tsdown 和 bundle 检查却全部通过。继续查看 CSS 命令，Tailwind 报：``Specified input file `./plugins/context-insight/src/client/theme/app.css` does not exist.``
+插件迁移后，原始1220记录 `CSS=1`，同次类型检查、测试、tsdown 和 bundle 检查却全部通过。继续查看 CSS 命令，Tailwind 报：``Specified input file `./plugins/sessions-insight/src/client/theme/app.css` does not exist.``
 
 **2. 诊断与失败尝试**
 
-脚本用相对参数 `plugins/context-insight` 拼出输入路径，又把该目录设为 Tailwind 子进程的工作目录，路径被解释了两次。先前修正 Tailwind 可执行文件的位置，没有解决输入路径基准。旧的 `generated.css.ts` 仍在，其他门禁继续读取它，因此没暴露本轮生成失败。
+脚本用相对参数 `plugins/sessions-insight` 拼出输入路径，又把该目录设为 Tailwind 子进程的工作目录，路径被解释了两次。先前修正 Tailwind 可执行文件的位置，没有解决输入路径基准。旧的 `generated.css.ts` 仍在，其他门禁继续读取它，因此没暴露本轮生成失败。
 
 **3. 方案比较与采纳**
 

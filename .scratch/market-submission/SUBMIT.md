@@ -1,8 +1,8 @@
-# 收录投稿包：context-insight
+# 收录投稿包：sessions-insight
 
 ## 结论
 
-- 本项目唯一可收录插件：`@cyrus/dsh-context-insight@0.0.4`（`plugins/context-insight`，Context Lens）
+- 本项目唯一可收录插件：`@cyrus/dsh-sessions-insight@0.0.4`（`plugins/sessions-insight`，Sessions Insight）
 - 根包 `@cyrus/dsh-plugins` 是**纯聚合包**（`cordis.patch.yml` 只是把依赖插件逐条 insert）→ 评审规则第 7 条明确不收录
 - 上游已有同形态先例，命名照抄：`data/plugins/BitDG__dsh-plugins--plugins-music-player.yml`（`name: BitDG/dsh-plugins#music-player`）
 
@@ -10,10 +10,10 @@
 
 | 项                 | 状态        | 证据                                                                             |
 | ------------------ | ----------- | -------------------------------------------------------------------------------- |
-| `dsh.bundle` 声明  | ✅          | `plugins/context-insight/package.json` → `dsh.bundle.patch = ./cordis.patch.yml` |
+| `dsh.bundle` 声明  | ✅          | `plugins/sessions-insight/package.json` → `dsh.bundle.patch = ./cordis.patch.yml` |
 | `dsh.client`       | ✅          | `platform: web`，inject 三个官方 client 包                                       |
-| 真实可跑代码       | ✅          | `plugins/context-insight` 有 src/lib/locale/docs，非空壳                         |
-| 上游无重复条目     | ✅          | 树内 `Mt-Youya` / `dsh-plugins` / `context-insight` 均无本仓库条目               |
+| 真实可跑代码       | ✅          | `plugins/sessions-insight` 有 src/lib/locale/docs，非空壳                         |
+| 上游无重复条目     | ✅          | 树内 `Mt-Youya` / `dsh-plugins` / `sessions-insight` 均无本仓库条目               |
 | `dsh-plugin` topic | ✅ 已加     | `gh api repos/Mt-Youya/dsh-plugins/topics` → `["dsh-plugin"]`                    |
 | 描述属实           | ✅ 待你复核 | 六项上下文构成 + 精确/估算徽标 + 三来源，均出自 README 与代码                    |
 | 条目数 ≤3          | ✅          | 本 PR 只有 1 条                                                                  |
@@ -22,7 +22,7 @@
 
 1. **交付方式** — 我用 gh 直接 fork + 提 PR / 只给文件你自己提
 2. **category** — 现填 `usage`；备选 `session` `memory` `tools`（选不准不会被打回，维护者直接改）
-3. **是否顺带补** — ① `dsh-plugin` topic **已完成**（2026-10-21 写入并复核）② `plugins/context-insight/screenshots.json` 仍待定（内容已备好，需一次提交推送）
+3. **是否顺带补** — ① `dsh-plugin` topic **已完成**（2026-10-21 写入并复核）② `plugins/sessions-insight/screenshots.json` 仍待定（内容已备好，需一次提交推送）
 
 ## 确认后的命令清单
 
@@ -30,21 +30,21 @@
 # ① 硬门槛：加 topic（当前为空，PUT 会整体替换，安全）
 gh api --method PUT repos/Mt-Youya/dsh-plugins/topics -f 'names[]=dsh-plugin'
 
-# ② 可选：截图声明（把 screenshots.json 放到 plugins/context-insight/ 后）
-git add plugins/context-insight/screenshots.json
-git commit -m "chore(context-insight): declare storefront screenshots"
+# ② 可选：截图声明（把 screenshots.json 放到 plugins/sessions-insight/ 后）
+git add plugins/sessions-insight/screenshots.json
+git commit -m "chore(sessions-insight): declare storefront screenshots"
 git push
 
 # ③ 提 PR（等仓库年龄满 24h 后再做）
 gh repo fork awesome-dsh-plugin/awesome-dsh-plugin --clone=true
 cd awesome-dsh-plugin
-git checkout -b add-mt-youya-dsh-plugins-context-insight
-cp ../Mt-Youya__dsh-plugins--plugins-context-insight.yml data/plugins/
-git add data/plugins/Mt-Youya__dsh-plugins--plugins-context-insight.yml
-git commit -m "Add Mt-Youya/dsh-plugins#context-insight"
+git checkout -b add-mt-youya-dsh-plugins-sessions-insight
+cp ../Mt-Youya__dsh-plugins--plugins-sessions-insight.yml data/plugins/
+git add data/plugins/Mt-Youya__dsh-plugins--plugins-sessions-insight.yml
+git commit -m "Add Mt-Youya/dsh-plugins#sessions-insight"
 git push -u origin HEAD
 gh pr create --repo awesome-dsh-plugin/awesome-dsh-plugin \
-  --title "Add Mt-Youya/dsh-plugins#context-insight" \
+  --title "Add Mt-Youya/dsh-plugins#sessions-insight" \
   --body "Read-only context breakdown panel for DSH, Claude Code and Codex sessions."
 ```
 
@@ -73,7 +73,7 @@ README 曾写「需要 DSH **0.2.1-rc.2** 或更高」，而 `package.json` 是 
 | 项                          | 结果                                                                         |
 | --------------------------- | ---------------------------------------------------------------------------- |
 | 仓库可见性                  | `public`，`archived: false` ✅ GitHub API 实测                               |
-| 插件自带 `cordis.patch.yml` | ✅ `plugins/context-insight/cordis.patch.yml` 存在，含 `id: context-insight` |
+| 插件自带 `cordis.patch.yml` | ✅ `plugins/sessions-insight/cordis.patch.yml` 存在，含 `id: sessions-insight` |
 | `dsh-plugin` topic          | ✅ 已写入并复核：`TOPICS=[dsh-plugin]`                                       |
 | 仓库年龄                    | ⏳ 12.06h / 24h，最早 `2026-10-22T02:31:49Z`（北京时间 2026-10-22 10:31）    |
 

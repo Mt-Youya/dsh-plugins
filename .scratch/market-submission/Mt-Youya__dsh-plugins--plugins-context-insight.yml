@@ -1,5 +1,5 @@
-url: https://github.com/Mt-Youya/dsh-plugins/tree/main/plugins/context-insight
-name: Mt-Youya/dsh-plugins#context-insight
+url: https://github.com/Mt-Youya/dsh-plugins/tree/main/plugins/sessions-insight
+name: Mt-Youya/dsh-plugins#sessions-insight
 category: usage
 description:
   en: "Read-only context panel for DeepSeek Harness: parses existing Claude Code, DSH and Codex session logs and breaks down what each turn actually fed the model — system prompt, tool definitions, memory and instructions, history, tool results and images — marking every count as exact usage or a derived estimate."

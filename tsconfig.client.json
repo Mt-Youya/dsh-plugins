@@ -5,7 +5,7 @@
     "types": []
   },
   "include": [
-    "plugins/context-insight/src/client",
+    "plugins/sessions-insight/src/client",
     "packages/session-contract/src",
     "packages/plugin-kit/src",
     "packages/plugin-kit-client/src"

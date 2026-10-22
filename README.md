@@ -4,13 +4,13 @@ English | [简体中文](./README.zh.md)
 
 A plugin collection for DeepSeek Harness (DSH). Install this one bundle to get every plugin listed below; each plugin can also be installed on its own.
 
-![The Context Lens panel](plugins/context-insight/docs/images/01-merged-tree.png)
+![The Sessions Insight panel](plugins/sessions-insight/docs/images/01-merged-tree.png)
 
 ## Plugins
 
 | Plugin                                                 | npm package                  | What it does                                                                                                                                  |
 | ------------------------------------------------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Context Lens](./plugins/context-insight/README.en.md) | `@cyrus/dsh-context-insight` | Opens up what each turn of a Claude Code, DSH or Codex session actually fed the model: composition, tool calls, compactions, cost. Read-only. |
+| [Sessions Insight](./plugins/sessions-insight/README.en.md) | `@cyrus/dsh-sessions-insight` | Opens up what each turn of a Claude Code, DSH or Codex session actually fed the model: composition, tool calls, compactions, cost. Read-only. |
 
 ## Install
 
@@ -25,14 +25,22 @@ dsh plugin --profile desktop add @cyrus/dsh-plugins
 **Install a single plugin**:
 
 ```bash
-dsh plugin --profile desktop add @cyrus/dsh-context-insight
+dsh plugin --profile desktop add @cyrus/dsh-sessions-insight
 ```
 
-Then **fully quit and reopen** DSH. "Cyrus Plugins" or "Context Lens" in the plugin manager means it worked.
+Then **fully quit and reopen** DSH. "Cyrus Plugins" or "Sessions Insight" in the plugin manager means it worked.
 
 > **Pick one of the two.** The collection and the standalone plugin insert the same id into the loader tree; with both in `dsh.profile.bundles`, DSH fails at boot with `duplicate loader entry id`. Run `dsh plugin --profile <name> remove` on one before switching to the other.
 >
 > Do not install from the git URL (`pnpm add https://github.com/...`): the root depends on `workspace:^`, which is only rewritten to a version number when publishing to npm.
+
+**Installing from this working tree (developing the collection)**: the desktop plugin manager's "Add plugin" also accepts a local directory — point it at this checkout's absolute path. DSH records it as `"@cyrus/dsh-plugins": "link:<that path>"`: a symlink into your working tree, not a copy, and nothing is built for you. The host resolves `lib/index.js` through that link, and `lib/` is gitignored, so build it first:
+
+```bash
+npx tsdown
+```
+
+Then fully quit and reopen DSH. Later edits only need a rebuild and a restart — there is no need to reinstall.
 
 Each plugin's usage, permission boundary and known limitations live in its own README.
 
@@ -43,7 +51,7 @@ This is a pnpm monorepo. Only the collection and `plugins/*` are published; the 
 | Path                         | Contents                                                                  | Published                             |
 | ---------------------------- | ------------------------------------------------------------------------- | ------------------------------------- |
 | `/` (root)                   | The collection bundle: `cordis.patch.yml` + `locale/`                     | **yes**, `@cyrus/dsh-plugins`         |
-| `plugins/context-insight`    | The Context Lens plugin: host half and browser half                       | **yes**, `@cyrus/dsh-context-insight` |
+| `plugins/sessions-insight`    | The Sessions Insight plugin: host half and browser half                       | **yes**, `@cyrus/dsh-sessions-insight` |
 | `packages/session-contract`  | The unified IR, wire types and their guards                               | no                                    |
 | `packages/session-readers`   | Claude Code / Codex / DSH readers                                         | no                                    |
 | `packages/plugin-kit`        | Plugin-agnostic JSON envelope and URL spelling                            | no                                    |
@@ -70,10 +78,10 @@ The preview runs at <http://localhost:5178> and reads your real local sessions; 
 Run the gates before you commit:
 
 ```bash
-npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && npx tsdown && node scripts/check-bundle.mjs plugins/context-insight
+npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && npx tsdown && node scripts/check-bundle.mjs plugins/sessions-insight
 ```
 
-Install the working tree into your local DSH to try it (packs, installs, and checks that the installed copy really is the new build):
+Rebuild the artifacts and check that the profile's link really points at your build (this does not install — installation happens in the DSH plugin manager):
 
 ```bash
 pnpm install:plugin

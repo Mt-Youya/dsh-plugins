@@ -7,7 +7,7 @@
  * `shot:ready` (or `shot:failed:<why>`), which `scripts/screenshots.mjs`
  * waits for. Kept in the preview app, never shipped.
  *
- * @module @cyrus/dsh-context-insight/preview/shot
+ * @module @cyrus/dsh-sessions-insight/preview/shot
  */
 
 /** Scenes the docs use; `tree` is the page as it opens. */

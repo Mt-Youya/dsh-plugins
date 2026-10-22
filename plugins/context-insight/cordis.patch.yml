@@ -1,6 +1,0 @@
-# Bundle patch for the dsh-context-insight plugin.
-# A top-level YAML array of loader patch entries; the Host applies it after the
-# profile's bundle layers and before the user's own cordis.patch.yml.
-- insert:
-    - id: context-insight
-      name: "@cyrus/dsh-context-insight"

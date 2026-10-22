@@ -1,7 +1,7 @@
 # 集合包 = 可安装的插件入口。
 #
-# 本包把 main/exports 指向 plugins/context-insight 的产物，所以 patch 只需插入
-# 自己（name 就是本包名）。不要在这里再插入 "@cyrus/dsh-context-insight"：
+# 本包把 main/exports 指向 plugins/sessions-insight 的产物，所以 patch 只需插入
+# 自己（name 就是本包名）。不要在这里再插入 "@cyrus/dsh-sessions-insight"：
 # 内层插件包如果同时装进 profile，它自带的 patch 会再插入一次，宿主会启动两个
 # 实例并报 duplicate exact route。
 - insert:

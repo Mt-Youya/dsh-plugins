@@ -2,7 +2,7 @@
   "name": "@cyrus/dsh-preview",
   "version": "0.0.0",
   "private": true,
-  "description": "Vite dev harness: mounts the context-insight plugin's browser half against its real Host routes.",
+  "description": "Vite dev harness: mounts the sessions-insight plugin's browser half against its real Host routes.",
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.ts"

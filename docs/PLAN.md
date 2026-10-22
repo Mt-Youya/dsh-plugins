@@ -1,6 +1,6 @@
-# 计划：@cyrus/dsh-context-insight
+# 计划：@cyrus/dsh-sessions-insight
 
-DSH Web GUI 的「上下文透视」插件（Context Lens）。只读解析三个来源的会话，统一成以轮次为一等公民的 IR，把模型每轮实际收到的 prompt 构成拆开给人看；并把旧会话摘要交接进 DSH 继续。
+DSH Web GUI 的「会话洞察」插件（Sessions Insight）。只读解析三个来源的会话，统一成以轮次为一等公民的 IR，把模型每轮实际收到的 prompt 构成拆开给人看；并把旧会话摘要交接进 DSH 继续。
 
 ## 已敲定的决策（四轮盘问）
 
@@ -13,7 +13,7 @@ DSH Web GUI 的「上下文透视」插件（Context Lens）。只读解析三�
 | 导航    | 工作目录是唯一主轴，来源只作徽标                                                           |
 | 精度    | 总量精确 + 分块按字符估算，每个数值带 `exact`/`estimate` 标记                              |
 | 索引    | 不建索引层：按需解析 + LRU + mtime 失效；搜索全量流式，P95 < 3s 为门槛                     |
-| 安全    | 只读源数据、Origin/Host 同源、路径白名单、读取上限；状态只写 `~/.dsh/dsh-context-insight/` |
+| 安全    | 只读源数据、Origin/Host 同源、路径白名单、读取上限；状态只写 `~/.dsh/dsh-sessions-insight/` |
 | 成本    | 自维护价格表（版本号 + 数据截至），可覆盖，未覆盖显示 `—`                                  |
 | 接管    | v1 只做摘要交接（官方 `session.create` + `prompt`）；整段导入进 v1.1                       |
 | 简报    | 默认规则抽取（离线零成本可重现），可一键用模型润色                                         |
