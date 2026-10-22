@@ -1,54 +1,43 @@
 #!/usr/bin/env bash
 #
-# Install the current working tree into a DSH profile, and prove it landed.
+# 只构建 + 校验，不改 profile。
 #
-# pnpm caches a tarball by its file: path, so re-packing the same version under
-# the same name is a no-op for `dsh plugin add` — the old bytes stay installed
-# and the app keeps serving a stale bundle. This script packs, asks the CLI to
-# install, then compares the built client hash with the installed one; when they
-# differ it replaces the package directory and reinstalls.
+# 插件由 DSH 的「添加插件」界面安装（输入仓库根目录即可）；安装后 profile 里的
+# node_modules/@cyrus/dsh-plugins 指向本仓库，所以改完代码只需要重建产物，然后
+# 在界面点「立即重启」（或完全退出重开）。
 #
-# Usage: ./scripts/install-plugin.sh [profile]        (default: desktop)
+# 用法：./scripts/install-plugin.sh [profile]（默认 desktop）
 set -euo pipefail
 
 PROFILE="${1:-desktop}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PKG="$ROOT/plugins/context-insight"
-STAGE="$ROOT/dist"
-TARGET="$HOME/.dsh/profiles/$PROFILE/node_modules/@cyrus/dsh-context-insight"
+PROFILE_DIR="$HOME/.dsh/profiles/$PROFILE"
+NAME="@cyrus/dsh-plugins"
 
-[ -d "$HOME/.dsh/profiles/$PROFILE" ] || { echo "no such profile: $PROFILE" >&2; exit 1; }
-mkdir -p "$STAGE"
+[ -d "$PROFILE_DIR" ] || { echo "没有这个 profile：$PROFILE" >&2; exit 1; }
 
-echo "==> packing"
-rm -f "$STAGE"/*.tgz
-(cd "$PKG" && pnpm pack --pack-destination "$STAGE" >/dev/null)
-TGZ="$(ls "$STAGE"/*.tgz | head -1)"
-echo "    $TGZ"
+echo "==> 构建集合包产物（lib/，client id = $NAME）"
+(cd "$ROOT" && node scripts/build-css.mjs plugins/context-insight >/dev/null && npx tsdown >/dev/null && node scripts/check-bundle.mjs .)
 
-echo "==> dsh plugin --profile $PROFILE add"
-dsh plugin --profile "$PROFILE" add "$TGZ" >/dev/null 2>&1 || true
-
-built="$(shasum -a 256 "$PKG/lib/client.js" | cut -d' ' -f1)"
-installed=""
-[ -f "$TARGET/lib/client.js" ] && installed="$(shasum -a 256 "$TARGET/lib/client.js" | cut -d' ' -f1)"
-
-if [ "$built" != "$installed" ]; then
-  echo "==> installed copy is stale ($installed); replacing"
-  rm -rf "$TARGET"
-  mkdir -p "$TARGET"
-  tar -xzf "$TGZ" -C "$TARGET" --strip-components=1
-  (cd "$HOME/.dsh/profiles/$PROFILE" && pnpm install --force >/dev/null 2>&1) || true
+if [ ! -e "$PROFILE_DIR/node_modules/$NAME" ]; then
+  echo "尚未安装。请在 DSH 界面「添加插件」输入：$ROOT"
+  exit 0
 fi
 
-installed="$(shasum -a 256 "$TARGET/lib/client.js" | cut -d' ' -f1)"
-version="$(node -p "require('$TARGET/package.json').version")"
-if [ "$built" != "$installed" ]; then
-  echo "FAILED: installed client.js still differs from the build" >&2
-  echo "  built     $built" >&2
-  echo "  installed $installed" >&2
+resolved="$(cd "$PROFILE_DIR" && node -e "console.log(require.resolve('$NAME'))")"
+expected="$ROOT/lib/index.js"
+if [ "$resolved" != "$expected" ]; then
+  echo "失败：profile 解析到的入口不是插件产物" >&2
+  echo "  resolved $resolved" >&2
+  echo "  expected $expected" >&2
   exit 1
 fi
-echo "ok: $version at $TARGET"
-echo "    client.js $installed"
-echo "now fully quit and reopen the app (the client bundle is loaded at boot)."
+
+built="$(shasum -a 256 "$ROOT/lib/client.js" | cut -d' ' -f1)"
+installed="$(shasum -a 256 "$PROFILE_DIR/node_modules/$NAME/lib/client.js" | cut -d' ' -f1)"
+[ "$built" = "$installed" ] || { echo "失败：profile 里的 client.js 与构建产物不一致" >&2; exit 1; }
+
+echo "ok: 产物已重建，profile 与之同步"
+echo "    entry  $resolved"
+echo "    client $installed"
+echo "在 DSH 界面点「立即重启」，或完全退出重开。"

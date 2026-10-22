@@ -3,10 +3,10 @@
  *
  * Two tables coexist because they answer two different questions:
  *
- * - `xogpu` — what the user actually pays, in CNY, per the relay station's page;
- * - `openrouter` — the public USD reference price, plus DeepSeek's own USD page
- *   (the DSH sessions in this corpus connect to `deepseek-official`, so their
- *   price comes from the provider rather than the relay).
+ * - `official` — DeepSeek's own USD page, the price the user actually pays for
+ *   the DSH sessions in this corpus (they connect to `deepseek-official`);
+ * - `openrouter` — the public USD reference price, shown only as a reference
+ *   column and never treated as the primary amount.
  *
  * The two are **never** added or converted: there is no exchange rate in this
  * build, and inventing one would be a fabricated number. The panel shows the
@@ -24,7 +24,7 @@
 export type Currency = "USD" | "CNY"
 
 /** Which table to read. */
-export type TableId = "xogpu" | "official" | "openrouter"
+export type TableId = "official" | "openrouter"
 
 /** One model's rates, per 1M tokens, in its table's currency. */
 export interface ModelPrice {
@@ -98,48 +98,11 @@ export function displayKey(provider: string | undefined, model: string | undefin
   return `${provider.toLowerCase()}/${model.toLowerCase()}`
 }
 
-const XOGPU_SOURCE = "中转站 xogpu 报价页（CNY，per 1M tokens，用户实付）"
 const OPENROUTER_SOURCE = "OpenRouter /api/v1/models（USD，per 1M tokens，公开参考价）"
 const DEEPSEEK_SOURCE = "DeepSeek 官方页（USD，peak 档作保守上界）"
 
 /**
- * Table A — what the user pays, through the relay station.
- *
- * Cache-read/cache-write cells the page renders as "—" are `null` on purpose:
- * they are unlisted, and counting them as 0 with a `partial` marker is the only
- * honest option (treating them as free would understate the bill silently).
- */
-const XOGPU: PricingTable = {
-  id: "xogpu",
-  version: "2026-10-20.2",
-  asOf: "2026-10-20",
-  currency: "CNY",
-  source: XOGPU_SOURCE,
-  models: {
-    "anthropic/claude-opus-5": { input: 35, output: 175, cacheWrite: 43.75, cacheRead: 3.5 },
-    "anthropic/claude-opus-5-5": { input: 28, output: 140, cacheWrite: 35, cacheRead: null },
-    "anthropic/claude-fable-5": { input: 70, output: 350, cacheWrite: 87.5, cacheRead: 7 },
-    "anthropic/claude-fable-5-1": { input: 70, output: 350, cacheWrite: 87.5, cacheRead: 1.75 },
-    "anthropic/claude-sonnet-5": { input: 14, output: 70, cacheWrite: 17.5, cacheRead: 1.4 },
-    "anthropic/claude-sonnet-5-5": { input: 14, output: 70, cacheWrite: null, cacheRead: 2.8 },
-    "anthropic/claude-sonnet-4": { input: 21, output: 105, cacheWrite: 26.25, cacheRead: 2.1 },
-    "anthropic/claude-opus-4-8": { input: 35, output: 175, cacheWrite: 43.75, cacheRead: 3.5 },
-    "anthropic/claude-opus-4-7": { input: 35, output: 175, cacheWrite: 43.75, cacheRead: 3.5 },
-    "anthropic/claude-opus-4-6": { input: 35, output: 175, cacheWrite: 43.75, cacheRead: 3.5 },
-    "anthropic/claude-opus-4-5": { input: 35, output: 175, cacheWrite: 43.75, cacheRead: 3.5 },
-    "anthropic/claude-opus-4-5-fixed": { input: 35, output: 175, cacheWrite: 43.75, cacheRead: 3.5 },
-    "anthropic/claude-haiku-4": { input: 7, output: 35, cacheWrite: 8.75, cacheRead: 0.7 },
-    "anthropic/claude-haiku-5-5": { input: 0.7, output: 3.5, cacheWrite: null, cacheRead: 0.007 },
-    "openai/gpt-5-6-sol": { input: 35, output: 210, cacheWrite: 43.75, cacheRead: 3.5 },
-    "openai/gpt-5-6-terra": { input: 17.5, output: 105, cacheWrite: 21.88, cacheRead: 1.75 },
-    "openai/gpt-6-1-sol": { input: 14, output: 70, cacheWrite: null, cacheRead: null },
-    "openai/gpt-6-astra": { input: 70, output: 350, cacheWrite: 87.5, cacheRead: 7 },
-    "openai/gpt-5-5": { input: 35, output: 210, cacheWrite: 0, cacheRead: 3.5 },
-  },
-}
-
-/**
- * Table B — public USD reference.
+ * Table A — public USD reference.
  *
  * Generated from the OpenRouter `/api/v1/models` response (per-token strings
  * × 1e6, 4 decimals), plus DeepSeek's own page because DSH talks to
@@ -168,7 +131,7 @@ const OPENROUTER: PricingTable = {
 }
 
 /**
- * Table C — what DeepSeek usage actually costs.
+ * Table B — what DeepSeek usage actually costs.
  *
  * DSH sessions talk to `deepseek-official`, which bills in USD; that is real
  * money, not a reference figure, so it gets its own table and its own primary
@@ -220,20 +183,20 @@ const OFFICIAL: PricingTable = {
 }
 
 /** Both tables, keyed by id. */
-export const TABLES: Record<TableId, PricingTable> = { xogpu: XOGPU, official: OFFICIAL, openrouter: OPENROUTER }
+export const TABLES: Record<TableId, PricingTable> = { official: OFFICIAL, openrouter: OPENROUTER }
 
 /** Table ids in presentation order (primary candidates first). */
-export const TABLE_IDS: readonly TableId[] = ["xogpu", "official", "openrouter"]
+export const TABLE_IDS: readonly TableId[] = ["official", "openrouter"]
 
 /**
  * Order in which a model's *primary* price is looked for.
  *
- * A model's primary table is decided per model, not per session: Claude/GPT are
- * paid through the relay (CNY), DeepSeek is paid to the provider (USD), and a
- * session may mix both. `openrouter` is never primary — it is the reference
- * column.
+ * Only `official` can answer as a primary price: DeepSeek is paid to the
+ * provider directly. `openrouter` is never primary — it is the reference
+ * column, so Claude/GPT turns with no official price stay `null` rather than
+ * being priced from a public reference list.
  */
-export const PRIMARY_ORDER: readonly TableId[] = ["xogpu", "official"]
+export const PRIMARY_ORDER: readonly TableId[] = ["official"]
 
 /**
  * Which table answers for one model as its primary price.
@@ -257,14 +220,14 @@ export function primaryTableFor(
 
 /**
  * Resolve a table by id.
- * @param id - table id; defaults to the relay table.
+ * @param id - table id; defaults to the official table.
  */
-export function tableById(id: TableId = "xogpu"): PricingTable {
+export function tableById(id: TableId = "official"): PricingTable {
   return TABLES[id]
 }
 
 /** Backwards-compatible alias: the default table. */
-export const PRICING: PricingTable = XOGPU
+export const PRICING: PricingTable = OFFICIAL
 
 /**
  * Look one model up.

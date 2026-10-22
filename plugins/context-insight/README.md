@@ -120,12 +120,11 @@ curl -sS http://127.0.0.1:<port>/api/dsh-context-insight/health
 4. **分块数字是估算，总量才是精确值。** 分块按 2.6 chars/token 折算，对指令体偏高约 23%；做过等比对账的轮次会显示 `reconciled.factor`（见 `docs/adr/0006-projection-not-differencing.md`）。不要拿分块数字做计费。
 5. **DSH 正文必须解日志。** projcache 只有元数据、没有正文投影，看内容时仍要逐帧解压会话日志，几 MB 的会话首开有明显停顿。
 6. **交接的 `delivered` 是投递瞬间的状态，不是可持续观察的状态。** 宿主接受 prompt 后约 30ms 内就会发出 `turn/start`，所以轮询能看到的稳定状态只有 `running` / `succeeded` / `failed`。成功判定以 `turn/end reason=completed` 为准，见 `docs/adr/0007-accepted-is-not-success.md`。
-7. **成本是「多张价目表」并存的，不做汇率换算。** 共三张表，各自带 `version`/`asOf`/`source`：
-   - `xogpu`（CNY）：中转站报价页，Claude 与 GPT 的**实付口径**；
+7. **成本是「多张价目表」并存的，不做汇率换算。** 共两张表，各自带 `version`/`asOf`/`source`：
    - `official`（USD）：DeepSeek 官方定价页，取 **peak 价**作为保守上界（cacheWrite 记 0——官方只按 cache hit/miss 计价）；
    - `openrouter`（USD）：公开参考价，从 `/api/v1/models` 抽取，只作「参考」列。
 
-   主金额按模型回退：先 `xogpu`、再 `official`；两者都没有则该模型为 `null`（不估算）。同一会话里出现不同来源的模型时，合计按 `(表, 币种)` 分组并列，**绝不跨表或跨币种相加、也没有汇率换算**。价目里某通道未列价 ≠ 免费：该通道按 0 计入，金额前加 `≥` 并标 `partial`。这些数字用于理解用量结构，不要拿去对账。
+   主金额只取 `official`：DeepSeek 模型有主价，Claude/GPT 没有主价（`null`，不估算），只显示 openrouter 参考列。同一会话里出现不同币种时，合计按 `(表, 币种)` 分组并列，**绝不跨表或跨币种相加、也没有汇率换算**。价目里某通道未列价 ≠ 免费：该通道按 0 计入，金额前加 `≥` 并标 `partial`。这些数字用于理解用量结构，不要拿去对账。
 
 ## 目录结构
 

@@ -120,12 +120,11 @@ curl -sS http://127.0.0.1:<port>/api/dsh-context-insight/health
 4. **Blocks are estimates; totals are exact.** Blocks use 2.6 chars/token, which runs ~23% high on instruction bodies; turns that were equalised carry a `reconciled.factor` (see `docs/adr/0006-projection-not-differencing.md`). Do not bill from block numbers.
 5. **DSH bodies require decoding the log.** The projcache holds metadata only, so opening a session still means frame-by-frame zstd decoding; multi-MB sessions pause noticeably on first open.
 6. **A handoff's `delivered` is the instant of delivery, not a state you can keep observing.** The Host emits `turn/start` within about 30 ms of accepting the prompt, so the only stable states polling can see are `running` / `succeeded` / `failed`. Success means `turn/end reason=completed`; see `docs/adr/0007-accepted-is-not-success.md`.
-7. **Cost comes from several price tables side by side, with no currency conversion.** There are three tables, each with its own `version` / `asOf` / `source`:
-   - `xogpu` (CNY): a reseller's price page, the **amount actually paid** for Claude and GPT;
+7. **Cost comes from several price tables side by side, with no currency conversion.** There are two tables, each with its own `version` / `asOf` / `source`:
    - `official` (USD): DeepSeek's official pricing page, using the **peak price** as a conservative upper bound (cacheWrite counts as 0, since the official price only distinguishes cache hit and miss);
    - `openrouter` (USD): public reference prices taken from `/api/v1/models`, shown only in the "reference" column.
 
-   The primary amount falls back per model: `xogpu` first, then `official`; a model in neither is `null` (never estimated). When one session mixes models from different tables, totals are grouped by `(table, currency)` and shown side by side, **never added across tables or currencies, and never converted**. An unlisted channel is not free: it counts as 0, the amount gets a `≥` prefix and is marked `partial`. Use these numbers to understand the shape of usage, not to reconcile a bill.
+   The primary amount comes only from `official`: DeepSeek models are priced, while Claude/GPT have no primary amount (`null`, never estimated) and show the openrouter reference column only. When one session mixes currencies, totals are grouped by `(table, currency)` and shown side by side, **never added across tables or currencies, and never converted**. An unlisted channel is not free: it counts as 0, the amount gets a `≥` prefix and is marked `partial`. Use these numbers to understand the shape of usage, not to reconcile a bill.
 
 ## Layout
 

@@ -44,14 +44,11 @@ function session(turns: Turn[]): Session {
 }
 
 const OPUS_5_5 = { provider: "anthropic", model: "claude-opus-5-5" }
-const SONNET_5_DOTTED = { provider: "anthropic", model: "claude-sonnet-5.5" }
 const DEEPSEEK = { provider: "deepseek-official", model: "deepseek-flash" }
-const GPT_6_1 = { provider: "openai", model: "gpt-6.1-sol" }
 
-describe("three tables", () => {
-  it("ships xogpu (CNY), official (USD) and openrouter (USD reference)", () => {
-    expect(Object.keys(TABLES).sort()).toEqual(["official", "openrouter", "xogpu"])
-    expect(TABLES.xogpu.currency).toBe("CNY")
+describe("two tables", () => {
+  it("ships official (USD) and openrouter (USD reference)", () => {
+    expect(Object.keys(TABLES).sort()).toEqual(["official", "openrouter"])
     expect(TABLES.official.currency).toBe("USD")
     expect(TABLES.openrouter.currency).toBe("USD")
     expect(TABLES.official.source).toContain("DeepSeek")
@@ -61,34 +58,39 @@ describe("three tables", () => {
     expect(lookupPrice(TABLES.openrouter, "deepseek-official", "deepseek-flash")).toBeUndefined()
   })
 
-  it("normalises dotted ids in both priced tables", () => {
+  it("normalises dotted ids in the tables", () => {
     expect(normalizeModelId("claude-sonnet-5.5")).toBe("claude-sonnet-5-5")
     expect(modelKey("Anthropic", "claude-sonnet-5.5")).toBe("anthropic/claude-sonnet-5-5")
-    expect(lookupPrice(TABLES.xogpu, "anthropic", "claude-sonnet-5.5")).toMatchObject({ input: 14, currency: "CNY" })
     expect(lookupPrice(TABLES.openrouter, "anthropic", "claude-sonnet-5.5")).toMatchObject({
+      input: 2,
+      currency: "USD",
+    })
+    expect(lookupPrice(TABLES.openrouter, "anthropic", "claude-sonnet-5-5")).toMatchObject({
       input: 2,
       currency: "USD",
     })
   })
 
-  it("picks the primary table per model", () => {
-    expect(primaryTableFor("anthropic", "claude-opus-5-5")).toBe("xogpu")
-    expect(primaryTableFor("openai", "gpt-6.1-sol")).toBe("xogpu")
+  it("picks official as the only primary table", () => {
     expect(primaryTableFor("deepseek-official", "deepseek-flash")).toBe("official")
+    // Claude/GPT have no primary price: openrouter is the reference column only.
+    expect(primaryTableFor("anthropic", "claude-opus-5-5")).toBeNull()
+    expect(primaryTableFor("openai", "gpt-6.1-sol")).toBeNull()
     expect(primaryTableFor("openai", "gpt-reserve")).toBeNull()
     expect(primaryTableFor("anthropic", "<synthetic>")).toBeNull()
   })
 })
 
-describe("primary price follows the model", () => {
-  it("bills a Claude session from xogpu in CNY", () => {
+describe("primary price and the reference column", () => {
+  it("leaves a Claude session unpriced, keeping the OpenRouter reference", () => {
     const report = costOfSession(session([turn(1, OPUS_5_5, usage(1_000_000, 0, 0, 1_000_000))]), "claude")
-    expect(report.tableId).toBe("xogpu")
-    expect(report.groups).toEqual([{ tableId: "xogpu", currency: "CNY", amount: 168, pricedTurns: 1 }])
-    expect(report.turns[0]?.tableId).toBe("xogpu")
-    // The same turn has a USD reference from OpenRouter.
-    expect(report.turns[0]?.reference).toMatchObject({ tableId: "openrouter", currency: "USD", amount: 24 })
+    expect(report.tableId).toBeNull()
+    expect(report.groups).toEqual([])
+    expect(report.turns[0]).toMatchObject({ priced: false, amount: null })
+    expect(report.unpricedModels).toEqual(["anthropic/claude-opus-5-5"])
+    // The session keeps its USD reference column from OpenRouter.
     expect(report.reference?.tableId).toBe("openrouter")
+    expect(report.tables.openrouter?.turns[0]?.amount).toBeCloseTo(24, 6)
   })
 
   it("bills a DSH session from the official table in USD", () => {
@@ -102,29 +104,40 @@ describe("primary price follows the model", () => {
     expect(report.partial).toBe(false)
   })
 
-  it("keeps Claude and DeepSeek in separate (table, currency) groups", () => {
+  it("prices only the DeepSeek turn when a session mixes Claude and DeepSeek", () => {
     const report = costOfSession(
       session([turn(1, OPUS_5_5, usage(1_000_000, 0, 0, 0)), turn(2, DEEPSEEK, usage(1_000_000, 0, 0, 0))]),
       "claude"
     )
-    expect(report.groups).toHaveLength(2)
-    const xogpu = report.groups.find((g) => g.tableId === "xogpu")
-    const official = report.groups.find((g) => g.tableId === "official")
-    expect(xogpu).toMatchObject({ currency: "CNY", amount: 28, pricedTurns: 1 })
-    expect(official).toMatchObject({ currency: "USD", amount: 0.3, pricedTurns: 1 })
-    // Mixed session: no single primary table, and no merged money.
-    expect(report.tableId).toBeNull()
-    expect(report.totals.usd).toBeNull()
-    expect(report.totals.pricedTurns).toBe(2)
+    expect(report.groups).toEqual([{ tableId: "official", currency: "USD", amount: 0.3, pricedTurns: 1 }])
+    expect(report.turns[0]?.priced).toBe(false)
+    expect(report.turns[0]?.reference).toBeUndefined()
+    expect(report.tables.openrouter?.turns[0]?.amount).toBeCloseTo(4, 6)
+    expect(report.turns[1]?.tableId).toBe("official")
+    expect(report.tableId).toBe("official")
+    expect(report.totals.usd).toBeCloseTo(0.3, 6)
+    expect(report.totals.pricedTurns).toBe(1)
   })
 })
 
 describe("unlisted channels", () => {
-  it("marks xogpu claude-opus-5-5 partial for its unlisted cacheRead", () => {
-    const report = costOfSession(session([turn(1, OPUS_5_5, usage(0, 2_000_000, 1_000_000, 0))]), "claude")
+  it("marks a null bucket partial and names the channel", () => {
+    const table: PricingTable = {
+      id: "official",
+      version: "t",
+      asOf: "2026-01-01",
+      currency: "USD",
+      source: "test table",
+      models: { "a/m": { input: 1, output: 2, cacheRead: null, cacheWrite: 3 } },
+    }
+    const report = costOfSession(
+      session([turn(1, { provider: "a", model: "m" }, usage(0, 2_000_000, 1_000_000, 0))]),
+      "claude",
+      table
+    )
     expect(report.partial).toBe(true)
-    expect(report.unlistedChannels).toEqual(["anthropic/claude-opus-5-5#cacheRead"])
-    expect(report.groups[0]?.amount).toBeCloseTo(35, 6)
+    expect(report.unlistedChannels).toEqual(["a/m#cacheRead"])
+    expect(report.groups[0]?.amount).toBeCloseTo(3, 6)
   })
 
   it("does not mark the same turn partial in the openrouter table", () => {
@@ -133,9 +146,21 @@ describe("unlisted channels", () => {
     expect(report.tables.openrouter?.turns[0]?.amount).toBeCloseTo((2_000_000 * 0.2 + 1_000_000 * 5) / 1e6, 6)
   })
 
-  it("records both missing buckets of gpt-6.1-sol in xogpu", () => {
-    const report = costOfSession(session([turn(1, GPT_6_1, usage(1_000_000, 500_000, 500_000, 1_000_000))]), "codex")
-    expect(report.unlistedChannels).toEqual(["openai/gpt-6.1-sol#cacheRead", "openai/gpt-6.1-sol#cacheWrite"])
+  it("records both missing buckets of a hand-made table", () => {
+    const table: PricingTable = {
+      id: "official",
+      version: "t",
+      asOf: "2026-01-01",
+      currency: "USD",
+      source: "test table",
+      models: { "a/m": { input: 14, output: 70, cacheRead: null, cacheWrite: null } },
+    }
+    const report = costOfSession(
+      session([turn(1, { provider: "a", model: "m" }, usage(1_000_000, 500_000, 500_000, 1_000_000))]),
+      "codex",
+      table
+    )
+    expect(report.unlistedChannels).toEqual(["a/m#cacheRead", "a/m#cacheWrite"])
     expect(report.partial).toBe(true)
     expect(report.groups[0]?.amount).toBeCloseTo(14 + 70, 6)
   })
@@ -156,15 +181,16 @@ describe("unlisted channels", () => {
 
 describe("per-turn lines and caller tables", () => {
   it("carries currency, table, amount and the cache hit rate", () => {
-    const report = costOfSession(session([turn(1, OPUS_5_5, usage(1_000_000, 1_000_000, 0, 0))]), "claude")
-    expect(report.turns[0]).toMatchObject({ priced: true, currency: "CNY", tableId: "xogpu", usd: null })
+    const report = costOfSession(session([turn(1, DEEPSEEK, usage(1_000_000, 1_000_000, 0, 0))]), "dsh")
+    expect(report.turns[0]).toMatchObject({ priced: true, currency: "USD", tableId: "official" })
+    expect(report.turns[0]?.usd).toBeCloseTo(0.306, 6)
     expect(report.turns[0]?.cacheHitRate).toBeCloseTo(0.5, 6)
     expect(report.totals.cacheHitRate).toBeCloseTo(0.5, 6)
   })
 
   it("prices against a single hand-made table", () => {
     const table: PricingTable = {
-      id: "xogpu",
+      id: "official",
       version: "t",
       asOf: "2026-01-01",
       currency: "USD",
@@ -177,6 +203,6 @@ describe("per-turn lines and caller tables", () => {
       table
     )
     expect(report.totals.usd).toBeCloseTo(3, 6)
-    expect(report.groups).toEqual([{ tableId: "xogpu", currency: "USD", amount: 3, pricedTurns: 1 }])
+    expect(report.groups).toEqual([{ tableId: "official", currency: "USD", amount: 3, pricedTurns: 1 }])
   })
 })

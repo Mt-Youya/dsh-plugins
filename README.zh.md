@@ -87,17 +87,17 @@ pnpm screenshots
 
 ## 发布
 
-按 [`docs/RELEASE.md`](./docs/RELEASE.md) 的步骤来：先发插件，再发组合包。
+按 [`docs/RELEASE.zh.md`](./docs/RELEASE.zh.md) 的步骤来：先发插件，再发组合包。
 
 ## 文档
 
-- [`docs/RELEASE.md`](./docs/RELEASE.md) — npm 发布步骤
-- `docs/PLAN.md` — 决策与里程碑
-- `docs/IR.md` — 三源统一的轮次 IR（adapter 契约）
-- `docs/API.md` — 宿主路由契约
-- `docs/HANDOFF.md` — 交接链路契约
-- `docs/adr/` — 架构决策记录
-- `GLOSSARY.md` — 词表
+- [`docs/RELEASE.zh.md`](./docs/RELEASE.zh.md) — npm 发布步骤
+- [`docs/PLAN.md`](docs/PLAN.md) — 决策与里程碑
+- [`docs/IR.md`](docs/IR.md) — 三源统一的轮次 IR（adapter 契约）
+- [`docs/API.md`](docs/API.md) — 宿主路由契约
+- [`docs/HANDOFF.md`](docs/HANDOFF.md) — 交接链路契约
+- [`docs/adr/`](docs/adr/)— 架构决策记录
+- [`GLOSSARY.md`](GLOSSARY.md) — 词表
 
 ## 许可
 

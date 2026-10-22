@@ -16,6 +16,7 @@ import type { BriefValue, CostValue, HandoffStatusValue } from "../../protocol.t
 import type { Api, ApiFailure } from "../api.ts"
 import { formatMoney, formatTime } from "../format.ts"
 import { t } from "../locale.ts"
+import { Skeleton } from "./states.tsx"
 
 /** Where the dialog is in the handoff lifecycle. */
 type Phase =
@@ -117,20 +118,22 @@ export function HandoffDialog({
 
   return (
     <div
-      className="fixed inset-0 z-60 bg-[rgb(0_0_0/55%)] flex items-start justify-center"
+      className="fixed inset-0 z-60 bg-[rgb(0_0_0/55%)] flex items-center justify-center p-4"
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <div
-        className="w-[min(820px,94vw)] max-h-[82vh] grid grid-rows-[auto_minmax(0,1fr)] rounded-[10px] border-[0.5px] border-line bg-bg-1 shadow-[0_18px_48px_rgb(0_0_0/50%)] overflow-hidden"
+        className="w-[min(820px,94vw)] max-h-[90dvh] grid grid-rows-[auto_minmax(0,1fr)] rounded-[10px] border-[0.5px] border-line bg-bg-1 shadow-[0_18px_48px_rgb(0_0_0/50%)] overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-label={t("handoff.title")}
       >
-        <header>
-          <span>{t("handoff.title")}</span>
-          <span className="text-fg-dim text-[10.5px] my-1.5">
-            {source} · {id.slice(0, 8)}
-          </span>
+        <header className="flex items-center gap-3 px-5 py-4 border-b border-line-soft">
+          <div className="flex flex-col gap-1 min-w-0">
+            <span className="text-[16px] font-semibold text-fg">{t("handoff.title")}</span>
+            <span className="text-fg-dim text-[11px]">
+              {source} · {id.slice(0, 8)}
+            </span>
+          </div>
           <button
             type="button"
             className="px-2.5 py-1 rounded-md border-[0.5px] border-line bg-transparent text-fg font-[inherit] text-[11px] cursor-pointer enabled:hover:border-accent disabled:opacity-50 disabled:cursor-default ms-auto"
@@ -140,23 +143,38 @@ export function HandoffDialog({
           </button>
         </header>
 
-        {phase.kind === "preparing" ? <p>{t("handoff.preparing")}</p> : null}
+        {phase.kind === "preparing" ? (
+          <div className="flex flex-col gap-3 p-5 overflow-y-auto min-h-0" role="status" aria-busy="true">
+            <p className="m-0 flex items-center gap-2 text-[12px] text-fg-dim">
+              <span className="size-1.5 rounded-full bg-accent motion-safe:animate-pulse" aria-hidden="true" />
+              {t("handoff.preparing")}
+            </p>
+            <Skeleton className="h-10 shrink-0 rounded-lg" />
+            <Skeleton className="h-3 w-3/4 shrink-0 rounded-sm" />
+            <Skeleton className="h-5 w-1/2 shrink-0 rounded-sm" />
+            <Skeleton className="h-[min(300px,42dvh)] shrink-0 rounded-lg" />
+            <div className="pt-3 border-t border-line-soft" aria-hidden="true">
+              <Skeleton className="h-10 w-28 rounded-lg" />
+            </div>
+          </div>
+        ) : null}
         {phase.kind === "preview-failed" ? (
           <p>{t("session.error", { detail: phase.failure.detail ?? phase.failure.error })}</p>
         ) : null}
 
         {phase.kind === "ready" || phase.kind === "applying" || phase.kind === "apply-failed" ? (
-          <div className="flex flex-col gap-2 px-3 pt-2.5 pb-3 overflow-y-auto min-h-0">
-            <label className="flex flex-col gap-1 text-[11px] text-fg-dim">
+          <div className="flex flex-col gap-3 p-5 overflow-y-auto min-h-0">
+            <label className="flex flex-col gap-2 text-[12px] text-fg">
               <span>{t("handoff.cwd")}</span>
               <input
+                className="w-full min-w-0 rounded-lg border border-line bg-bg px-3 py-2.5 font-mono text-[12px] text-fg"
                 value={cwd}
                 onChange={(event) => setCwd(event.target.value)}
                 spellCheck={false}
                 aria-describedby="ci-handoff-cwd-hint"
               />
             </label>
-            <p className="text-fg-dim text-[10.5px] my-1.5" id="ci-handoff-cwd-hint">
+            <p className="text-fg-dim text-[11px] leading-relaxed m-0" id="ci-handoff-cwd-hint">
               {t("handoff.cwdHint")}
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -176,20 +194,20 @@ export function HandoffDialog({
                 {t("handoff.chars", { count: phase.brief.chars })}
               </span>
             </div>
-            <label className="flex flex-col gap-1 text-[11px] text-fg-dim">
+            <label className="flex flex-col gap-2 text-[12px] text-fg">
               <span>{t("handoff.brief")}</span>
               <textarea
-                className="font-mono text-[11.5px] leading-normal resize-y min-h-50"
+                className="box-border w-full rounded-lg border border-line bg-bg p-3 font-mono text-[12px] leading-relaxed text-fg resize-y min-h-40 max-h-[42dvh]"
                 value={briefText}
                 onChange={(event) => setBriefText(event.target.value)}
                 spellCheck={false}
                 rows={14}
               />
             </label>
-            <div className="flex gap-2 items-center">
+            <div className="flex flex-wrap gap-2 items-center pt-3 border-t border-line-soft">
               <button
                 type="button"
-                className="px-2.5 py-1 rounded-md border-[0.5px] border-line bg-bg-2 text-fg font-[inherit] text-[11px] cursor-pointer enabled:hover:border-accent disabled:opacity-50 disabled:cursor-default"
+                className="px-4 py-2.5 rounded-lg border border-accent bg-accent text-white font-[inherit] text-[12px] font-medium cursor-pointer enabled:hover:brightness-110 disabled:opacity-50 disabled:cursor-default"
                 onClick={() => apply(phase.brief)}
                 disabled={phase.kind === "applying" || cwd.trim() === "" || briefText.trim() === ""}
               >
@@ -211,7 +229,7 @@ export function HandoffDialog({
         ) : null}
 
         {phase.kind === "applied" ? (
-          <div className="flex flex-col gap-2 px-3 pt-2.5 pb-3 overflow-y-auto min-h-0">
+          <div className="flex flex-col gap-3 p-5 overflow-y-auto min-h-0">
             <p className={stateClass(phase.status.state)} data-state={phase.status.state}>
               {stateLabel(phase.status)} · {phase.sessionId.slice(0, 12)}
             </p>
@@ -247,8 +265,8 @@ export function HandoffDialog({
  * Cost line for one session: one amount per `(table, currency)` group, plus the
  * OpenRouter reference amount.
  *
- * Amounts are never converted or added — a relay-billed CNY turn and a
- * provider-billed USD turn stay two numbers, each labelled by its symbol, with
+ * Amounts are never converted or added — a provider-billed USD turn and an
+ * OpenRouter reference amount stay two numbers, each labelled by its symbol, with
  * every table's provenance and every unlisted channel in the tooltip. A `≥`
  * prefix marks a lower bound when the session's primary prices hit an unlisted
  * channel.

@@ -12,11 +12,13 @@ import { join } from "node:path"
 const root = process.argv[2] ?? "."
 const client = readFileSync(join(root, "lib/client.js"), "utf8")
 const host = readFileSync(join(root, "lib/index.js"), "utf8")
+// The shell keys the client graph by the package that owns lib/, so the bundle
+// must register under that package's name.
+const packageName = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).name
 const failures = []
 
 const id = client.match(/__ModuleLoader__\.load\(\{\s*id:\s*"([^"]+)"/)
-if (id === null || id[1] !== "@cyrus/dsh-context-insight")
-  failures.push("client bundle does not register the package id")
+if (id === null || id[1] !== packageName) failures.push("client bundle does not register the package id")
 if (!client.includes("factory:")) failures.push("client bundle has no factory")
 if (!client.includes("@scope (.ci-panel)")) failures.push("client bundle carries no scoped stylesheet")
 if (/import\s+[^;]*from\s*["']react["']/.test(client)) failures.push("client bundle left a bare ESM react import")

@@ -44,7 +44,8 @@ if (/@scope\s*\(\s*\.ci-panel\s*\)/.test(css)) {
   throw new Error("source CSS declares its own @scope (.ci-panel); the build already scopes everything")
 }
 
-const head = css.slice(0, at)
+// Theme tokens belong to this panel, not the Host or other Tailwind plugins.
+const head = css.slice(0, at).replace(":root,:host{", ".ci-panel{")
 // `@property` is only valid at the top level of a stylesheet; inside @scope the
 // browser drops it, so it is lifted out before wrapping.
 const properties = []

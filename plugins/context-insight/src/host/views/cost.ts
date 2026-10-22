@@ -15,11 +15,11 @@
  * Adding `cacheRead` on top of `input` would therefore double-count DSH and
  * Codex windows; the formula below never does.
  *
- * The primary price is chosen **per model** (see `primaryTableFor`): Claude/GPT
- * are paid through the relay in CNY, DeepSeek is paid to the provider in USD, and
- * one session may contain both. Every answer therefore carries its `tableId`,
- * and session totals are grouped by `(tableId, currency)` — never merged, never
- * converted. The OpenRouter table is the reference column only.
+ * The primary price is chosen **per model** (see `primaryTableFor`): DeepSeek is
+ * paid to the provider in USD, so `official` is the only primary table. Every
+ * answer therefore carries its `tableId`, and session totals are grouped by
+ * `(tableId, currency)` — never merged, never converted. The OpenRouter table is
+ * the reference column only, so Claude/GPT turns carry no primary amount.
  *
  * @module @cyrus/dsh-context-insight/host/cost
  */
@@ -100,7 +100,7 @@ export interface SessionCost {
   sessionId: string
   /** The primary table when every priced turn shares one; null for a mixed session. */
   tableId: TableId | null
-  /** Primary provenance: that table's, or the relay table's for a mixed session. */
+  /** Primary provenance: that table's, or the official table's when nothing priced. */
   pricing: TableCost["pricing"]
   totals: {
     usd: number | null
@@ -376,11 +376,10 @@ export function costOfSession(
   const single = primaryTables.size === 1 ? ([...primaryTables][0] as TableId) : null
   const pricing =
     (single === null ? undefined : computed[single]?.pricing) ??
-    computed.xogpu?.pricing ??
     computed.official?.pricing ??
     (referenceTable?.pricing as TableCost["pricing"])
   const baseNote =
-    "input 为未缓存余量；cacheRead 单列相加、不嵌套在 input 内（DSH/Codex 的缓存窗口已由 adapter 分离）。未覆盖模型记 null，不猜；未列价通道记 0 并标 partial（UI 用 ≥ 表示下限）。主价格按模型选表（Claude/GPT→中转站 CNY，DeepSeek→官方 USD），会话合计按 (tableId, currency) 分组；openrouter 仅作参考列，**不做汇率换算**，任何合计都不跨表、不跨币种。"
+    "input 为未缓存余量；cacheRead 单列相加、不嵌套在 input 内（DSH/Codex 的缓存窗口已由 adapter 分离）。未覆盖模型记 null，不猜；未列价通道记 0 并标 partial（UI 用 ≥ 表示下限）。主价格只取 official（DeepSeek→官方 USD；Claude/GPT 无主价，只显示 openrouter 参考列），会话合计按 (tableId, currency) 分组；openrouter 仅作参考列，**不做汇率换算**，任何合计都不跨表、不跨币种。"
   const note = provisional ? `${baseNote} 含预览价：见会话内提示。` : baseNote
   return {
     source,

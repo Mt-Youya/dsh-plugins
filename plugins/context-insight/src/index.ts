@@ -161,12 +161,24 @@ export function apply(ctx: HostContext): () => void {
   const warm = (): void => {
     void Promise.allSettled(sources.map((source) => source.status()))
   }
-  if (typeof globalThis.setTimeout === "function") globalThis.setTimeout(warm, 5_000)
+  const timer = typeof globalThis.setTimeout === "function" ? globalThis.setTimeout(warm, 5_000) : undefined
   const deps: RouteDeps = { sources, version: PLUGIN_VERSION, handoff }
   const routes: WebRoute[] = [{ kind: "exact", path: HEALTH_PATH, handler: handleHealth }, ...createRoutes(deps)]
-  const disposers = routes.map((route) => ctx.webServer.register(route))
-  return () => {
+  const release = (disposers: readonly (() => void)[]): void => {
+    if (timer !== undefined) globalThis.clearTimeout(timer)
     for (const dispose of disposers) dispose()
     for (const source of sources) source.invalidate()
   }
+  // All or nothing: cordis only collects the disposer `apply` returns, and the
+  // web server's routes are not owned by this fiber. A registration that throws
+  // part-way would otherwise leave the earlier routes in the Host's table for
+  // the life of the process, and every later start would collide on them.
+  const disposers: (() => void)[] = []
+  try {
+    for (const route of routes) disposers.push(ctx.webServer.register(route))
+  } catch (error) {
+    release(disposers)
+    throw error
+  }
+  return () => release(disposers)
 }

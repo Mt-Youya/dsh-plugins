@@ -16,8 +16,8 @@
  */
 
 import { fingerprintOf, readSnapshot, snapshotPath, walkFingerprint, writeSnapshot } from "./snapshot.ts"
-import { readdir, stat } from "node:fs/promises"
-import { basename } from "node:path"
+import { readFile, readdir, stat } from "node:fs/promises"
+import { basename, resolve } from "node:path"
 import { readCodexSession } from "@cyrus/dsh-session-readers"
 import {
   defaultCodexRoot,
@@ -77,8 +77,33 @@ interface CodexScan {
   root: string
   state: "ok" | "missing" | "unreadable"
   entries: CodexEntry[]
+  titles: Map<string, string>
   index?: CodexCorpusIndex
   scannedAt: number
+}
+
+/** Codex keeps display names outside rollouts; later index records are renames. */
+async function readTitles(root: string): Promise<Map<string, string>> {
+  const titles = new Map<string, string>()
+  let text: string
+  try {
+    text = await readFile(resolve(root, "..", "session_index.jsonl"), "utf8")
+  } catch {
+    return titles
+  }
+  for (const line of text.split("\n")) {
+    let row: unknown
+    try {
+      row = JSON.parse(line)
+    } catch {
+      continue
+    }
+    if (typeof row !== "object" || row === null || !("id" in row) || !("thread_name" in row)) continue
+    if (typeof row.id !== "string" || typeof row.thread_name !== "string") continue
+    const title = cleanTitle(row.thread_name, row.id)
+    if (title !== undefined) titles.set(row.id, title)
+  }
+  return titles
 }
 
 interface CachedSession {
@@ -149,13 +174,14 @@ export class CodexSource implements SessionSource {
     const fresh = this.#scan
     if (fresh !== undefined && Date.now() - fresh.scannedAt < this.#scanTtlMs) return fresh
     const scannedAt = Date.now()
+    const titles = await readTitles(this.#root)
     // Cheap file-set fingerprint first: when nothing changed, the previous scan
     // is reused without decompressing a single rollout.
     const files = await walkFingerprint(this.#root, (name) => name.endsWith(".jsonl") || name.startsWith("rollout-"))
     const fingerprint = fingerprintOf(files)
     const cachedEntries = await readSnapshot<CodexEntry>(this.#indexPath, "codex", fingerprint)
     if (cachedEntries !== undefined) {
-      const scan: CodexScan = { root: this.#root, state: "ok", entries: cachedEntries, scannedAt }
+      const scan: CodexScan = { root: this.#root, state: "ok", entries: cachedEntries, titles, scannedAt }
       this.#scan = scan
       return scan
     }
@@ -165,7 +191,7 @@ export class CodexSource implements SessionSource {
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code
       const state = code === "ENOENT" ? "missing" : "unreadable"
-      const scan: CodexScan = { root: this.#root, state, entries: [], scannedAt }
+      const scan: CodexScan = { root: this.#root, state, entries: [], titles, scannedAt }
       this.#scan = scan
       return scan
     }
@@ -174,7 +200,7 @@ export class CodexSource implements SessionSource {
     try {
       index = indexCodexCorpus(this.#root)
     } catch {
-      const scan: CodexScan = { root: this.#root, state: "unreadable", entries: [], scannedAt }
+      const scan: CodexScan = { root: this.#root, state: "unreadable", entries: [], titles, scannedAt }
       this.#scan = scan
       return scan
     }
@@ -207,7 +233,7 @@ export class CodexSource implements SessionSource {
       })
     }
     rows.sort((a, b) => b.updatedAt - a.updatedAt)
-    const scan: CodexScan = { root: this.#root, state: "ok", entries: rows, index, scannedAt }
+    const scan: CodexScan = { root: this.#root, state: "ok", entries: rows, titles, index, scannedAt }
     this.#scan = scan
     return scan
   }
@@ -262,6 +288,11 @@ export class CodexSource implements SessionSource {
     return codexChainKey(entry)
   }
 
+  #namedSession(session: Session, scan: CodexScan): Session {
+    const title = scan.titles.get(session.id)
+    return title === undefined ? session : { ...session, title }
+  }
+
   async list(workdir: string): Promise<SessionSummary[]> {
     const scan = await this.scan()
     const rows: SessionSummary[] = []
@@ -276,7 +307,7 @@ export class CodexSource implements SessionSource {
         bytes: entry.bytes,
         dataQuality: cached === undefined ? [LIST_ITEM_UNPARSED] : cached.session.dataQuality,
       }
-      const title = cleanTitle(cached?.session.title, entry.id)
+      const title = scan.titles.get(entry.id) ?? cleanTitle(cached?.session.title, entry.id)
       if (title !== undefined) summary.title = title
       const firstInput = cached === undefined ? undefined : firstInputOf(cached.session)
       if (firstInput !== undefined) summary.firstInput = firstInput
@@ -290,7 +321,7 @@ export class CodexSource implements SessionSource {
     return scan.entries.map((entry) => {
       const cached = this.#parsed.get(this.#key(entry))
       const candidate: SearchCandidate = { id: entry.id, workdir: entry.workdir, updatedAt: entry.updatedAt }
-      const title = cleanTitle(cached?.session.title, entry.id)
+      const title = scan.titles.get(entry.id) ?? cleanTitle(cached?.session.title, entry.id)
       if (title !== undefined) candidate.title = title
       const firstInput = cached === undefined ? undefined : firstInputOf(cached.session)
       if (firstInput !== undefined) candidate.firstInput = firstInput
@@ -312,14 +343,20 @@ export class CodexSource implements SessionSource {
     const key = this.#key(entry)
     const hit = this.#parsed.get(key)
     if (hit !== undefined) {
-      return { ok: true, session: hit.session, bytes: hit.bytes, elapsedMs: 0, cached: true }
+      return { ok: true, session: this.#namedSession(hit.session, scan), bytes: hit.bytes, elapsedMs: 0, cached: true }
     }
     const started = Date.now()
     try {
       const result = await readCodexSession(entry.firstPath, { root: this.#root, index: scan.index })
       const record: CachedSession = { session: result.session, bytes: entry.bytes, elapsedMs: Date.now() - started }
       this.#parsed.set(key, record)
-      return { ok: true, session: record.session, bytes: record.bytes, elapsedMs: record.elapsedMs, cached: false }
+      return {
+        ok: true,
+        session: this.#namedSession(record.session, scan),
+        bytes: record.bytes,
+        elapsedMs: record.elapsedMs,
+        cached: false,
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown"
       return { ok: false, error: "parse-failed", detail: message.slice(0, 200) }

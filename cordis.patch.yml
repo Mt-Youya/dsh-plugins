@@ -1,11 +1,9 @@
-# Bundle patch for the dsh-plugins collection.
-# A top-level YAML array of loader patch entries; the Host applies it after the
-# profile's bundle layers and before the user's own cordis.patch.yml.
+# 集合包 = 可安装的插件入口。
 #
-# One row per plugin in the collection. `name` is the plugin's npm package,
-# which this package depends on, so installing the collection installs every
-# plugin it lists. To add a plugin: add it to `dependencies` in package.json
-# and one `- id / name` row below.
+# 本包把 main/exports 指向 plugins/context-insight 的产物，所以 patch 只需插入
+# 自己（name 就是本包名）。不要在这里再插入 "@cyrus/dsh-context-insight"：
+# 内层插件包如果同时装进 profile，它自带的 patch 会再插入一次，宿主会启动两个
+# 实例并报 duplicate exact route。
 - insert:
-    - id: context-insight
-      name: "@cyrus/dsh-context-insight"
+    - id: cyrus-dsh-plugins
+      name: "@cyrus/dsh-plugins"

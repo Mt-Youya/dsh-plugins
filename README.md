@@ -87,11 +87,11 @@ pnpm screenshots
 
 ## Publishing
 
-Follow [`docs/RELEASE.en.md`](./docs/RELEASE.en.md): the plugin first, then the collection.
+Follow [`docs/RELEASE.md`](./docs/RELEASE.md): the plugin first, then the collection.
 
 ## Documentation
 
-- [`docs/RELEASE.en.md`](./docs/RELEASE.en.md) — publishing to npm
+- [`docs/RELEASE.md`](./docs/RELEASE.md) — publishing to npm
 - `docs/PLAN.md` — decisions and milestones (Chinese)
 - `docs/IR.md` — the unified turn IR, the adapter contract (Chinese)
 - `docs/API.md` — host route contract (Chinese)

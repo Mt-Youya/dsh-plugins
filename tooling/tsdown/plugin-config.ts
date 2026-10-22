@@ -7,7 +7,7 @@
  * `src/client/index.tsx` is the browser entry, and its *file format* is a
  * contract with the shell's module loader rather than a module system: the
  * served bundle must call `window.__ModuleLoader__.load({ id, factory })` with
- * the package name as `id`, and the factory receives the `require` the shell
+ * the owning package's name as `id`, and the factory receives the `require` the shell
  * resolves (so `react` stays external and the shell's single copy is used).
  * The banner and footer build that wrapper around the CJS-shaped body.
  *
@@ -22,20 +22,25 @@
 import { defineConfig } from "tsdown"
 import { readFileSync } from "node:fs"
 
-/** Package name; also the module id the shell registers this bundle under. */
-const PACKAGE_ID = "@cyrus/dsh-context-insight"
-
 /**
  * The CJS body rolldown emits reads and writes `module.exports`/`exports` as
  * free variables, so the wrapper supplies both before the body and returns the
  * finished exports object after it.
+ *
+ * `id` must be the name of the package whose manifest owns the built file: the
+ * shell keys the module graph by that package, and a bundle registering any
+ * other id never arrives.
+ * @param id - the owning package's name.
+ * @returns the banner opening the registration call.
  */
-const CLIENT_BANNER = `window.__ModuleLoader__.load({
-	id: "${PACKAGE_ID}",
+function clientBanner(id: string): string {
+  return `window.__ModuleLoader__.load({
+	id: ${JSON.stringify(id)},
 	factory: (require) => {
 		var module = { exports: {} };
 		var exports = module.exports;
 `
+}
 
 const CLIENT_FOOTER = `
 		return module.exports;
@@ -49,7 +54,7 @@ export interface PluginBuildOptions {
   srcDir: string
   /** Output directory, with a trailing slash. */
   outDir: string
-  /** Absolute path of the manifest the version is inlined from. */
+  /** Absolute path of the manifest that owns `outDir`; its name and version are inlined. */
   manifestPath: string
   /** Workspace package name → absolute source entry. */
   alias: Record<string, string>
@@ -66,7 +71,7 @@ export function createPluginConfig(options: PluginBuildOptions) {
    * keeps the health route in step with whatever the release bumped, with no
    * second file to forget.
    */
-  const manifestVersion = (JSON.parse(readFileSync(options.manifestPath, "utf8")) as { version: string }).version
+  const manifest = JSON.parse(readFileSync(options.manifestPath, "utf8")) as { name: string; version: string }
 
   return defineConfig([
     {
@@ -86,7 +91,7 @@ export function createPluginConfig(options: PluginBuildOptions) {
       // `main` and `exports["."]` name lib/index.js; an .mjs extension would
       // leave every manifest path dangling.
       outExtensions: () => ({ js: ".js" }),
-      define: { __DSH_PLUGIN_VERSION__: JSON.stringify(manifestVersion) },
+      define: { __DSH_PLUGIN_VERSION__: JSON.stringify(manifest.version) },
     },
     {
       entry: { client: options.srcDir + "client/index.tsx" },
@@ -105,7 +110,7 @@ export function createPluginConfig(options: PluginBuildOptions) {
       // extension (what a CJS build implies inside a "type": "module" package)
       // would not match `exports["./client"]`.
       outExtensions: () => ({ js: ".js" }),
-      banner: { js: CLIENT_BANNER },
+      banner: { js: clientBanner(manifest.name) },
       footer: { js: CLIENT_FOOTER },
     },
   ])

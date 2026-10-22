@@ -10,14 +10,18 @@
  */
 
 /**
- * Create the style element once per page.
+ * Create one style element per page, refreshing its CSS after a plugin reload.
  * @param id - element id the plugin owns.
  * @param css - compiled stylesheet text.
  * @returns nothing; a document without a head (tests, SSR) is left alone.
  */
 export function injectStylesOnce(id: string, css: string): void {
   if (typeof document === "undefined") return
-  if (document.getElementById(id) !== null) return
+  const existing = document.getElementById(id)
+  if (existing !== null) {
+    if (existing.textContent !== css) existing.textContent = css
+    return
+  }
   const style = document.createElement("style")
   style.id = id
   style.textContent = css

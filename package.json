@@ -3,16 +3,15 @@
   "version": "0.0.3",
   "description": "DeepSeek Harness plugin collection: installs and registers the plugins listed in cordis.patch.yml (currently Context Lens). Also the workspace root they are built from.",
   "keywords": [
+    "chatgpt",
+    "claude",
+    "codex",
     "deepseek",
     "deepseek-harness",
     "deepseek-plugin",
-    "deepseek-plugins",
-    "deepseek-plugins-collection",
     "dsh",
-    "dsh-bundle",
     "dsh-plugin",
-    "dsh-plugins",
-    "dsh-plugins-collection"
+    "plugin"
   ],
   "homepage": "https://github.com/Mt-Youya/dsh-plugins",
   "license": "MIT",
@@ -24,12 +23,26 @@
   "files": [
     "cordis.patch.yml",
     "locale",
+    "lib/**/*.js",
+    "lib/**/*.js.map",
+    "plugins/context-insight/README.md",
+    "plugins/context-insight/README.en.md",
+    "plugins/context-insight/LICENSE",
+    "plugins/context-insight/icon.svg",
+    "plugins/context-insight/docs/images/**/*.png",
     "README.md",
-    "README.zh.md",
+    "README.en.md",
     "LICENSE"
   ],
   "type": "module",
+  "main": "lib/index.js",
   "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
     "./package.json": "./package.json",
     "./locale/*": "./locale/*"
   },
@@ -81,6 +94,14 @@
     },
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
     }
   }
 }
