@@ -178,11 +178,14 @@ pnpm install
 npx tsc --noEmit                          # type gate: the packages and the host half
 npx tsc --noEmit -p tsconfig.client.json  # type gate: the browser half (types: [], no node types)
 npx vitest run                            # unit tests
-npx tsdown                                # builds lib/index.js and lib/client.js
+node scripts/build-css.mjs plugins/sessions-insight
+npx tsdown --config plugins/sessions-insight/tsdown.config.ts --minify
 node scripts/check-bundle.mjs plugins/sessions-insight   # host loading contract
 ```
 
 Inside the package you can also build just this half: `pnpm --filter @cyrus/dsh-sessions-insight build` (that is `css + tsdown`).
+
+Commit the `lib/` artifacts alongside the source so Git installs use prebuilt entries without requiring build-script approval. After changing source, rebuild before committing and include the artifacts. Keep `prepack` to rebuild and validate when packing.
 
 Two entries are produced:
 

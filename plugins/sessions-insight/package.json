@@ -53,7 +53,7 @@
   },
   "scripts": {
     "css": "node ../../scripts/build-css.mjs .",
-    "build": "pnpm css && tsdown",
+    "build": "pnpm css && tsdown --minify",
     "typecheck": "tsc --noEmit -p ../../tsconfig.json",
     "test": "vitest run --root ../..",
     "prepack": "pnpm build && node ../../scripts/check-bundle.mjs .",

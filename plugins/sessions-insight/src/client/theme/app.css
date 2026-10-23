@@ -21,6 +21,7 @@
 @import "tailwindcss/utilities.css" layer(utilities) important;
 
 @source "../../";
+@source not "../../../lib";
 
 @theme {
   --color-fg: var(--dsw-alias-label-primary, light-dark(oklch(0.22 0 none), oklch(0.93 0 none)));

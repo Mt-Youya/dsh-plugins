@@ -178,11 +178,14 @@ pnpm install
 npx tsc --noEmit                          # 类型门禁：各包与宿主半边
 npx tsc --noEmit -p tsconfig.client.json  # 类型门禁：浏览器半边（types: []，摘掉 node 类型）
 npx vitest run                            # 单测
-npx tsdown                                # 构建 lib/index.js 与 lib/client.js
+node scripts/build-css.mjs plugins/sessions-insight
+npx tsdown --config plugins/sessions-insight/tsdown.config.ts --minify
 node scripts/check-bundle.mjs plugins/sessions-insight   # 宿主加载契约
 ```
 
 在包内也可以只构建自己：`pnpm --filter @cyrus/dsh-sessions-insight build`（等价于 `css + tsdown`）。
+
+`lib/` 产物随源码提交到 GitHub，让 Git 安装直接使用预构建入口，无需用户授权构建脚本。修改源码后，提交前必须重新构建并一并提交产物；保留 `prepack`，供打包时重新构建和校验。
 
 产物两个入口：
 

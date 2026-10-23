@@ -1,5 +1,6 @@
 node_modules/
 lib/
+!plugins/sessions-insight/lib/
 *.tsbuildinfo
 .DS_Store
 *.log
