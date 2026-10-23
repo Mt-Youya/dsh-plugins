@@ -14,11 +14,11 @@
  */
 
 import type { ReactElement } from "react"
-import type { Attribution, ContextPart } from "@cyrus/dsh-session-contract"
+import type { Attribution, ContextPart, Measure } from "@cyrus/dsh-session-contract"
 import { barLayout } from "../state/bar-layout.ts"
 import { compactTokens, formatShare, formatTokens } from "../format.ts"
 import { t } from "../locale.ts"
-import { MeasureValue, PrecisionBadge } from "./precision.tsx"
+import { MeasureValue, measureTip } from "./precision.tsx"
 
 export type { BarLayout, BarSegment } from "../state/bar-layout.ts"
 
@@ -55,27 +55,39 @@ export function StackedBar({
   const layout = barLayout(attribution)
   return (
     <div
-      className={`flex w-full overflow-hidden bg-bg-3 ${dense ? "h-1.5 rounded-full" : "h-3 rounded-sm"}`}
-      role="img"
+      className={`flex w-full bg-bg-3 ${dense ? "h-1.5 rounded-full overflow-hidden" : "relative h-3 rounded-sm"}`}
+      role={dense ? "img" : "group"}
       aria-label={label}
     >
-      {layout.segments.map((segment) => (
-        <span
-          key={segment.key}
-          className={
-            segment.kind === "unknown"
-              ? "h-full flex-none bg-[repeating-linear-gradient(45deg,var(--color-fg-dim)_0_2px,transparent_2px_5px)] shadow-[inset_0_0_0_1px_var(--color-fg-dim)]"
-              : "h-full flex-none"
-          }
-          data-part={segment.part ?? "unknown"}
-          style={
-            segment.part === undefined
-              ? { width: `${segment.width.toFixed(3)}%` }
-              : { width: `${segment.width.toFixed(3)}%`, background: partColor(segment.part) }
-          }
-          title={`${segment.part === undefined ? t("turns.unknown") : t(`part.${segment.part}`)} ${formatTokens(segment.tokens)} · ${segment.share}`}
-        />
-      ))}
+      {layout.segments.map((segment) => {
+        const name = segment.part === undefined ? t("turns.unknown") : t(`part.${segment.part}`)
+        const measure: Measure = attribution.parts.find((slice) => slice.part === segment.part)?.measure ?? {
+          tokens: segment.tokens,
+          precision: "estimate",
+          basis: "unattributed",
+        }
+        const tip = `${name} · ${segment.share} · ${measureTip(measure)}`
+        return (
+          <span
+            key={segment.key}
+            className={
+              segment.kind === "unknown"
+                ? "h-full flex-none first:rounded-s-sm last:rounded-e-sm after:w-max after:max-w-full bg-[repeating-linear-gradient(45deg,var(--color-fg-dim)_0_2px,transparent_2px_5px)] shadow-[inset_0_0_0_1px_var(--color-fg-dim)]"
+                : "h-full flex-none first:rounded-s-sm last:rounded-e-sm after:w-max after:max-w-full"
+            }
+            data-part={segment.part ?? "unknown"}
+            style={
+              segment.part === undefined
+                ? { width: `${segment.width.toFixed(3)}%` }
+                : { width: `${segment.width.toFixed(3)}%`, background: partColor(segment.part) }
+            }
+            title={dense ? tip : undefined}
+            data-tip={dense ? undefined : tip}
+            tabIndex={dense ? undefined : 0}
+            aria-label={tip}
+          />
+        )
+      })}
     </div>
   )
 }
@@ -90,62 +102,51 @@ export function PartLegend({ attribution }: { attribution: Attribution }): React
   const layout = barLayout(attribution)
   return (
     <div>
-      <ul className="mt-3 mb-0 p-0 list-none">
+      <ul className="flex flex-wrap gap-x-5 gap-y-2 mt-3 mb-0 p-0 list-none">
         {attribution.parts
           .filter((slice) => slice.measure.tokens !== 0)
           .map((slice) => (
-            <li
-              className="grid grid-cols-[10px_minmax(0,1fr)_auto] gap-2.5 items-center py-1.5 text-[12px] border-t border-line-soft first:border-t-0"
-              key={slice.part}
-              data-part={slice.part}
-            >
+            <li className="inline-flex gap-1.5 items-center text-[11px]" key={slice.part} data-part={slice.part}>
               <span
                 className="w-2.5 h-2.5 rounded-[3px]"
                 style={{ background: partColor(slice.part) }}
                 aria-hidden="true"
               />
-              <span className="flex flex-col gap-px min-w-0">{t(`part.${slice.part}`)}</span>
-              <span className="text-right whitespace-nowrap">
-                <MeasureValue measure={slice.measure} share={formatShare(slice.measure.tokens, layout.denominator)} />
-              </span>
+              <span>{t(`part.${slice.part}`)}</span>
+              <MeasureValue
+                measure={slice.measure}
+                share={formatShare(slice.measure.tokens, layout.denominator)}
+                dense
+              />
             </li>
           ))}
         {layout.residual > 0 ? (
-          <li
-            className="grid grid-cols-[10px_minmax(0,1fr)_auto] gap-2.5 items-center py-1.5 text-[12px] border-t border-line-soft first:border-t-0"
-            data-part="unknown"
-          >
+          <li className="inline-flex gap-1.5 items-center text-[11px]" data-part="unknown">
             <span
               className="w-2.5 h-2.5 rounded-[3px] bg-[repeating-linear-gradient(45deg,var(--color-fg-dim)_0_1px,transparent_1px_3px)]"
               aria-hidden="true"
             />
-            <span className="flex flex-col gap-px min-w-0">
-              {t("turns.unknown")}
-              <span className="text-[10px] text-fg-dim">{t("turns.unknownNote")}</span>
-            </span>
-            <span className="text-right whitespace-nowrap">
-              <span
-                className="inline-flex items-baseline gap-1 relative font-mono text-[11px] outline-offset-2"
-                data-precision="estimate"
-              >
-                <span className="text-fg-dim italic">{formatTokens(layout.residual)}</span>
-                <span className="text-fg-dim text-[10px]" aria-hidden="true">
-                  ≈
-                </span>
-                <PrecisionBadge precision="estimate" />
-                <span className="text-fg-dim text-[10px]">{formatShare(layout.residual, layout.denominator)}</span>
-              </span>
-            </span>
+            <span>{t("turns.unknown")}</span>
+            <MeasureValue
+              measure={{ tokens: layout.residual, precision: "estimate", basis: "unattributed" }}
+              share={formatShare(layout.residual, layout.denominator)}
+              dense
+            />
           </li>
         ) : null}
       </ul>
+      {layout.residual > 0 ? (
+        <p className="mt-2 mb-0 text-[10.5px] text-fg-dim" role="note">
+          {t("turns.unknownNote")}
+        </p>
+      ) : null}
       {layout.overCounted > 0 ? (
-        <p className="mt-2 mb-0 px-2 py-1 border-s-2 border-warn bg-bg-1 text-[10.5px] text-warn" role="note">
+        <p className="mt-2 mb-0 px-2 py-1 bg-bg-1 text-[10.5px] text-warn" role="note">
           {t("turns.overCounted", { tokens: formatTokens(layout.overCounted) })}
         </p>
       ) : null}
       {layout.normalizedByParts ? (
-        <p className="mt-2 mb-0 px-2 py-1 border-s-2 border-warn bg-bg-1 text-[10.5px] text-warn" role="note">
+        <p className="mt-2 mb-0 px-2 py-1 bg-bg-1 text-[10.5px] text-warn" role="note">
           {t("turns.normalizedByParts")}
         </p>
       ) : null}

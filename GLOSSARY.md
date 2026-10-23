@@ -1,6 +1,6 @@
 # dsh-sessions-insight
 
-DSH（DeepSeek Harness）Web GUI 的「会话洞察」插件（英文 Sessions Insight；与市场里的 dsh-context 插件区分）：只读解析 Claude Code 与 DSH 自己的会话日志，把模型每轮实际收到的上下文拆开给人看，并支持把 Claude 会话接管到 DSH 继续。
+DSH（DeepSeek Harness）Web GUI 的「会话洞察」插件（英文 Sessions Insight；与市场里的 dsh-context 插件区分）：解析 Claude Code、DSH 与 Codex 的会话日志，把模型每轮实际收到的上下文拆开给人看，并支持把 Claude 会话接管到 DSH 继续，以及确认后删除会话原始日志。
 
 ## Language
 

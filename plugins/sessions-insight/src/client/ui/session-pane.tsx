@@ -46,6 +46,7 @@ export function SessionPane({
   onToggleTools,
   onLoadMore,
   onHandoff,
+  onOpenSession,
 }: {
   session: LoadedSession
   title: string
@@ -57,11 +58,18 @@ export function SessionPane({
   onToggleTools: (next: boolean) => void
   onLoadMore: () => void
   onHandoff: () => void
+  onOpenSession?: (id: string) => void | Promise<void>
 }): ReactElement {
   const currentTurn = session.turns.find((turn) => turn.index === selectedTurn)
   return (
     <article className="flex h-full min-h-0 flex-col overflow-y-auto @3xl:overflow-hidden" aria-label={title}>
-      <SessionHead data={session.data} turns={session.turns} cost={cost} onHandoff={onHandoff} />
+      <SessionHead
+        onOpenSession={onOpenSession}
+        data={session.data}
+        turns={session.turns}
+        cost={cost}
+        onHandoff={onHandoff}
+      />
       {session.turns.length === 0 ? (
         <EmptyBlock title={t("session.noTurns")} hint={t("session.noTurnsHint")} center />
       ) : (

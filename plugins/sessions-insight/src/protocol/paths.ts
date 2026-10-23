@@ -72,3 +72,11 @@ export const HANDOFF_APPLY_URL: string = browserUrl(HANDOFF_APPLY_PATH)
 export const HANDOFF_STATUS_URL: string = browserUrl(HANDOFF_STATUS_PATH)
 /** Cost, spelled for the browser. */
 export const COST_URL: string = browserUrl(COST_PATH)
+
+/** Delete the original session logs (POST). */
+export const SESSION_DELETE_PATH = `${API_ROOT}/session/delete`
+export const SESSION_DELETE_URL = browserUrl(SESSION_DELETE_PATH)
+
+/** Bind an existing DSH session to its workspace before opening it (POST). */
+export const HANDOFF_REVEAL_PATH = `${API_ROOT}/handoff/reveal`
+export const HANDOFF_REVEAL_URL = browserUrl(HANDOFF_REVEAL_PATH)

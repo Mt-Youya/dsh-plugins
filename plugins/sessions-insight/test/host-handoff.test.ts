@@ -22,7 +22,7 @@ class FakeCommands implements SessionCommandsFace {
     this.#promptError = options.promptError
   }
 
-  async create(request: { cwd: string; sessionId?: string; agentPreset?: string }): Promise<unknown> {
+  async create(request: { workspaceId: string; sessionId?: string; agentPreset?: string }): Promise<unknown> {
     this.calls.push({ call: "create", payload: request })
     if (this.#createError !== undefined) throw new Error(this.#createError)
     return { sessionId: "new-session-1", agentPreset: "standard" }
@@ -36,6 +36,11 @@ class FakeCommands implements SessionCommandsFace {
     if (this.#promptError !== undefined) throw new Error(this.#promptError)
     return { accepted: true }
   }
+}
+
+const workspaces = {
+  create: async (_request: { path: string }) => ({ workspace: { workspaceId: "w1" } }),
+  attach: async (_workspaceId: string, _sessionId: string) => {},
 }
 
 /**
@@ -70,7 +75,7 @@ function events(entries: { type: string; seq: number; time?: number; data?: unkn
 describe("handoff apply", () => {
   it("requires an explicit, absolute, existing cwd", async () => {
     const commands = new FakeCommands()
-    const runner = new HandoffRunner({ commands, observe: observerOf([]) })
+    const runner = new HandoffRunner({ workspaces, commands, observe: observerOf([]) })
     expect(await runner.apply({ source: "claude", id: "s1", cwd: "   ", brief: "x" })).toMatchObject({
       ok: false,
       error: "bad-request",
@@ -91,7 +96,7 @@ describe("handoff apply", () => {
 
   it("creates with cwd in-process and then queues the brief", async () => {
     const commands = new FakeCommands()
-    const runner = new HandoffRunner({ commands, observe: observerOf([]) })
+    const runner = new HandoffRunner({ workspaces, commands, observe: observerOf([]) })
     const dir = await mkdtemp(join(tmpdir(), "m7-handoff-"))
     const result = await runner.apply({ source: "claude", id: "s1", cwd: dir, brief: "THE BRIEF" })
     expect(result.ok).toBe(true)
@@ -99,7 +104,7 @@ describe("handoff apply", () => {
     expect(result.value).toMatchObject({ sessionId: "new-session-1", state: "delivered" })
     expect(result.value.pollAfterMs).toBeGreaterThan(0)
     // In-process controller: no args.request wrapper, plain parameter names.
-    expect(commands.calls[0]).toEqual({ call: "create", payload: { cwd: dir } })
+    expect(commands.calls[0]).toEqual({ call: "create", payload: { workspaceId: "w1" } })
     const prompt = commands.calls[1]?.payload as {
       request: { sessionId: string; mode: string; content: { type: string; text: string }[] }
       source: { kind: string }
@@ -113,6 +118,7 @@ describe("handoff apply", () => {
   it("maps controller rejections onto the documented failure codes", async () => {
     const dir = await mkdtemp(join(tmpdir(), "m7-handoff-"))
     const notFound = new HandoffRunner({
+      workspaces,
       commands: new FakeCommands({ promptError: "session/not-found" }),
       observe: observerOf([]),
     })
@@ -121,6 +127,7 @@ describe("handoff apply", () => {
       error: "not-found",
     })
     const preset = new HandoffRunner({
+      workspaces,
       commands: new FakeCommands({ createError: "agent-preset/not-found presets" }),
       observe: observerOf([]),
     })
@@ -130,6 +137,7 @@ describe("handoff apply", () => {
       detail: "agent-preset-not-found",
     })
     const unavailable = new HandoffRunner({
+      workspaces,
       commands: new FakeCommands({ createError: "gateway/internal" }),
       observe: observerOf([]),
     })
@@ -140,13 +148,13 @@ describe("handoff apply", () => {
   })
 
   it("refuses when the session controller or the observer is missing", async () => {
-    const noCommands = new HandoffRunner({ observe: observerOf([]) })
+    const noCommands = new HandoffRunner({ workspaces, observe: observerOf([]) })
     expect(await noCommands.apply({ source: "claude", id: "s1", cwd: tmpdir(), brief: "x" })).toMatchObject({
       ok: false,
       error: "handoff-unavailable",
       detail: "session-controller-missing",
     })
-    const noObserver = new HandoffRunner({ commands: new FakeCommands() })
+    const noObserver = new HandoffRunner({ workspaces, commands: new FakeCommands() })
     expect(await noObserver.status("s1")).toMatchObject({
       ok: false,
       error: "handoff-unavailable",
@@ -157,17 +165,18 @@ describe("handoff apply", () => {
 
 describe("handoff status machine (accepted is not success)", () => {
   it("stays delivered while the log has no turn at all", async () => {
-    const runner = new HandoffRunner({ commands: new FakeCommands(), observe: observerOf([]) })
+    const runner = new HandoffRunner({ workspaces, commands: new FakeCommands(), observe: observerOf([]) })
     expect(await runner.status("s1")).toMatchObject({ ok: true, value: { state: "delivered" } })
   })
 
   it("stays delivered when the log is not on disk yet", async () => {
-    const runner = new HandoffRunner({ commands: new FakeCommands(), observe: observerOf(undefined) })
+    const runner = new HandoffRunner({ workspaces, commands: new FakeCommands(), observe: observerOf(undefined) })
     expect(await runner.status("s1")).toMatchObject({ ok: true, value: { state: "delivered" } })
   })
 
   it("reports running once turn/start is observed", async () => {
     const runner = new HandoffRunner({
+      workspaces,
       commands: new FakeCommands(),
       observe: observerOf(events([{ type: "turn/start", seq: 3 }])),
     })
@@ -176,6 +185,7 @@ describe("handoff status machine (accepted is not success)", () => {
 
   it("reports succeeded only on a completed turn/end, with its seq", async () => {
     const runner = new HandoffRunner({
+      workspaces,
       commands: new FakeCommands(),
       observe: observerOf(
         events([
@@ -189,6 +199,7 @@ describe("handoff status machine (accepted is not success)", () => {
 
   it("reports failed with MISSING_CREDENTIAL and the fix hint", async () => {
     const runner = new HandoffRunner({
+      workspaces,
       commands: new FakeCommands(),
       observe: observerOf(
         events([
@@ -207,6 +218,7 @@ describe("handoff status machine (accepted is not success)", () => {
     let now = 1_000
     // The event already existed at prompt time, so the baseline equals its seq.
     const runner = new HandoffRunner({
+      workspaces,
       commands: new FakeCommands(),
       observe: observerOf(events([{ type: "turn/end", seq: 2, time: 10, data: { reason: { kind: "completed" } } }])),
       now: () => now,
@@ -223,6 +235,7 @@ describe("observation window is log order, not wall clock", () => {
     let now = 5_000
     const dir = await mkdtemp(join(tmpdir(), "m7-handoff-"))
     const runner = new HandoffRunner({
+      workspaces,
       commands: new FakeCommands(),
       // The Host emitted turn/start at time 10, long before apply() returned at 5000.
       observe: freshObserver(events([{ type: "turn/start", seq: 3, time: 10 }])),
@@ -239,6 +252,7 @@ describe("observation window is log order, not wall clock", () => {
   it("reports the terminal state when turn/end also predates the delivery timestamp", async () => {
     const dir = await mkdtemp(join(tmpdir(), "m7-handoff-"))
     const runner = new HandoffRunner({
+      workspaces,
       commands: new FakeCommands(),
       observe: freshObserver(
         events([
@@ -264,7 +278,7 @@ describe("observation window is log order, not wall clock", () => {
         data: {},
       })),
     ]
-    const runner = new HandoffRunner({ commands: new FakeCommands(), observe: freshObserver(longTurn) })
+    const runner = new HandoffRunner({ workspaces, commands: new FakeCommands(), observe: freshObserver(longTurn) })
     await runner.apply({ source: "claude", id: "s1", cwd: dir, brief: "x" })
     expect(await runner.status("new-session-1")).toMatchObject({ ok: true, value: { state: "running" } })
   })
@@ -276,10 +290,7 @@ describe("observation window is log order, not wall clock", () => {
       { type: "turn/start", seq: 5, time: 1 },
       { type: "turn/end", seq: 9, time: 2, data: { reason: { kind: "completed" } } },
     ])
-    const runner = new HandoffRunner({
-      commands: new FakeCommands(),
-      observe: observerOf(before, before),
-    })
+    const runner = new HandoffRunner({ workspaces, commands: new FakeCommands(), observe: observerOf(before, before) })
     await runner.apply({ source: "claude", id: "s1", cwd: dir, brief: "x" })
     // Baseline is 9, so nothing is in the window and no new turn has started.
     expect(await runner.status("new-session-1")).toMatchObject({ ok: true, value: { state: "delivered" } })
@@ -295,9 +306,94 @@ describe("observation window is log order, not wall clock", () => {
       // user/message, which is exactly the folded-record case.
       { type: "turn/end", seq: 2, time: 6, data: { reason: { kind: "completed" } } },
     ])
-    const runner = new HandoffRunner({ commands: new FakeCommands(), observe: observerOf(after, before) })
+    const runner = new HandoffRunner({ workspaces, commands: new FakeCommands(), observe: observerOf(after, before) })
     await runner.apply({ source: "claude", id: "s1", cwd: dir, brief: "x" })
     const status = await runner.status("new-session-1")
     expect(status).toMatchObject({ ok: true, value: { state: "succeeded" } })
   })
+})
+
+it("reports elapsed turn time and observed activity rather than polling duration", async () => {
+  const runner = new HandoffRunner({
+    workspaces,
+    commands: new FakeCommands(),
+    now: () => 9000,
+    observe: observerOf(
+      events([
+        { type: "turn/start", seq: 1, time: 1000 },
+        { type: "tool/call", seq: 2, time: 2000, data: { callId: "a", name: "bash" } },
+      ])
+    ),
+  })
+  expect(await runner.status("s1")).toMatchObject({
+    ok: true,
+    value: {
+      state: "running",
+      elapsedMs: 8000,
+      progress: { seq: 2, updatedAt: 2000, toolsCompleted: 0, tool: "bash" },
+    },
+  })
+})
+
+it("resolves a workspace before creating a visible session, never passing cwd with workspaceId", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "handoff-workspace-"))
+  const commands = new FakeCommands()
+  const calls: string[] = []
+  const runner = new HandoffRunner({
+    commands,
+    workspaces: {
+      create: async ({ path }: { path: string }) => {
+        calls.push(path)
+        return { workspace: { workspaceId: "w1" } }
+      },
+      attach: async () => {},
+    },
+  })
+  expect((await runner.apply({ source: "codex", id: "s1", cwd: dir, brief: "brief" })).ok).toBe(true)
+  expect(calls).toEqual([dir])
+  expect(commands.calls[0]).toEqual({ call: "create", payload: { workspaceId: "w1" } })
+})
+
+it("refuses delivery when workspace registration is unavailable or fails", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "handoff-workspace-"))
+  const commands = new FakeCommands()
+  const missing = new HandoffRunner({ commands })
+  expect(await missing.apply({ source: "codex", id: "s1", cwd: dir, brief: "brief" })).toMatchObject({
+    ok: false,
+    detail: "workspace-controller-missing",
+  })
+  const broken = new HandoffRunner({
+    commands,
+    workspaces: {
+      ...workspaces,
+      create: async () => {
+        throw new Error("disk unavailable")
+      },
+    },
+  })
+  expect(await broken.apply({ source: "codex", id: "s1", cwd: dir, brief: "brief" })).toMatchObject({
+    ok: false,
+    error: "handoff-unavailable",
+  })
+  expect(commands.calls).toEqual([])
+})
+
+it("repairs visibility of an existing session without creating a session or prompting it", async () => {
+  const attached: string[][] = []
+  const commands = new FakeCommands()
+  const runner = new HandoffRunner({
+    commands,
+    workspaces: {
+      ...workspaces,
+      attach: async (workspaceId, sessionId) => {
+        attached.push([workspaceId, sessionId])
+      },
+    },
+  })
+  expect(await runner.reveal("session-existing", "/example")).toEqual({
+    ok: true,
+    value: { sessionId: "session-existing" },
+  })
+  expect(attached).toEqual([["w1", "session-existing"]])
+  expect(commands.calls).toEqual([])
 })

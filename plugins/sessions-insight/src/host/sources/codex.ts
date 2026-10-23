@@ -31,6 +31,7 @@ import type { SegmentInfo, SessionSummary, SourceStatus, WorkdirEntry } from "..
 import { LIST_ITEM_UNPARSED, isSafeId } from "../../protocol.ts"
 import type { ParsedSession, SearchCandidate, SessionSource, SourceFailure } from "./source.ts"
 import { cleanTitle, firstInputOf } from "./source.ts"
+import { deleteLogs } from "./delete.ts"
 import { Lru } from "@cyrus/dsh-plugin-kit-host"
 
 /** Milliseconds the corpus index is reused before re-indexing. */
@@ -236,6 +237,22 @@ export class CodexSource implements SessionSource {
     const scan: CodexScan = { root: this.#root, state: "ok", entries: rows, titles, index, scannedAt }
     this.#scan = scan
     return scan
+  }
+
+  async remove(id: string): Promise<{ ok: true } | SourceFailure> {
+    if (!isSafeId(id)) return { ok: false, error: "bad-request", detail: "invalid-session-id" }
+    const scan = await this.scan()
+    const entry = scan.entries.find((candidate) => candidate.id === id)
+    if (entry === undefined) return { ok: false, error: "not-found", detail: "session-not-found" }
+    const paths = new Set(entry.segments.map((segment) => segment.path))
+    if (scan.entries.some((other) => other.id !== id && other.segments.some((segment) => paths.has(segment.path)))) {
+      return { ok: false, error: "forbidden", detail: "shared-session-logs" }
+    }
+    try {
+      return await deleteLogs(this.root, [...paths])
+    } finally {
+      this.invalidate()
+    }
   }
 
   async status(): Promise<SourceStatus> {

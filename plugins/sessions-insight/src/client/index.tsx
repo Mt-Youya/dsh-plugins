@@ -21,6 +21,7 @@ import { registerLocale, registerPanel, type ClientContext } from "@cyrus/dsh-pl
 import type { ReactElement } from "react"
 import { LOCALE_NS, en, setRuntimeTranslate, t, zh } from "./locale.ts"
 import { ContextInsightPanel } from "./ui/panel.tsx"
+import { createApi } from "./api.ts"
 import { injectStyles } from "./styles.ts"
 
 export type { ClientContext, Dispose, LocaleFace, SlotsFace } from "@cyrus/dsh-plugin-kit-client"
@@ -35,7 +36,7 @@ export const PANEL_ID = "sessions-insight"
 const PANEL_ORDER = 30
 
 /** Services this entry waits for before `apply` runs. */
-export const inject = ["slots", "locale"] as const
+export const inject = ["slots", "locale", "uiWorkspace"] as const
 
 declare global {
   /** Apply guard shared by every module instance in one page lifetime. */
@@ -75,7 +76,7 @@ export function ContextInsightPanelIcon({ size }: { size: number; active: boolea
  * Mount the browser half.
  * @param ctx - client root context (services: slots, locale).
  */
-export function apply(ctx: ClientContext): void {
+export function apply(ctx: ClientContext & { get?: (name: string) => unknown }): void {
   // A duplicated client injection (the module factory executed twice in one
   // page lifetime, e.g. a stale bundle mixed with a rebuilt one) would
   // otherwise mount a second sidebar row and a second panel page. First
@@ -109,7 +110,20 @@ export function apply(ctx: ClientContext): void {
       // change, so the row follows the Language setting without a reload.
       label: () => t("entry.label"),
       icon: ContextInsightPanelIcon,
-      panel: ContextInsightPanel,
+      panel: () => (
+        <ContextInsightPanel
+          onOpenSession={async (id) => {
+            const workspace = ctx.get?.("uiWorkspace") as
+              | { openSession?: (id: string) => void | Promise<void> }
+              | undefined
+            if (typeof workspace?.openSession !== "function") throw new Error("uiWorkspace.openSession unavailable")
+            const sessionId = id.startsWith("session-") ? id : `session-${id}`
+            const revealed = await createApi().handoffReveal(sessionId)
+            if (!revealed.ok) throw new Error(revealed.detail ?? revealed.error)
+            await workspace.openSession(sessionId)
+          }}
+        />
+      ),
     })
   } catch (error) {
     // A shell that cannot serve the seats leaves the panel absent; boot stays

@@ -61,7 +61,7 @@ function highlight(text: string, query: string): ReactNode[] {
     if (index > cursor) nodes.push(text.slice(cursor, index))
     nodes.push(
       <mark
-        className="bg-[color-mix(in_oklch,var(--color-accent)_35%,transparent)] text-fg rounded-[2px] px-px"
+        className="bg-[color-mix(in_oklch,var(--color-accent)_35%,transparent)] text-fg rounded-xs px-px"
         key={`m-${String(index)}`}
       >
         {text.slice(index, index + needle.length)}
@@ -244,7 +244,7 @@ export function SearchPalette({
 
   return (
     <div
-      className="fixed inset-0 z-[60] bg-[rgb(0_0_0/55%)] flex items-start justify-center pt-[12vh]"
+      className="fixed inset-0 z-60 bg-[rgb(0_0_0/55%)] flex items-start justify-center pt-[12vh]"
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <div

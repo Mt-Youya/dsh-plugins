@@ -1,7 +1,7 @@
 {
   "name": "@cyrus/dsh-sessions-insight",
   "version": "0.0.4",
-  "description": "Read-only context insight for the DSH Web GUI: what each turn actually fed the model, across Claude Code, DSH and Codex sessions.",
+  "description": "Sessions insight and confirmed session deletion for the DSH Web GUI: what each turn actually fed the model, across Claude Code, DSH and Codex sessions.",
   "keywords": [
     "agent",
     "claude-code",
@@ -88,7 +88,8 @@
       "inject": [
         "@deepseek-ai/dsh-client-locale",
         "@deepseek-ai/dsh-client-ui-layout",
-        "@deepseek-ai/dsh-client-ui-sidebar"
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-workspace"
       ]
     }
   }

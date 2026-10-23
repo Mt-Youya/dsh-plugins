@@ -2,13 +2,13 @@
 
 # 会话洞察 · dsh-sessions-insight（Sessions Insight）
 
-DSH Web GUI 的只读「会话洞察」面板：解析 **Claude Code / DSH / Codex** 三个来源的会话日志，把**模型每一轮实际收到的上下文**拆开给人看——系统提示、工具定义、记忆与指令、历史、工具结果、图片各占多少，以及每个数字是精确的 usage 还是按字符折算的估算。
+DSH Web GUI 的「会话洞察」面板：解析 **Claude Code / DSH / Codex** 三个来源的会话日志，把**模型每一轮实际收到的上下文**拆开给人看——系统提示、工具定义、记忆与指令、历史、工具结果、图片各占多少，以及每个数字是精确的 usage 还是按字符折算的估算。
 
 ![三源合并视图：左侧工作目录、中间会话与轮次、右侧单轮构成](docs/images/01-merged-tree.png)
 
-> 全程只读：不写源数据、不建索引、不落盘。唯一的缓存是进程内 LRU，进程结束即消失。
+> 洞察读取不改写源日志；会话行支持右键「删除会话」，确认后永久删除该会话原始日志。
 
-> **当前范围**：只读洞察 + 摘要交接。交接把生成好的简报投递进 DSH 新会话，**只调官方 `session.create` / `session.prompt`**，不手写会话事件、不改写原会话（`docs/HANDOFF.md`、`docs/adr/0003-never-handwrite-session-events.md`、`docs/adr/0007-accepted-is-not-success.md`）。
+> **当前范围**：只读洞察 + 摘要交接 + 确认删除。交接把生成好的简报投递进 DSH 新会话，**只调官方 `session.create` / `session.prompt`**，不手写会话事件、不改写原会话（`docs/HANDOFF.md`、`docs/adr/0003-never-handwrite-session-events.md`、`docs/adr/0007-accepted-is-not-success.md`）。
 
 ## 它能回答什么
 
@@ -31,6 +31,12 @@ DSH Web GUI 的只读「会话洞察」面板：解析 **Claude Code / DSH / Cod
 - `⌘K`（Windows/Linux 上 `Ctrl+K`）打开全库搜索，命中后直接跳到那一轮。
 
 ![全库搜索](docs/images/03-search-palette.png)
+
+## 交接给 DSH
+
+打开 Claude Code 或 Codex 会话，点击「交接给 DSH」，预览并编辑自动生成的交接简报、确认工作目录，再点击「投递到 DSH」。简报包含背景与目标、已改动文件、已定决策、未决与风险、下一步和验证命令六段。
+
+![交接给 DSH：工作目录与可编辑的交接简报](docs/images/04-handoff-dialog.png)
 
 ## 三源与读取位置
 
@@ -105,7 +111,7 @@ curl -sS http://127.0.0.1:<port>/api/dsh-sessions-insight/health
 
 ## 权限与安全边界
 
-- **只读**：三个源目录只做 `stat` 与读文件，从不写、不删、不改名。
+- **确认删除**：三个来源的会话行均可右键删除，确认后删除原始日志并刷新列表。Codex 共用日志时拒绝删除；附属文件和宿主全局索引保留。
 - **不落盘**：不建索引、不写缓存文件；进程内 LRU 以 `source + id + mtime + size` 失效。
 - **路径白名单**：所有路径参数先解析、再做 `realpath` 校验，必须仍落在三个白名单根目录之内——挡掉 `..` 与符号链接逃逸。
 - **同源校验**：每条路由都是 `kind:'exact'`，先过 Origin/Host 门：`Sec-Fetch-Site: cross-site` 直接 403，`Origin` 与 `Host` 不一致 403；不带 `Origin` 的同源 GET 放行。

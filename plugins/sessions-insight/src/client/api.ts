@@ -13,9 +13,12 @@
  * @module @cyrus/dsh-sessions-insight/client/api
  */
 
+import { HANDOFF_REVEAL_URL, isHandoffRevealValue, type HandoffRevealValue } from "../protocol.ts"
+import { t } from "./locale.ts"
 import { requestJson, type ApiFailure, type ApiResult } from "@cyrus/dsh-plugin-kit-client"
 import type {
   BriefValue,
+  DeleteSessionValue,
   CostValue,
   HandoffApplyValue,
   HandoffStatusValue,
@@ -28,6 +31,8 @@ import type {
 } from "../protocol.ts"
 import {
   API_ERROR_CODES,
+  SESSION_DELETE_URL,
+  isDeleteSessionValue,
   COST_URL,
   HANDOFF_APPLY_URL,
   HANDOFF_PREPARE_URL,
@@ -52,6 +57,7 @@ export type { ApiFailure, ApiResult } from "@cyrus/dsh-plugin-kit-client"
 
 /** The reads the panel performs. */
 export interface Api {
+  deleteSession(source: string, id: string): Promise<ApiResult<DeleteSessionValue>>
   sources(signal?: AbortSignal): Promise<ApiResult<SourcesValue>>
   workdirs(signal?: AbortSignal, refresh?: boolean): Promise<ApiResult<WorkdirsValue>>
   sessions(workdir: string, signal?: AbortSignal): Promise<ApiResult<SessionsValue>>
@@ -75,6 +81,7 @@ export interface Api {
     body: { source: string; id: string; cwd: string; brief: string },
     signal?: AbortSignal
   ): Promise<ApiResult<HandoffApplyValue>>
+  handoffReveal(sessionId: string): Promise<ApiResult<HandoffRevealValue>>
   handoffStatus(sessionId: string, signal?: AbortSignal): Promise<ApiResult<HandoffStatusValue>>
 }
 
@@ -110,6 +117,7 @@ function post<T>(url: string, body: unknown, guard: Guard<T>, signal?: AbortSign
  */
 export function createApi(base = ""): Api {
   return {
+    deleteSession: (source, id) => post(base + SESSION_DELETE_URL, { source, id }, isDeleteSessionValue),
     sources: (signal) => get(base + SOURCES_URL, isSourcesValue, signal),
     workdirs: (signal, refresh = false) =>
       get(base + WORKDIRS_URL + (refresh ? "?refresh=1" : ""), isWorkdirsValue, signal),
@@ -129,8 +137,11 @@ export function createApi(base = ""): Api {
       ),
     cost: (source, id, signal) =>
       get(`${base}${COST_URL}?source=${encodeURIComponent(source)}&id=${encodeURIComponent(id)}`, isCostValue, signal),
-    handoffPrepare: (source, id, signal) => post(base + HANDOFF_PREPARE_URL, { source, id }, isBriefValue, signal),
+    handoffPrepare: (source, id, signal) =>
+      post(base + HANDOFF_PREPARE_URL, { source, id, locale: t("handoff.language") }, isBriefValue, signal),
     handoffApply: (body, signal) => post(base + HANDOFF_APPLY_URL, body, isHandoffApplyValue, signal),
+    handoffReveal: (sessionId) =>
+      post(base + HANDOFF_REVEAL_URL, { source: "dsh", id: sessionId }, isHandoffRevealValue),
     handoffStatus: (sessionId, signal) =>
       get(`${base}${HANDOFF_STATUS_URL}?sessionId=${encodeURIComponent(sessionId)}`, isHandoffStatusValue, signal),
   }

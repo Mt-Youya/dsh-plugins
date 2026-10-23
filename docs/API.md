@@ -1,6 +1,6 @@
 # 宿主路由契约
 
-宿主半边只注册`kind:'exact'`路由，全部**只读**（`/handoff/apply` 是唯一例外，且它只调官方 remote，不写源数据）。浏览器侧用 document-relative URL（去掉前导斜杠）。
+宿主半边只注册`kind:'exact'`路由，读取接口只读；`/handoff/apply` 调官方 remote 创建会话，`/session/delete` 在用户确认后删除原始日志。浏览器侧用 document-relative URL（去掉前导斜杠）。
 
 ## 通用信封
 
@@ -26,6 +26,16 @@ type Envelope<T> = { ok: true; value: T } | { ok: false; error: string; detail?:
 | POST | `/api/dsh-sessions-insight/handoff/prepare`          | 生成交接简报（规则抽取）                 | 只读源数据；返回 `brief` 文本与来源会话 id                        |
 | POST | `/api/dsh-sessions-insight/handoff/apply`            | 在 DSH 新建会话并投递简报                | 仅调官方 `session.create`+`session.prompt`；见 ADR 0003           |
 
+## 删除会话
+
+`POST /api/dsh-sessions-insight/session/delete` 接收 `{source,id}`，成功返回同样的引用。
+
+- 支持 Claude、DSH、Codex；只删除扫描得到的该会话日志，不递归删除目录，不清理各宿主的全局索引或附属文件。
+- 使用统一的 Origin/Host 同源门禁和 JSON 请求体校验，并校验来源、ID、根目录 containment 和文件类型；符号链接拒绝删除。DSH 桌面端先验证 `dsh-app://app` 来源，再剥离 Origin 和 Sec-Fetch-Site 转发，因此这两项缺失时不额外拒绝；浏览器跨域 JSON 请求仍需通过 CORS 预检。
+- Codex 若与另一会话共用任一日志，返回 `forbidden / shared-session-logs`，不删任何文件。
+- 成功及部分文件删除失败后均失效列表缓存；前端成功后刷新会话数量和列表，清理已删除会话的详情。
+- 删除不可撤销；客户端点击菜单后显示确认提示。多日志的文件删除不是事务，I/O 中途失败可能只删除一部分。
+
 ## 精度与来源的透出规则
 
 1. 任何数值字段都必须能回答「这是 exact 还是 estimate、依据是什么」，即 IR 里的 `Measure` 原样透传，**不得在路由层降级成裸 number**。
@@ -45,9 +55,9 @@ type Envelope<T> = { ok: true; value: T } | { ok: false; error: string; detail?:
 
 | 方法 | 路径                                                 | 用途                          | 关键约束                                                                                                                            |
 | ---- | ---------------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| POST | `/api/dsh-sessions-insight/handoff/prepare`           | 从单会话 IR 规则抽取 6 段简报 | 体 `{source,id}`；只读源数据；`defaultCwd` 取会话 workdir，workdir 未知时 400                                                       |
-| POST | `/api/dsh-sessions-insight/handoff/apply`             | 建 DSH 会话并投递简报         | 体 `{source,id,cwd,brief,sessionId?}`；**`cwd` 必填且必须是绝对路径、已存在目录**；返回 `{sessionId,state:'delivered',pollAfterMs}` |
-| GET  | `/api/dsh-sessions-insight/handoff/status?sessionId=` | 观察交接结果                  | 读该会话日志：拿到 `turn/end` 前只回 `delivered`/`running`；日志未落盘也回 `delivered`                                              |
+| POST | `/api/dsh-sessions-insight/handoff/prepare`           | 从单会话 IR 规则抽取 6 段简报 | 体 `{source,id,locale?}`；语言跟随界面（`zh*` 中文，其余英文；省略兼容旧版中文）；只读源数据；`defaultCwd` 取会话 workdir，workdir 未知时 400                                                       |
+| POST | `/api/dsh-sessions-insight/handoff/apply`             | 建 DSH 会话并投递简报         | 体 `{source,id,cwd,brief,sessionId?}`；先按 cwd 创建或复用工作区，再通过 workspaceId 创建绑定会话；**`cwd` 必填且必须是绝对路径、已存在目录**；返回 `{sessionId,state:'delivered',pollAfterMs}` |
+| GET  | `/api/dsh-sessions-insight/handoff/status?sessionId=` | 观察交接结果                  | 读该会话日志：拿到 `turn/end` 前只回 `delivered`/`running`；日志未落盘也回 `delivered`；`elapsedMs` 为交接经过时间，`progress?` 含最新 `seq`、`updatedAt`、`toolsCompleted` 和执行中的 `tool?`                                              |
 | GET  | `/api/dsh-sessions-insight/cost?source=&id=`          | 会话成本                      | 必须带 `pricing.version/asOf/currency`；未覆盖模型单轮 `usd:null`，全会话无定价时 `totals.usd:null`                                 |
 
 补充口径：
@@ -65,3 +75,5 @@ type Envelope<T> = { ok: true; value: T } | { ok: false; error: string; detail?:
 - 进程内 LRU：key = `source + id + mtimeMs + size`；不落盘、不建索引（PLAN 决策）。
 - DSH 侧先读 projcache，用 `max(rows.*.seq)` 与日志末帧 `seq` 比较验鲜；落后则回落日志解析并在响应的 `dataQuality` 里标注。
 - Claude/Codex 侧以文件 mtime+size 失效；Codex 的分段文件必须按 `history_base` 链整体失效（任一分段变化即整会话失效）。
+
+`POST /api/dsh-sessions-insight/handoff/reveal`：体 `{source:"dsh",id}`（id 可带 `session-` 前缀）。从日志确定真实工作目录，创建或复用对应工作区并补齐会话成员关系；返回 `{sessionId}`，不启动模型轮次。

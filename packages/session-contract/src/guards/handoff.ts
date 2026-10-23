@@ -60,10 +60,12 @@ export interface HandoffStatusValue {
   /** Human sentence: what happened and what to do about it. */
   detail?: string
   elapsedMs: number
+  progress?: { seq: number; updatedAt: number; toolsCompleted: number; tool?: string }
 }
 
 /** `/handoff/prepare` request. */
 export interface HandoffPrepareRequest {
+  locale?: string
   source: ContextSource
   id: string
 }
@@ -90,7 +92,10 @@ function readSourceId(body: unknown): HandoffPrepareRequest | undefined {
  * @returns the request, or undefined when a field is missing or malformed.
  */
 export function parseHandoffPrepare(body: unknown): HandoffPrepareRequest | undefined {
-  return readSourceId(body)
+  const request = readSourceId(body)
+  if (request === undefined || !isRecord(body)) return undefined
+  if (body.locale !== undefined && typeof body.locale !== "string") return undefined
+  return { ...request, ...(typeof body.locale === "string" ? { locale: body.locale } : {}) }
 }
 
 /**
@@ -161,8 +166,26 @@ export function isHandoffStatusValue(value: unknown): value is HandoffStatusValu
   )
     return false
   if (!isNumber(value.elapsedMs)) return false
+  if (value.progress !== undefined) {
+    const progress = value.progress
+    if (
+      !isRecord(progress) ||
+      !isNumber(progress.seq) ||
+      !isNumber(progress.updatedAt) ||
+      !isNumber(progress.toolsCompleted)
+    )
+      return false
+    if (progress.tool !== undefined && typeof progress.tool !== "string") return false
+  }
   if (value.reason !== undefined && typeof value.reason !== "string") return false
   if (value.detail !== undefined && typeof value.detail !== "string") return false
   if (value.seq !== undefined && !isNumber(value.seq)) return false
   return true
+}
+
+export interface HandoffRevealValue {
+  sessionId: string
+}
+export function isHandoffRevealValue(value: unknown): value is HandoffRevealValue {
+  return isRecord(value) && typeof value.sessionId === "string" && isSafeId(value.sessionId)
 }

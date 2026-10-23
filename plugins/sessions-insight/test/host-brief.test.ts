@@ -133,3 +133,13 @@ describe("handoff brief extraction", () => {
     expect(brief.text).toContain("已达 2000 字上限")
   })
 })
+
+it("uses English boilerplate for English locales, preserving source evidence", () => {
+  const brief = extractBrief(session([turn(1, "保留原文", "")]), "en-US")
+  expect(brief.text).toContain("# Handoff brief")
+  expect(brief.text).toContain("Background and goals")
+  expect(brief.text).toContain("First input: 保留原文")
+  expect(brief.text).toContain("No record in the session log")
+  expect(brief.text).not.toContain("日志中无记录")
+  expect(extractBrief(session([]), "zh-CN").text).toContain("# 交接简报")
+})

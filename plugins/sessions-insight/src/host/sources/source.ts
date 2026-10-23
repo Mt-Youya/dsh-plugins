@@ -67,6 +67,8 @@ export interface SessionSource {
   detail(id: string): Promise<ParsedSession | SourceFailure>
   /** Physical files behind a parsed session, by name and size. */
   segmentInfo(session: Session): Promise<SegmentInfo[]>
+  /** Delete the original logs, when this adapter supports deletion. */
+  remove?(id: string): Promise<{ ok: true } | SourceFailure>
   /** Drop every cache this source holds. */
   invalidate(): void
   /** Sessions a search may scan, newest first. */

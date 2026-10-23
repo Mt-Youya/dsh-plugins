@@ -92,7 +92,7 @@ export function Waterfall({
           {compactions.map(({ index, point }, order) => (
             <line
               key={`${String(index)}-${String(order)}`}
-              className="stroke-[var(--color-warn)] stroke-[1] [stroke-dasharray:3_3] opacity-80 [vector-effect:non-scaling-stroke]"
+              className="stroke-warn stroke-1 [stroke-dasharray:3_3] opacity-80 [vector-effect:non-scaling-stroke]"
               x1={xOf(index) * WIDTH}
               x2={xOf(index) * WIDTH}
               y1={0}
@@ -103,7 +103,7 @@ export function Waterfall({
           ))}
           {marked < 0 ? null : (
             <line
-              className="stroke-[var(--color-fg-dim)] stroke-[1] opacity-50 [vector-effect:non-scaling-stroke]"
+              className="stroke-fg-dim stroke-1 opacity-50 [vector-effect:non-scaling-stroke]"
               x1={xOf(marked) * WIDTH}
               x2={xOf(marked) * WIDTH}
               y1={0}

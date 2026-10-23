@@ -32,6 +32,7 @@ const SHOTS = [
   ["01-merged-tree.png", "tree"],
   ["02-dsh-session.png", "session"],
   ["03-search-palette.png", "search"],
+  ["04-handoff-dialog.png", "handoff"],
 ]
 
 /** A minimal DevTools-protocol client over Node's global WebSocket. */

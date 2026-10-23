@@ -2,13 +2,13 @@ English | [简体中文](./README.md)
 
 # Sessions Insight · dsh-sessions-insight
 
-A read-only **Sessions Insight** panel for the DSH Web GUI. It parses session logs from **Claude Code, DSH and Codex** and shows what the model actually received on each turn — system prompt, tool definitions, memory & instructions, history, tool results, images — and marks every number as an exact usage figure or a character-based estimate.
+A **Sessions Insight** panel for the DSH Web GUI. It parses session logs from **Claude Code, DSH and Codex** and shows what the model actually received on each turn — system prompt, tool definitions, memory & instructions, history, tool results, images — and marks every number as an exact usage figure or a character-based estimate.
 
 ![Merged three-source view: workdirs on the left, sessions and turns in the middle, one turn's composition on the right](docs/images/01-merged-tree.png)
 
-> Read-only end to end: no writes to source data, no index, nothing persisted. The only cache is an in-process LRU.
+> Insight reads never rewrite source logs. Right-click a session and confirm Delete session to permanently remove its original logs.
 
-> **Current scope**: read-only insight plus the summary handoff. The handoff delivers a generated brief into a new DSH session and **only calls the official `session.create` / `session.prompt`** — it never hand-writes session events and never rewrites the source session (`docs/HANDOFF.md`, `docs/adr/0003-never-handwrite-session-events.md`, `docs/adr/0007-accepted-is-not-success.md`).
+> **Current scope**: read-only insight, the summary handoff and confirmed deletion. The handoff delivers a generated brief into a new DSH session and **only calls the official `session.create` / `session.prompt`** — it never hand-writes session events and never rewrites the source session (`docs/HANDOFF.md`, `docs/adr/0003-never-handwrite-session-events.md`, `docs/adr/0007-accepted-is-not-success.md`).
 
 ## What it answers
 
@@ -31,6 +31,12 @@ A read-only **Sessions Insight** panel for the DSH Web GUI. It parses session lo
 - `⌘K` (`Ctrl+K` on Windows/Linux) opens full-corpus search; a hit jumps straight to that turn.
 
 ![Full-corpus search](docs/images/03-search-palette.png)
+
+## Hand off to DSH
+
+Open a Claude Code or Codex session and click **Hand off to DSH**. Preview and edit the generated brief, confirm the working directory, then click **Deliver to DSH**. The brief has six sections: background and goals, changed files, decisions, open questions and risks, next steps, and verification commands.
+
+![Hand off to DSH: working directory and editable handoff brief](docs/images/04-handoff-dialog.png)
 
 ## Sources and their roots
 
@@ -105,7 +111,7 @@ curl -sS http://127.0.0.1:<port>/api/dsh-sessions-insight/health
 
 ## Permissions and security boundary
 
-- **Read-only**: the three roots are only `stat`-ed and read; nothing is written, deleted or renamed.
+- **Confirmed deletion**: right-click sessions from any source to delete their original logs and refresh the list. Shared Codex logs are protected; sidecar files and host indexes are retained.
 - **Nothing persisted**: no index, no cache files; the in-process LRU keys on `source + id + mtime + size`.
 - **Path allowlist**: every path argument is resolved and `realpath`-checked to stay inside the three allowed roots, which blocks `..` and symlink escapes.
 - **Same-origin gate**: every route is `kind:'exact'` and passes an Origin/Host gate first — `Sec-Fetch-Site: cross-site` is a 403, a mismatched `Origin`/`Host` is a 403, a same-origin GET without `Origin` passes.

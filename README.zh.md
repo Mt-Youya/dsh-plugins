@@ -10,7 +10,7 @@
 
 | 插件                                                              | npm 包                       | 做什么                                                                                                        |
 | ----------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| [会话洞察（Sessions Insight）](./plugins/sessions-insight/README.md) | `@cyrus/dsh-sessions-insight` | 把 Claude Code / DSH / Codex 三源会话每一轮实际喂给模型的上下文拆开看：构成、工具调用、压缩点、费用，全程只读 |
+| [会话洞察（Sessions Insight）](./plugins/sessions-insight/README.md) | `@cyrus/dsh-sessions-insight` | 把 Claude Code / DSH / Codex 三源会话每一轮实际喂给模型的上下文拆开看：构成、工具调用、压缩点、费用，支持确认后删除会话 |
 
 ## 安装
 

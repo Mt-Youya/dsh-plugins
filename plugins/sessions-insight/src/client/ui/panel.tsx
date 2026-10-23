@@ -117,7 +117,9 @@ const ROOT_STYLE = {
  * selection; ⌘K opens the search palette over it.
  * @returns the panel page.
  */
-export function ContextInsightPanel(): ReactElement {
+export function ContextInsightPanel({
+  onOpenSession,
+}: { onOpenSession?: (id: string) => void | Promise<void> } = {}): ReactElement {
   const api: Api = useMemo(() => createApi(), [])
   const [boot, setBoot] = useState<Boot>({ kind: "loading" })
   const [workdir, setWorkdir] = useState<string | null>(null)
@@ -327,6 +329,7 @@ export function ContextInsightPanel(): ReactElement {
   const tree =
     boot.kind === "ready" ? (
       <ProjectTree
+        revision={reloadToken}
         api={api}
         workdirs={boot.workdirs}
         selected={selected}
@@ -334,6 +337,15 @@ export function ContextInsightPanel(): ReactElement {
           setSelected(next)
           setPendingJump(null)
           if (next.workdir !== undefined) setWorkdir(next.workdir)
+        }}
+        onDeleted={(deleted) => {
+          setSelected((current) => (current?.source === deleted.source && current.id === deleted.id ? null : current))
+          setPendingJump((current) =>
+            current?.ref.source === deleted.source && current.ref.id === deleted.id ? null : current
+          )
+          LIST_CACHE.sessions.clear()
+          delete LIST_CACHE.workdirs
+          retry()
         }}
         loading={false}
       />
@@ -377,6 +389,7 @@ export function ContextInsightPanel(): ReactElement {
         toolsExpanded={toolsExpanded}
         onToggleTools={setToolsExpanded}
         onLoadMore={loadMore}
+        onOpenSession={onOpenSession}
         onHandoff={() => setHandoffFor({ source: detail.ref.source, id: detail.ref.id })}
       />
     )
@@ -413,7 +426,13 @@ export function ContextInsightPanel(): ReactElement {
 
       {searchOpen ? <SearchPalette api={api} onClose={() => setSearchOpen(false)} onOpenTurn={jumpTo} /> : null}
       {handoffFor === null ? null : (
-        <HandoffDialog api={api} source={handoffFor.source} id={handoffFor.id} onClose={() => setHandoffFor(null)} />
+        <HandoffDialog
+          onOpenSession={onOpenSession}
+          api={api}
+          source={handoffFor.source}
+          id={handoffFor.id}
+          onClose={() => setHandoffFor(null)}
+        />
       )}
     </div>
   )

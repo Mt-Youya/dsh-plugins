@@ -36,3 +36,14 @@ describe("apply", () => {
     expect(table.size).toBe(0)
   })
 })
+
+it("binds route cleanup to the Host fiber lifecycle, without relying on the apply return value", () => {
+  const { table, ctx } = webServer()
+  let onDispose: (() => void) | undefined
+  Object.assign(ctx, { effect: (setup: () => () => void) => { onDispose = setup(); return onDispose } })
+  apply(ctx)
+  expect(table.has(HEALTH_PATH)).toBe(true)
+  expect(onDispose).toBeTypeOf("function")
+  onDispose?.()
+  expect(table.size).toBe(0)
+})

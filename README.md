@@ -10,7 +10,7 @@ A plugin collection for DeepSeek Harness (DSH). Install this one bundle to get e
 
 | Plugin                                                 | npm package                  | What it does                                                                                                                                  |
 | ------------------------------------------------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Sessions Insight](./plugins/sessions-insight/README.en.md) | `@cyrus/dsh-sessions-insight` | Opens up what each turn of a Claude Code, DSH or Codex session actually fed the model: composition, tool calls, compactions, cost. Read-only. |
+| [Sessions Insight](./plugins/sessions-insight/README.en.md) | `@cyrus/dsh-sessions-insight` | Opens up what each turn of a Claude Code, DSH or Codex session actually fed the model: composition, tool calls, compactions, cost. Includes confirmed session deletion. |
 
 ## Install
 

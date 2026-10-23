@@ -125,7 +125,6 @@
     padding-block: 0.625rem;
     padding-inline: 0.875rem;
     border: 1px solid color-mix(in oklch, var(--color-accent) 22%, transparent);
-    border-inline-start: 3px solid var(--color-accent);
     border-radius: 10px;
     background: color-mix(in oklch, var(--color-accent) 7%, var(--color-bg-1));
     font-size: 13.5px;
@@ -318,7 +317,6 @@
 
 .ci-row[data-selected="true"] {
   background: color-mix(in oklch, var(--color-accent) 14%, transparent);
-  box-shadow: inset 2px 0 0 var(--color-accent);
 }
 
 .ci-row:focus-visible,

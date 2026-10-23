@@ -14,7 +14,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ReactElement } from "react"
 import type { ContextSource, WorkdirEntry } from "../../protocol.ts"
 import type { Api } from "../api.ts"
-import { formatBytes, formatShortTime, splitPath, tildePath } from "../format.ts"
+import { formatShortTime, splitPath, tildePath } from "../format.ts"
+import { SessionRow } from "./session-row.tsx"
 import { Glyph, SourceIcon, SOURCE_MARKS } from "./icons.tsx"
 import { TreeSkeleton } from "./states.tsx"
 import { t } from "../locale.ts"
@@ -93,7 +94,7 @@ function ProjectRow({
         <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold">{project.leaf}</span>
         <span className="shrink-0 text-[10.5px] text-fg-3 tabular-nums">{formatShortTime(project.lastUpdatedAt)}</span>
       </span>
-      <span className="mt-1 flex min-w-0 items-center gap-1.5 ps-[37px]">
+      <span className="mt-1 flex min-w-0 items-center gap-1.5 ps-9.25">
         <span className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-fg-3">
           {project.parent === "" ? "" : tildePath(project.parent)}
         </span>
@@ -104,52 +105,6 @@ function ProjectRow({
         </span>
       </span>
     </button>
-  )
-}
-
-/** A session row, hung under its project by a guide line. */
-function SessionRow({
-  row,
-  index,
-  onOpen,
-  onFocus,
-}: {
-  row: Extract<TreeRow, { kind: "session" }>
-  index: number
-  onOpen: () => void
-  onFocus: () => void
-}): ReactElement {
-  const mark = SOURCE_MARKS[row.session.source]
-  return (
-    <div className="ms-[13px] border-s border-line-soft ps-1.5">
-      <button
-        type="button"
-        className="ci-row px-2 py-1.5"
-        data-key={row.key}
-        data-selected={row.selected}
-        data-focus={index}
-        aria-current={row.selected}
-        onClick={onOpen}
-        onFocus={onFocus}
-        title={row.session.title}
-      >
-        <span className="flex min-w-0 items-center gap-1.5">
-          <span className="inline-flex w-3.5 shrink-0 justify-center">
-            <SourceIcon source={row.session.source} size={12} />
-          </span>
-          <span className="min-w-0 flex-1 truncate text-[12.5px]">{row.session.title}</span>
-        </span>
-        <span className="mt-0.5 flex min-w-0 items-center gap-1.5 ps-5 text-[10.5px] text-fg-3 tabular-nums">
-          <span style={{ color: mark.text }} className="ci-src__word">
-            {mark.label.zh}
-          </span>
-          <span aria-hidden="true">·</span>
-          <span>{formatShortTime(row.session.updatedAt)}</span>
-          <span aria-hidden="true">·</span>
-          <span>{formatBytes(row.session.bytes)}</span>
-        </span>
-      </button>
-    </div>
   )
 }
 
@@ -169,12 +124,16 @@ export function ProjectTree({
   selected,
   onSelect,
   loading,
+  onDeleted,
+  revision,
 }: {
   api: Api
   workdirs: readonly WorkdirEntry[]
   selected: TreeSelection | null
   onSelect: (selection: TreeSelection) => void
   loading: boolean
+  onDeleted: (session: TreeSession) => void
+  revision: number
 }): ReactElement {
   const allProjects = useMemo(() => buildProjects(workdirs, splitPath), [workdirs])
   const [query, setQuery] = useState("")
@@ -186,6 +145,14 @@ export function ProjectTree({
   const [focus, setFocus] = useState(-1)
   const navRef = useRef<HTMLDivElement | null>(null)
   const requested = useRef(new Set<string>())
+  const generation = useRef(revision)
+
+  useEffect(() => {
+    generation.current = revision
+    requested.current.clear()
+    setSessions(new Map())
+    setLoadingWorkdirs(new Set())
+  }, [revision])
 
   // Default: open the project that holds the selection, else the first one.
   useEffect(() => {
@@ -203,6 +170,7 @@ export function ProjectTree({
       requested.current.add(workdir)
       setLoadingWorkdirs((current) => new Set(current).add(workdir))
       const result = await api.sessions(workdir)
+      if (generation.current !== revision) return
       requested.current.delete(workdir)
       setLoadingWorkdirs((current) => {
         const next = new Set(current)
@@ -224,7 +192,7 @@ export function ProjectTree({
       }))
       setSessions((current) => new Map(current).set(workdir, rows))
     },
-    [api]
+    [api, revision]
   )
 
   useEffect(() => {
@@ -313,7 +281,7 @@ export function ProjectTree({
       <div className="flex shrink-0 flex-col gap-2 px-3 pt-3 pb-2">
         <div className="flex items-center gap-2 text-[12px] font-semibold">
           <span>{t("tree.title")}</span>
-          <span className="rounded-full bg-bg-2 px-1.5 text-[10.5px] font-medium leading-[17px] text-fg-dim tabular-nums">
+          <span className="rounded-full bg-bg-2 px-1.5 text-[10.5px] font-medium leading-4.25 text-fg-dim tabular-nums">
             {query.trim() === "" ? allProjects.length : `${String(projects.length)} / ${String(allProjects.length)}`}
           </span>
         </div>
@@ -358,10 +326,10 @@ export function ProjectTree({
           }
           if (row.kind === "skeleton") {
             return (
-              <div className="ms-[13px] flex flex-col gap-1 border-s border-line-soft py-1 ps-2.5" key={row.key}>
+              <div className="ms-3.25 flex flex-col gap-1 border-s border-line-soft py-1 ps-2.5" key={row.key}>
                 {Array.from({ length: row.rows }, (_, order) => (
                   <div
-                    className="h-8 rounded-[8px] bg-[linear-gradient(90deg,var(--color-bg-1),var(--color-bg-2),var(--color-bg-1))] bg-[length:200%_100%] motion-safe:animate-[ci-skel_1.4s_var(--ease-in-out)_infinite]"
+                    className="h-8 rounded-lg bg-[linear-gradient(90deg,var(--color-bg-1),var(--color-bg-2),var(--color-bg-1))] bg-size-[200%_100%] motion-safe:animate-[ci-skel_1.4s_var(--ease-in-out)_infinite]"
                     key={row.key + String(order)}
                   />
                 ))}
@@ -370,7 +338,7 @@ export function ProjectTree({
           }
           if (row.kind === "more") {
             return (
-              <div className="ms-[13px] border-s border-line-soft ps-1.5 py-0.5" key={row.key}>
+              <div className="ms-3.25 border-s border-line-soft ps-1.5 py-0.5" key={row.key}>
                 <button
                   type="button"
                   className="ci-btn ci-btn--quiet h-7 w-full justify-start"
@@ -386,6 +354,8 @@ export function ProjectTree({
           return (
             <SessionRow
               key={row.key}
+              api={api}
+              onDeleted={onDeleted}
               row={row}
               index={index}
               onOpen={() => openRow(row)}

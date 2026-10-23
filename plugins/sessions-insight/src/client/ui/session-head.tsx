@@ -8,6 +8,7 @@
  * @module @cyrus/dsh-sessions-insight/client/session-head
  */
 
+import { useState } from "react"
 import type { ReactElement } from "react"
 import type { CostValue, SessionDetail } from "../../protocol.ts"
 import type { Turn } from "@cyrus/dsh-session-contract"
@@ -35,12 +36,15 @@ export function SessionHead({
   turns,
   cost,
   onHandoff,
+  onOpenSession,
 }: {
   data: SessionDetail
   turns: readonly Turn[]
   cost: CostValue | null
   onHandoff: () => void
+  onOpenSession?: (id: string) => void | Promise<void>
 }): ReactElement {
+  const [openError, setOpenError] = useState("")
   const session = data.session
   const label = sessionLabel({ title: session.title, firstInput: session.firstInput })
   const mark = SOURCE_MARKS[session.source]
@@ -86,12 +90,33 @@ export function SessionHead({
             ) : null}
           </p>
         </div>
-        <button type="button" className="ci-btn shrink-0" onClick={onHandoff}>
+        <button
+          type="button"
+          className="ci-btn shrink-0"
+          onClick={
+            session.source !== "dsh"
+              ? onHandoff
+              : () => {
+                  setOpenError("")
+                  void Promise.resolve()
+                    .then(() => {
+                      if (onOpenSession === undefined) throw new Error("DSH navigation unavailable")
+                      return onOpenSession(session.id)
+                    })
+                    .catch((error: unknown) => setOpenError(error instanceof Error ? error.message : String(error)))
+                }
+          }
+        >
           <Glyph name="handoff" size={13} />
-          {t("handoff.button")}
+          {session.source === "dsh" ? t("handoff.openExisting") : t("handoff.button")}
         </button>
       </div>
 
+      {openError === "" ? null : (
+        <p className="m-0 text-[12px] text-err" role="alert">
+          {t("handoff.openFailed", { detail: openError })}
+        </p>
+      )}
       <div className="grid grid-cols-2 @2xl:grid-cols-4 gap-2">
         <Stat
           label={t("stats.current")}

@@ -19,6 +19,7 @@
  * @module @cyrus/dsh-sessions-insight/host/handoff
  */
 
+import { handoffProgress } from "./progress.ts"
 import { stat } from "node:fs/promises"
 import { isAbsolute } from "node:path"
 import type { HandoffApplyValue, HandoffStatusValue } from "../../protocol.ts"
@@ -28,7 +29,7 @@ import type { ObservedEvent } from "../sources/dsh-events.ts"
 /** Session creation/queueing, as the in-process controller exposes it. */
 export interface SessionCommandsFace {
   /** `sessionController.commands.create`. */
-  create(request: { cwd: string; sessionId?: string; agentPreset?: string }): Promise<unknown>
+  create(request: { workspaceId: string; sessionId?: string; agentPreset?: string }): Promise<unknown>
   /** `sessionController.commands.prompt(request, source)`. */
   prompt(
     request: {
@@ -57,8 +58,15 @@ export interface HandoffApplyInput {
   sessionId?: string
 }
 
+/** Official workspace creation is idempotent by canonical directory path. */
+export interface WorkspaceCommandsFace {
+  create(request: { path: string }): Promise<{ workspace: { workspaceId: string } }>
+  attach(workspaceId: string, sessionId: string): Promise<void>
+}
+
 /** Everything the runner needs from the Host. */
 export interface HandoffDeps {
+  workspaces?: WorkspaceCommandsFace
   /** In-process session commands; absent when the controller is not mounted. */
   commands?: SessionCommandsFace
   /** Reads the target session's events; absent means status cannot advance. */
@@ -222,9 +230,18 @@ export class HandoffRunner {
       return { ok: false, error: "bad-request", detail: "invalid-session-id" }
     }
 
+    const workspaces = this.#deps.workspaces
+    if (workspaces === undefined)
+      return { ok: false, error: "handoff-unavailable", detail: "workspace-controller-missing" }
+    let workspaceId: string
+    try {
+      workspaceId = (await workspaces.create({ path: cwd })).workspace.workspaceId
+    } catch (error) {
+      return { ok: false, error: "handoff-unavailable", detail: `workspace: ${messageOf(error).slice(0, 200)}` }
+    }
     let created: unknown
     try {
-      const request: { cwd: string; sessionId?: string; agentPreset?: string } = { cwd }
+      const request: { workspaceId: string; sessionId?: string; agentPreset?: string } = { workspaceId }
       if (input.sessionId !== undefined) request.sessionId = input.sessionId
       created = await commands.create(request)
     } catch (error) {
@@ -248,6 +265,22 @@ export class HandoffRunner {
 
     this.#remember(sessionId, baselineSeq)
     return { ok: true, value: { sessionId, state: "delivered", pollAfterMs: HANDOFF_POLL_MS } }
+  }
+
+  /** Make an existing handoff visible without starting or interrupting a turn. */
+  async reveal(sessionId: string, cwd: string): Promise<{ ok: true; value: { sessionId: string } } | HandoffFailure> {
+    if (!isSafeId(sessionId) || !isAbsolute(cwd))
+      return { ok: false, error: "bad-request", detail: "invalid-session-location" }
+    const workspaces = this.#deps.workspaces
+    if (workspaces === undefined)
+      return { ok: false, error: "handoff-unavailable", detail: "workspace-controller-missing" }
+    try {
+      const { workspace } = await workspaces.create({ path: cwd })
+      await workspaces.attach(workspace.workspaceId, sessionId)
+      return { ok: true, value: { sessionId } }
+    } catch (error) {
+      return { ok: false, error: "handoff-unavailable", detail: `workspace: ${messageOf(error).slice(0, 200)}` }
+    }
   }
 
   /**
@@ -275,11 +308,15 @@ export class HandoffRunner {
 
     const job = this.#jobs.get(sessionId)
     const baseline = job?.baselineSeq ?? -1
-    const elapsedMs = this.#now() - started
+    const elapsedMs = Math.max(
+      0,
+      this.#now() - (job?.deliveredAt ?? events.find((event) => event.type === "turn/start")?.time ?? started)
+    )
     // Log order first. The time fallback only applies when the whole log sits at
     // or below the baseline, i.e. when seq cannot separate old from new.
     const bySeq = events.filter((event) => event.seq > baseline)
     const inWindow = bySeq.length > 0 ? bySeq : events.filter((event) => event.time >= (job?.deliveredAt ?? 0))
+    const progress = handoffProgress(inWindow)
     const sawTurnStart = inWindow.some((event) => event.type === "turn/start")
     let turnEnd = inWindow.find((event) => event.type === "turn/end")
     if (turnEnd === undefined) {
@@ -293,22 +330,22 @@ export class HandoffRunner {
     }
     if (turnEnd === undefined) {
       if (!sawTurnStart) {
-        return { ok: true, value: { sessionId, state: "delivered", elapsedMs } }
+        return { ok: true, value: { sessionId, state: "delivered", elapsedMs, progress } }
       }
       // A turn has started, so delivery is over: never report "delivered" here.
       // (Previous builds could, when turn/start predated the wall-clock window.)
-      return { ok: true, value: { sessionId, state: "running", elapsedMs } }
+      return { ok: true, value: { sessionId, state: "running", elapsedMs, progress } }
     }
     const kind = reasonKind(turnEnd.data)
     if (kind === "completed") {
-      return { ok: true, value: { sessionId, state: "succeeded", seq: turnEnd.seq, elapsedMs } }
+      return { ok: true, value: { sessionId, state: "succeeded", seq: turnEnd.seq, elapsedMs, progress } }
     }
     const code = failureCodeOf(inWindow)
     const reason = code ?? kind ?? "unknown"
     const hint = FAILURE_HINTS[reason] ?? `turn/end reason=${reason}，会话日志里没有已知失败码`
     const raw = failureMessageOf(inWindow)
     const detail = raw === undefined ? hint : `${hint} 原始失败：${raw}`
-    return { ok: true, value: { sessionId, state: "failed", reason, seq: turnEnd.seq, detail, elapsedMs } }
+    return { ok: true, value: { sessionId, state: "failed", reason, seq: turnEnd.seq, detail, elapsedMs, progress } }
   }
 
   /**

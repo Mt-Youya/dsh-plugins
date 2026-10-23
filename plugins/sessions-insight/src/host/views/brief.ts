@@ -27,7 +27,7 @@ const LINE_LIMIT = 160
 
 /** One section of the brief. */
 export interface BriefSection {
-  /** Fixed Chinese heading, e.g. 已改动文件. */
+  /** Localized section heading. */
   title: string
   lines: string[]
   /** True when the transcript had nothing to say about this section. */
@@ -138,7 +138,19 @@ function timeRange(turns: readonly Turn[]): string {
  * @param session - the source session's IR.
  * @returns the brief and the counts its caller reports.
  */
-export function extractBrief(session: Session): BriefResult {
+export function extractBrief(session: Session, locale = "zh"): BriefResult {
+  const english = !/^zh(?:-|$)/i.test(locale)
+  const noRecord = english ? "No record in the session log" : NO_RECORD
+  const sectionTitles = english
+    ? ([
+        "Background and goals",
+        "Changed files",
+        "Decisions",
+        "Open items and risks",
+        "Next steps",
+        "Verification commands",
+      ] as const)
+    : SECTION_TITLES
   const assistantTexts = session.turns.flatMap((turn) => turn.assistantText)
   const calls = session.turns.flatMap((turn) => turn.toolCalls)
 
@@ -156,13 +168,19 @@ export function extractBrief(session: Session): BriefResult {
   const files = [...fileCounts.entries()]
     .sort((left, right) => right[1].count - left[1].count)
     .slice(0, 12)
-    .map(([path, meta]) => `${path}（${[...meta.tools].join("/")}，×${String(meta.count)}）`)
+    .map(
+      ([path, meta]) =>
+        `${path}${english ? " (" : "（"}${[...meta.tools].join("/")}${english ? ", " : "，"}×${String(meta.count)}${english ? ")" : "）"}`
+    )
 
   const decisions = collect(assistantTexts, DECISION, 6)
   const errors = calls
     .filter((call) => call.status === "error")
     .slice(0, 3)
-    .map((call) => `工具 ${call.name} 报错：${firstLine(outputText(call.output)) || "无输出"}`)
+    .map(
+      (call) =>
+        `${english ? `Tool ${call.name} failed: ` : `工具 ${call.name} 报错：`}${firstLine(outputText(call.output)) || (english ? "No output" : "无输出")}`
+    )
   const openItems = [...errors, ...collect(assistantTexts, OPEN, 6)].slice(0, 6)
   const next = collect(assistantTexts, NEXT, 4)
   const commands: string[] = []
@@ -180,42 +198,47 @@ export function extractBrief(session: Session): BriefResult {
 
   const background: string[] = []
   const title = session.title?.trim()
-  if (title !== undefined && title !== "") background.push(`会话标题：${clip(title, LINE_LIMIT)}`)
+  if (title !== undefined && title !== "")
+    background.push(`${english ? "Session title: " : "会话标题："}${clip(title, LINE_LIMIT)}`)
   const firstInput = session.turns[0]?.userInput[0]
   if (firstInput !== undefined && firstInput.trim() !== "") {
-    background.push(`首条输入：${clip(firstInput, LINE_LIMIT)}`)
+    background.push(`${english ? "First input: " : "首条输入："}${clip(firstInput, LINE_LIMIT)}`)
   }
   background.push(
-    `来源：${session.source} · ${session.workdir || "(未知工作目录)"} · ${String(session.turns.length)} 轮`
+    `${english ? "Source: " : "来源："}${session.source} · ${session.workdir || (english ? "(unknown workdir)" : "(未知工作目录)")} · ${String(session.turns.length)} ${english ? "turns" : "轮"}`
   )
-  background.push(`时间范围：${timeRange(session.turns)}`)
+  background.push(
+    `${english ? "Time range (UTC): " : "时间范围："}${session.turns.length === 0 ? noRecord : timeRange(session.turns)}`
+  )
   if (session.dataQuality.length > 0) {
-    background.push(`数据质量：${session.dataQuality.slice(0, 3).join(" / ")}`)
+    background.push(`${english ? "Data quality: " : "数据质量："}${session.dataQuality.slice(0, 3).join(" / ")}`)
   }
 
   const raw: { title: string; lines: string[] }[] = [
-    { title: SECTION_TITLES[0], lines: background },
-    { title: SECTION_TITLES[1], lines: files },
-    { title: SECTION_TITLES[2], lines: decisions },
-    { title: SECTION_TITLES[3], lines: openItems },
-    { title: SECTION_TITLES[4], lines: next },
-    { title: SECTION_TITLES[5], lines: commands },
+    { title: sectionTitles[0], lines: background },
+    { title: sectionTitles[1], lines: files },
+    { title: sectionTitles[2], lines: decisions },
+    { title: sectionTitles[3], lines: openItems },
+    { title: sectionTitles[4], lines: next },
+    { title: sectionTitles[5], lines: commands },
   ]
 
   const sections: BriefSection[] = raw.map((section) => ({
     title: section.title,
-    lines: section.lines.length === 0 ? [NO_RECORD] : section.lines,
+    lines: section.lines.length === 0 ? [noRecord] : section.lines,
     empty: section.lines.length === 0,
   }))
 
-  const header = `# 交接简报${title === undefined || title === "" ? "" : "：" + clip(title, 60)}`
+  const header = `# ${english ? "Handoff brief" : "交接简报"}${title === undefined || title === "" ? "" : (english ? ": " : "：") + clip(title, 60)}`
   let text = header + "\n"
   sections.forEach((section, index) => {
     text += `\n## ${String(index + 1)}. ${section.title}\n`
     for (const line of section.lines) text += `- ${line}\n`
   })
   if (text.length > BRIEF_LIMIT) {
-    const marker = "\n- （已达 2000 字上限，后续内容省略）\n"
+    const marker = english
+      ? "\n- (2000-character limit reached; remaining content omitted)\n"
+      : "\n- （已达 2000 字上限，后续内容省略）\n"
     text = text.slice(0, BRIEF_LIMIT - marker.length) + marker
   }
 

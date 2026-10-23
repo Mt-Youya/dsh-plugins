@@ -14,7 +14,7 @@ import { mkdir, readFile, readdir, rename, stat, writeFile } from "node:fs/promi
 import { basename, join } from "node:path"
 import { homedir } from "node:os"
 import { DEFAULT_PROJECTION_ROOT, readDshSession } from "@cyrus/dsh-session-readers"
-import { decodeSessionLog, splitLogLines } from "@cyrus/dsh-session-readers"
+import { deleteLogs } from "./delete.ts"
 import type { DshListMeta } from "@cyrus/dsh-session-readers"
 import { readDshListMeta } from "@cyrus/dsh-session-readers"
 import type { Session } from "@cyrus/dsh-session-contract"
@@ -171,43 +171,7 @@ export function decodeBucketName(bucket: string): string {
   return "/" + inner.replace(/-/g, "/")
 }
 
-/** One header line's facts. */
-export interface DshHeaderFacts {
-  id?: string
-  cwd?: string
-  createdAt?: number
-}
-
-/**
- * Decode just enough of a session log to read its header line.
- * @param path - `session.v4.jsonl.zstd`.
- * @param limit - bytes read from offset 0.
- * @returns the header facts, or an empty object when none was found.
- */
-export async function readDshHeaderFacts(path: string, limit: number): Promise<DshHeaderFacts> {
-  const buffer = await readFile(path)
-  const head = buffer.subarray(0, Math.min(buffer.length, limit))
-  const decoded = decodeSessionLog(head)
-  const lines = splitLogLines(decoded.text)
-  for (const line of lines) {
-    if (!line.includes('"type":"session"')) continue
-    let record: unknown
-    try {
-      record = JSON.parse(line)
-    } catch {
-      continue
-    }
-    if (typeof record !== "object" || record === null) continue
-    const row = record as Record<string, unknown>
-    if (row["type"] !== "session") continue
-    const facts: DshHeaderFacts = {}
-    if (typeof row["id"] === "string") facts.id = row["id"]
-    if (typeof row["cwd"] === "string") facts.cwd = row["cwd"]
-    if (typeof row["createdAt"] === "number") facts.createdAt = row["createdAt"]
-    return facts
-  }
-  return {}
-}
+export { readDshHeaderFacts, type DshHeaderFacts } from "./dsh-header.ts"
 
 /** DSH corpus reader. One instance per Host fiber. */
 export class DshSource implements SessionSource {
@@ -361,6 +325,19 @@ export class DshSource implements SessionSource {
       void saveDshIndex(this.#indexPath, next)
     }
     return { root: this.#root, state: "ok", entries, scannedAt }
+  }
+
+  async remove(id: string): Promise<{ ok: true } | SourceFailure> {
+    if (!isSafeId(id)) return { ok: false, error: "bad-request", detail: "invalid-session-id" }
+    const scan = await this.scan()
+    try {
+      return await deleteLogs(
+        this.root,
+        scan.entries.filter((entry) => entry.id === id).map((entry) => entry.path)
+      )
+    } finally {
+      this.invalidate()
+    }
   }
 
   async status(): Promise<SourceStatus> {

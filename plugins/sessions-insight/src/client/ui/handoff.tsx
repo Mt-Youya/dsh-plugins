@@ -42,10 +42,10 @@ const TERMINAL = new Set(["succeeded", "failed"])
  * @param state - delivered / running / succeeded / failed.
  */
 function stateClass(state: string): string {
-  const base = "m-0 px-2.5 py-2 rounded-lg border-s-[3px] bg-bg-2 text-xs "
-  if (state === "succeeded") return base + "border-s-ok text-ok"
-  if (state === "failed") return base + "border-s-err text-err"
-  return base + "border-s-warn text-warn"
+  const base = "m-0 px-2.5 py-2 rounded-lg bg-bg-2 text-xs "
+  if (state === "succeeded") return base + "text-ok"
+  if (state === "failed") return base + "text-err"
+  return base + "text-warn"
 }
 
 export function HandoffDialog({
@@ -53,18 +53,24 @@ export function HandoffDialog({
   source,
   id,
   onClose,
+  onOpenSession,
 }: {
   api: Api
   source: string
   id: string
   onClose: () => void
+  onOpenSession?: (id: string) => void | Promise<void>
 }): ReactElement {
   const [phase, setPhase] = useState<Phase>({ kind: "preparing" })
   const [cwd, setCwd] = useState("")
   const [briefText, setBriefText] = useState("")
+  const [progressError, setProgressError] = useState("")
+  const [openError, setOpenError] = useState("")
+  const alive = useRef(true)
   const pollTimer = useRef<number | undefined>(undefined)
 
   useEffect(() => {
+    alive.current = true
     const controller = new AbortController()
     void api.handoffPrepare(source, id, controller.signal).then((result) => {
       if (controller.signal.aborted) return
@@ -77,6 +83,7 @@ export function HandoffDialog({
       setBriefText(result.value.brief)
     })
     return () => {
+      alive.current = false
       controller.abort()
       if (pollTimer.current !== undefined) window.clearTimeout(pollTimer.current)
     }
@@ -85,6 +92,7 @@ export function HandoffDialog({
   function apply(brief: BriefValue): void {
     setPhase({ kind: "applying", brief })
     void api.handoffApply({ source, id, cwd, brief: briefText }).then((result) => {
+      if (!alive.current) return
       if (!result.ok) {
         setPhase({ kind: "apply-failed", brief, failure: result })
         return
@@ -98,7 +106,13 @@ export function HandoffDialog({
       })
       function poll(): void {
         void api.handoffStatus(sessionId).then((next) => {
-          if (!next.ok) return
+          if (!alive.current) return
+          if (!next.ok) {
+            setProgressError(next.detail ?? next.error)
+            pollTimer.current = window.setTimeout(poll, afterMs)
+            return
+          }
+          setProgressError("")
           setPhase({ kind: "applied", sessionId, status: next.value })
           if (!TERMINAL.has(next.value.state)) {
             pollTimer.current = window.setTimeout(poll, afterMs)
@@ -233,7 +247,40 @@ export function HandoffDialog({
             <p className={stateClass(phase.status.state)} data-state={phase.status.state}>
               {stateLabel(phase.status)} · {phase.sessionId.slice(0, 12)}
             </p>
-            <p className="text-fg-dim text-[10.5px] my-1.5">{t("handoff.polling")}</p>
+            <p className="m-0 text-[12px] text-fg-dim" role="status">
+              {t("handoff.progress", {
+                seconds: Math.floor(phase.status.elapsedMs / 1000),
+                count: phase.status.progress?.toolsCompleted ?? 0,
+              })}
+            </p>
+            {phase.status.state === "running" ? (
+              <p className="m-0 text-[12px] text-fg">
+                {phase.status.progress?.tool === "ask_user_question"
+                  ? t("handoff.waiting")
+                  : phase.status.progress?.tool
+                    ? t("handoff.tool", { tool: phase.status.progress.tool })
+                    : t("handoff.thinking")}
+              </p>
+            ) : null}
+            {phase.status.progress === undefined ? null : (
+              <p className="m-0 text-[11px] text-fg-dim">
+                {t("handoff.updated", {
+                  time: new Date(phase.status.progress.updatedAt).toLocaleTimeString(
+                    t("handoff.language") === "zh" ? "zh-CN" : "en-US"
+                  ),
+                })}
+              </p>
+            )}
+            {progressError === "" ? null : (
+              <p className="m-0 text-[12px] text-warn" role="alert">
+                {t("handoff.pollError", { detail: progressError })}
+              </p>
+            )}
+            {openError === "" ? null : (
+              <p className="m-0 text-[12px] text-err" role="alert">
+                {t("handoff.openFailed", { detail: openError })}
+              </p>
+            )}
             {phase.status.reason === undefined ? null : (
               <p className="m-0 font-mono text-[11px] text-err">
                 {t("handoff.reason", { reason: phase.status.reason })}
@@ -245,7 +292,23 @@ export function HandoffDialog({
             {phase.status.seq === undefined ? null : (
               <p className="text-fg-dim text-[10.5px] my-1.5">{t("handoff.evidence", { seq: phase.status.seq })}</p>
             )}
-            <div className="flex gap-2 items-center">
+            <div className="flex flex-wrap gap-2 items-center">
+              <button
+                type="button"
+                className="px-4 py-2.5 rounded-lg border border-accent bg-accent text-white text-[12px] cursor-pointer disabled:opacity-50"
+                disabled={onOpenSession === undefined}
+                onClick={() => {
+                  setOpenError("")
+                  void Promise.resolve()
+                    .then(() => onOpenSession?.(phase.sessionId))
+                    .then(onClose)
+                    .catch((error: unknown) => {
+                      if (alive.current) setOpenError(error instanceof Error ? error.message : String(error))
+                    })
+                }}
+              >
+                {t("handoff.openSession")}
+              </button>
               <button
                 type="button"
                 className="px-2.5 py-1 rounded-md border-[0.5px] border-line bg-transparent text-fg font-[inherit] text-[11px] cursor-pointer enabled:hover:border-accent disabled:opacity-50 disabled:cursor-default ms-auto"

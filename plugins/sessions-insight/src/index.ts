@@ -63,7 +63,7 @@ export { Lru } from "@cyrus/dsh-plugin-kit-host"
 export { PLUGIN_VERSION } from "./version.ts"
 
 /** Services this entry waits for before `apply` runs. */
-export const inject = ["webServer", "sessionController"] as const
+export const inject = ["webServer", "sessionController", "workspaceController", "workspaceRegistry"] as const
 
 /** Structural face of the Host web-server service. */
 export interface WebServerFace {
@@ -79,6 +79,7 @@ export interface WebServerFace {
 export interface HostContext {
   /** Browser HTTP carrier; registered routes are reachable at the site root. */
   webServer: WebServerFace
+  effect?: (setup: () => () => void, label?: string) => () => void
   /**
    * The Host's session controller, declared in `inject` so cordis resolves it
    * before `apply` runs. Handoff uses `sessionController.commands`; a property
@@ -86,6 +87,10 @@ export interface HostContext {
    * inject").
    */
   sessionController?: unknown
+  workspaceController?: {
+    commands: { create(request: { path: string }): Promise<{ workspace: { workspaceId: string } }> }
+  }
+  workspaceRegistry?: { get(id: string): { attachSession(id: string): Promise<void> } | undefined }
   /** Cordis service lookup, kept as a fallback for a lazily-activated gateway. */
   get?: (name: string) => unknown
 }
@@ -150,6 +155,18 @@ export function apply(ctx: HostContext): () => void {
   const handoff = new HandoffRunner({
     ...(commands() === undefined ? {} : { commands: commands() }),
     observe: (sessionId) => observeSession(observedRoot, sessionId),
+    ...(ctx.workspaceController === undefined || ctx.workspaceRegistry === undefined
+      ? {}
+      : {
+          workspaces: {
+            create: (request: { path: string }) => ctx.workspaceController!.commands.create(request),
+            attach: async (workspaceId: string, sessionId: string) => {
+              const workspace = ctx.workspaceRegistry!.get(workspaceId)
+              if (workspace === undefined) throw new Error("workspace/not-found")
+              await workspace.attachSession(sessionId)
+            },
+          },
+        }),
   })
   // Warm every reader's directory scan in the background. The first ⌘K, /sources
   // or /workdirs then answers from cache; without this the cold index build
@@ -170,7 +187,7 @@ export function apply(ctx: HostContext): () => void {
     for (const source of sources) source.invalidate()
   }
   // All or nothing: cordis only collects the disposer `apply` returns, and the
-  // web server's routes are not owned by this fiber. A registration that throws
+  // web server's routes need explicit fiber ownership. A registration that throws
   // part-way would otherwise leave the earlier routes in the Host's table for
   // the life of the process, and every later start would collide on them.
   const disposers: (() => void)[] = []
@@ -180,5 +197,6 @@ export function apply(ctx: HostContext): () => void {
     release(disposers)
     throw error
   }
-  return () => release(disposers)
+  const dispose = () => release(disposers)
+  return ctx.effect === undefined ? dispose : ctx.effect(() => dispose, "sessions-insight: host routes")
 }

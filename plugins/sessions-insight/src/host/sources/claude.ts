@@ -21,6 +21,7 @@ import type { SegmentInfo, SessionSummary, SourceStatus, WorkdirEntry } from "..
 import { LIST_ITEM_UNPARSED, isSafeId } from "../../protocol.ts"
 import type { ParsedSession, SearchCandidate, SessionSource, SourceFailure } from "./source.ts"
 import { cleanTitle, firstInputOf } from "./source.ts"
+import { deleteLogs } from "./delete.ts"
 import { Lru } from "@cyrus/dsh-plugin-kit-host"
 import { decodeProjectDirName, resolveInside } from "./paths.ts"
 
@@ -278,6 +279,21 @@ export class ClaudeSource implements SessionSource {
     if (this.#headers.size > 4096) this.#headers.clear()
     this.#headers.set(path, { mtimeMs, size, header })
     return header
+  }
+
+  async remove(id: string): Promise<{ ok: true } | SourceFailure> {
+    if (!isSafeId(id)) return { ok: false, error: "bad-request", detail: "invalid-session-id" }
+    const paths: string[] = []
+    // Include copied transcripts too, so an older copy cannot reappear after deletion.
+    for (const file of await walkFingerprint(this.root, (name) => name.endsWith(".jsonl"), 2)) {
+      const header = await this.#headerFacts(file.path, file.mtimeMs, file.size)
+      if ((header.sessionId ?? basename(file.path, ".jsonl")) === id) paths.push(file.path)
+    }
+    try {
+      return await deleteLogs(this.root, paths)
+    } finally {
+      this.invalidate()
+    }
   }
 
   async status(): Promise<SourceStatus> {

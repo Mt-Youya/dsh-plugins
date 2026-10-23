@@ -11,6 +11,7 @@ POST /api/session/create
 ```
 
 - **args 是按参数名索引的对象，不是数组；端点用斜杠。**
+- **当前交接实现**先调用 `workspaceController.commands.create({path: cwd})`：按规范化目录复用已有工作区，没有则注册。再调用 `sessionController.commands.create({workspaceId})`，由宿主绑定会话并推送侧边栏更新。`cwd` 与 `workspaceId` 不能同时传。
 - `cwd` 可选，**但省略即继承 dsh 进程的启动目录**（实测漏传把会话建到了本仓库桶下）。**交接必须显式传 cwd**，并在 UI 上让人看见它。
 - `sessionId` 可自定义；`agentPreset` 合法值 `standard|ptc|minimal|cordis`（默认 standard）。
 - 返回 `{sessionId, agentPreset}`。**create 不需要模型，成功不代表能跑模型**，不能当健康检查。
@@ -49,3 +50,9 @@ POST /api/session/create
 ## 进程内等价入口
 
 插件用 `ctx.sessions.create(...)` + agent loop 的 prompt 路径，语义与 HTTP 一致，但**参数名不经 wire 映射**（没有 `args.request` 这层包装），实现时不要照抄 RPC 的包封。
+
+## 会话可见性与继续交互
+
+客户端声明 `uiWorkspace` 服务依赖，通过 `uiWorkspace.openSession(sessionId)` 切回 DSH 原生会话界面，用户可在那里回答 `ask_user_question`。DSH 来源的详情页也提供「在 DSH 中打开」。
+
+打开前，`POST /handoff/reveal` 从真实 DSH 日志读取工作目录，再通过官方工作区服务补齐成员关系，用于找回旧版本仅传 cwd 创建的游离会话；不重发简报、不新建会话、不修改会话日志。
