@@ -6,11 +6,11 @@
  * text when it failed. Everything else (the raw JSON) is folded into a
  * disclosure so it never crowds the four facts above.
  *
- * @module @cyrus/dsh-sessions-insight/client/tool-detail
+ * @module @cyrusdoyle/dsh-sessions-insight/client/tool-detail
  */
 
 import type { ReactElement } from "react"
-import type { ToolCall } from "@cyrus/dsh-session-contract"
+import type { ToolCall } from "@cyrusdoyle/dsh-session-contract"
 import { clip, formatDuration } from "../format.ts"
 import { t } from "../locale.ts"
 import { Glyph } from "./icons.tsx"

@@ -3,7 +3,7 @@
  * inside the Vite dev server (see `vite.config.ts`), so the page shows real
  * sessions without packing or installing the plugin.
  *
- * @module @cyrus/dsh-sessions-insight/preview
+ * @module @cyrusdoyle/dsh-sessions-insight/preview
  */
 
 import { StrictMode } from "react"

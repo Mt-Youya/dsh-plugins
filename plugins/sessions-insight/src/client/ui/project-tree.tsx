@@ -7,7 +7,7 @@
  * request rather than one per workdir; the rows themselves are decided by the
  * pure functions in `tree.ts`.
  *
- * @module @cyrus/dsh-sessions-insight/client/project-tree
+ * @module @cyrusdoyle/dsh-sessions-insight/client/project-tree
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"

@@ -3,10 +3,10 @@
  *
  * The collection is what a profile installs, so the Host resolves its entry to
  * this package's manifest and keys the client module graph by
- * `@cyrus/dsh-plugins`. It therefore builds the plugin sources into its own
+ * `@cyrusdoyle/dsh-plugins`. It therefore builds the plugin sources into its own
  * `lib/` under its own name rather than pointing `exports` into
  * `plugins/sessions-insight/lib`, whose client bundle registers as
- * `@cyrus/dsh-sessions-insight` and would never arrive under this package.
+ * `@cyrusdoyle/dsh-sessions-insight` and would never arrive under this package.
  *
  * @see tooling/tsdown/plugin-config.ts
  * @module tsdown.config

@@ -1,7 +1,7 @@
 /**
  * The `/search` contract: paging, both tiers, and the guards for a hit page.
  *
- * @module @cyrus/dsh-session-contract/guards/search
+ * @module @cyrusdoyle/dsh-session-contract/guards/search
  */
 
 import { CONTEXT_SOURCES } from "../types.ts"

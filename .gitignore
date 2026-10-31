@@ -6,6 +6,7 @@ lib/
 *.log
 
 *.tgz
+/.scratch/npm-release/
 
 .vite/
 coverage/

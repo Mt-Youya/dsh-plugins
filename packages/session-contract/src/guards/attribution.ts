@@ -4,7 +4,7 @@
  * Precision, basis and context part are closed sets here as well as in the IR:
  * the guard is what a browser sees before it trusts a number.
  *
- * @module @cyrus/dsh-session-contract/guards/attribution
+ * @module @cyrusdoyle/dsh-session-contract/guards/attribution
  */
 
 import type { Attribution, Basis, ContextPart, Measure, Precision } from "../ir.ts"

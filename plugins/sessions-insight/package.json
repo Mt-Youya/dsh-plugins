@@ -1,6 +1,6 @@
 {
-  "name": "@cyrus/dsh-sessions-insight",
-  "version": "0.0.4",
+  "name": "@cyrusdoyle/dsh-sessions-insight",
+  "version": "0.0.5",
   "description": "Sessions insight and confirmed session deletion for the DSH Web GUI: what each turn actually fed the model, across Claude Code, DSH and Codex sessions.",
   "keywords": [
     "agent",
@@ -33,7 +33,7 @@
     "icon.svg",
     "locale",
     "README.md",
-    "README.en.md",
+    "README.zh.md",
     "LICENSE"
   ],
   "type": "module",
@@ -63,11 +63,11 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@cyrus/dsh-plugin-kit": "workspace:*",
-    "@cyrus/dsh-plugin-kit-client": "workspace:*",
-    "@cyrus/dsh-plugin-kit-host": "workspace:*",
-    "@cyrus/dsh-session-contract": "workspace:*",
-    "@cyrus/dsh-session-readers": "workspace:*"
+    "@cyrusdoyle/dsh-plugin-kit": "workspace:*",
+    "@cyrusdoyle/dsh-plugin-kit-client": "workspace:*",
+    "@cyrusdoyle/dsh-plugin-kit-host": "workspace:*",
+    "@cyrusdoyle/dsh-session-contract": "workspace:*",
+    "@cyrusdoyle/dsh-session-readers": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.3.1"

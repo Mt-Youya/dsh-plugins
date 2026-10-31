@@ -1,6 +1,6 @@
 [English](./README.md) | 简体中文
 
-# Cyrus 插件集 · @cyrus/dsh-plugins
+# Cyrus 插件集 · @cyrusdoyle/dsh-plugins
 
 给 DeepSeek Harness（DSH）用的插件合集。装这一个组合包，就装上下面列出的全部插件；每个插件也可以单独安装。
 
@@ -10,7 +10,7 @@
 
 | 插件                                                              | npm 包                       | 做什么                                                                                                        |
 | ----------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| [会话洞察（Sessions Insight）](./plugins/sessions-insight/README.md) | `@cyrus/dsh-sessions-insight` | 把 Claude Code / DSH / Codex 三源会话每一轮实际喂给模型的上下文拆开看：构成、工具调用、压缩点、费用，支持确认后删除会话 |
+| [会话洞察（Sessions Insight）](./plugins/sessions-insight/README.zh.md) | `@cyrusdoyle/dsh-sessions-insight` | 把 Claude Code / DSH / Codex 三源会话每一轮实际喂给模型的上下文拆开看：构成、工具调用、压缩点、费用，支持确认后删除会话 |
 
 ## 安装
 
@@ -19,13 +19,13 @@
 **装组合包（推荐）**：一次装上全部插件，以后合集里加了新插件，升级组合包就能拿到。
 
 ```bash
-dsh plugin --profile desktop add @cyrus/dsh-plugins
+dsh plugin --profile desktop add @cyrusdoyle/dsh-plugins
 ```
 
 **只装某一个插件**：
 
 ```bash
-dsh plugin --profile desktop add @cyrus/dsh-sessions-insight
+dsh plugin --profile desktop add @cyrusdoyle/dsh-sessions-insight
 ```
 
 装完**完全退出再重新打开** DSH；插件管理器里出现「Cyrus 插件集」或「会话洞察」即成功。
@@ -34,7 +34,7 @@ dsh plugin --profile desktop add @cyrus/dsh-sessions-insight
 >
 > 不要用 git 地址安装（`pnpm add https://github.com/...`）：仓库根的依赖写的是 `workspace:^`，只有发布到 npm 时才会被改写成版本号。
 
-**从当前工作区安装（开发这个合集时）**：桌面端插件管理器的「添加插件」也接受本地目录，填本仓库的绝对路径即可。DSH 会把它记成 `"@cyrus/dsh-plugins": "link:<那个路径>"` —— 一条指向你工作区的软链，不是拷贝，也不会替你做任何构建。宿主就是通过这条软链读 `lib/index.js`，而 `lib/` 在 .gitignore 里，所以先构建：
+**从当前工作区安装（开发这个合集时）**：桌面端插件管理器的「添加插件」也接受本地目录，填本仓库的绝对路径即可。DSH 会把它记成 `"@cyrusdoyle/dsh-plugins": "link:<那个路径>"` —— 一条指向你工作区的软链，不是拷贝，也不会替你做任何构建。宿主就是通过这条软链读 `lib/index.js`，而 `lib/` 在 .gitignore 里，所以先构建：
 
 ```bash
 npx tsdown
@@ -50,8 +50,8 @@ npx tsdown
 
 | 目录                         | 内容                                           | 发布                                 |
 | ---------------------------- | ---------------------------------------------- | ------------------------------------ |
-| `/`（仓库根）                | 组合包：`cordis.patch.yml` + `locale/`         | **是**，`@cyrus/dsh-plugins`         |
-| `plugins/sessions-insight`    | 会话洞察插件：宿主半边 + 浏览器半边          | **是**，`@cyrus/dsh-sessions-insight` |
+| `/`（仓库根）                | 组合包：`cordis.patch.yml` + `locale/`         | **是**，`@cyrusdoyle/dsh-plugins`         |
+| `plugins/sessions-insight`    | 会话洞察插件：宿主半边 + 浏览器半边          | **是**，`@cyrusdoyle/dsh-sessions-insight` |
 | `packages/session-contract`  | 统一 IR、线上类型与解码守卫                    | 否                                   |
 | `packages/session-readers`   | Claude Code / Codex / DSH 三源适配             | 否                                   |
 | `packages/plugin-kit`        | 插件无关的 JSON 信封与 URL 约定                | 否                                   |

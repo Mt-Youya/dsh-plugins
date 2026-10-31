@@ -1,7 +1,7 @@
 /**
  * Guards for values that arrive as strings but have to be an identifier.
  *
- * @module @cyrus/dsh-session-contract/guards/ids
+ * @module @cyrusdoyle/dsh-session-contract/guards/ids
  */
 
 /**

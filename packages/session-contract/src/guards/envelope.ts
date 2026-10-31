@@ -2,10 +2,10 @@
  * The envelope decoder is the kit's; the binding below supplies this contract's
  * code vocabulary so callers keep the two-argument form.
  *
- * @module @cyrus/dsh-session-contract/guards/envelope
+ * @module @cyrusdoyle/dsh-session-contract/guards/envelope
  */
 
-import { decodeEnvelope as decodeEnvelopeOf } from "@cyrus/dsh-plugin-kit"
+import { decodeEnvelope as decodeEnvelopeOf } from "@cyrusdoyle/dsh-plugin-kit"
 import { API_ERROR_CODES } from "../types.ts"
 import type { ApiErrorCode } from "../types.ts"
 

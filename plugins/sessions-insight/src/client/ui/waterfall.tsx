@@ -10,11 +10,11 @@
  * placed by percentage, so they stay round at any aspect ratio and a click on
  * one opens that turn.
  *
- * @module @cyrus/dsh-sessions-insight/client/waterfall
+ * @module @cyrusdoyle/dsh-sessions-insight/client/waterfall
  */
 
 import type { ReactElement } from "react"
-import type { Turn } from "@cyrus/dsh-session-contract"
+import type { Turn } from "@cyrusdoyle/dsh-session-contract"
 import { compactTokens } from "../format.ts"
 import { t } from "../locale.ts"
 

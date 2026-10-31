@@ -2,13 +2,13 @@
  * Wire types shared by both halves.
  *
  * The envelope shape itself is not this package's: it is generic over the code
- * vocabulary and lives in `@cyrus/dsh-plugin-kit`. What stays here is the vocabulary —
+ * vocabulary and lives in `@cyrusdoyle/dsh-plugin-kit`. What stays here is the vocabulary —
  * the codes a sessions-insight route may answer with — and the payload types.
  *
- * @module @cyrus/dsh-session-contract/types
+ * @module @cyrusdoyle/dsh-session-contract/types
  */
 
-import type { Envelope as GenericEnvelope, Fail as GenericFail, Ok as GenericOk } from "@cyrus/dsh-plugin-kit"
+import type { Envelope as GenericEnvelope, Fail as GenericFail, Ok as GenericOk } from "@cyrusdoyle/dsh-plugin-kit"
 import type { Attribution, CompactionPoint, ContextPart, Measure, Turn, Usage } from "./ir.ts"
 
 /**

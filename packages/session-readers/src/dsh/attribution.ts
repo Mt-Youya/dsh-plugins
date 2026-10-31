@@ -38,7 +38,7 @@ import {
   type Attribution,
   type ContextPart,
   type Measure,
-} from "@cyrus/dsh-session-contract"
+} from "@cyrusdoyle/dsh-session-contract"
 import type { ProjectionRequest } from "./projection.ts"
 
 /**

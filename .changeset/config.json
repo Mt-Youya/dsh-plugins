@@ -8,11 +8,11 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@cyrus/dsh-plugin-kit",
-    "@cyrus/dsh-session-contract",
-    "@cyrus/dsh-session-readers",
-    "@cyrus/dsh-plugin-kit-host",
-    "@cyrus/dsh-plugin-kit-client",
-    "@cyrus/dsh-preview"
+    "@cyrusdoyle/dsh-plugin-kit",
+    "@cyrusdoyle/dsh-session-contract",
+    "@cyrusdoyle/dsh-session-readers",
+    "@cyrusdoyle/dsh-plugin-kit-host",
+    "@cyrusdoyle/dsh-plugin-kit-client",
+    "@cyrusdoyle/dsh-preview"
   ]
 }

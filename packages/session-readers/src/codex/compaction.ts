@@ -9,7 +9,7 @@
  * both numbers, which is a substitution, never an append.
  */
 
-import type { CompactionPoint } from "@cyrus/dsh-session-contract"
+import type { CompactionPoint } from "@cyrusdoyle/dsh-session-contract"
 import { numberField, objectArrayField, objectField, type JsonObject } from "./records.ts"
 import { readUsageRecord, type UsageReading } from "./usage.ts"
 

@@ -7,7 +7,7 @@
  * 成功 (with the event's seq) or 失败 with the model-side reason and the fix
  * (docs/adr/0007-accepted-is-not-success.md).
  *
- * @module @cyrus/dsh-sessions-insight/client/handoff
+ * @module @cyrusdoyle/dsh-sessions-insight/client/handoff
  */
 
 import { useEffect, useRef, useState } from "react"

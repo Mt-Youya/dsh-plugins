@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import type { CompactionPoint, Turn } from "@cyrus/dsh-session-contract"
+import type { CompactionPoint, Turn } from "@cyrusdoyle/dsh-session-contract"
 import { FIRST_INPUT_CHARS, sessionLabel } from "../src/client/labels.ts"
 import { splitPath } from "../src/client/format.ts"
 import { buildTurnRows } from "../src/client/state/turn-rows.ts"

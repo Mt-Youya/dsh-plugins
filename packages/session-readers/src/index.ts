@@ -10,7 +10,7 @@
  * the cross-adapter surface explicitly instead of re-exporting three colliding
  * `export *` globs.
  *
- * @module @cyrus/dsh-session-readers
+ * @module @cyrusdoyle/dsh-session-readers
  */
 
 export * from "./calipers.ts"

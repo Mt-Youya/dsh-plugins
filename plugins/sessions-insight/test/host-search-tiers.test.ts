@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import type { Session, Turn } from "@cyrus/dsh-session-contract"
+import type { Session, Turn } from "@cyrusdoyle/dsh-session-contract"
 import { searchSessions } from "../src/host/views/search.ts"
 import type { ParsedSession, SearchCandidate, SessionSource, SourceFailure } from "../src/host/sources/source.ts"
 import type { ContextSource, SegmentInfo, SessionSummary, SourceStatus, WorkdirEntry } from "../src/protocol.ts"

@@ -1,6 +1,6 @@
 {
-  "name": "@cyrus/dsh-plugins",
-  "version": "0.0.3",
+  "name": "@cyrusdoyle/dsh-plugins",
+  "version": "0.0.4",
   "description": "DeepSeek Harness plugin collection: installs and registers the plugins listed in cordis.patch.yml (currently Sessions Insight). Also the workspace root they are built from.",
   "keywords": [
     "chatgpt",
@@ -26,12 +26,12 @@
     "lib/**/*.js",
     "lib/**/*.js.map",
     "plugins/sessions-insight/README.md",
-    "plugins/sessions-insight/README.en.md",
+    "plugins/sessions-insight/README.zh.md",
     "plugins/sessions-insight/LICENSE",
     "plugins/sessions-insight/icon.svg",
     "plugins/sessions-insight/docs/images/**/*.png",
     "README.md",
-    "README.en.md",
+    "README.zh.md",
     "LICENSE"
   ],
   "type": "module",
@@ -55,18 +55,18 @@
     "css": "node scripts/build-css.mjs plugins/sessions-insight",
     "build": "pnpm css && pnpm typecheck && pnpm typecheck:client && tsdown && pnpm build:libs",
     "build:libs": "pnpm --filter './packages/*' -r run build",
-    "pack:insight": "pnpm --filter @cyrus/dsh-sessions-insight release:patch",
+    "pack:insight": "pnpm --filter @cyrusdoyle/dsh-sessions-insight release:patch",
     "pack:collection": "pnpm pack",
     "typecheck": "tsc --noEmit",
     "typecheck:client": "tsc --noEmit -p tsconfig.client.json",
     "test": "vitest run",
     "fmt": "oxfmt --write .",
     "lint": "oxlint --fix",
-    "dsh:remove-insight": "dsh plugin --profile desktop remove @cyrus/dsh-sessions-insight",
+    "dsh:remove-insight": "dsh plugin --profile desktop remove @cyrusdoyle/dsh-sessions-insight",
     "install:plugin": "bash scripts/install-plugin.sh"
   },
   "dependencies": {
-    "@cyrus/dsh-sessions-insight": "workspace:^"
+    "@cyrusdoyle/dsh-sessions-insight": "workspace:^"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.3",

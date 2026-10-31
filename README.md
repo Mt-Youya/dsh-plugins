@@ -1,6 +1,6 @@
 English | [简体中文](./README.zh.md)
 
-# Cyrus Plugins · @cyrus/dsh-plugins
+# Cyrus Plugins · @cyrusdoyle/dsh-plugins
 
 A plugin collection for DeepSeek Harness (DSH). Install this one bundle to get every plugin listed below; each plugin can also be installed on its own.
 
@@ -10,7 +10,7 @@ A plugin collection for DeepSeek Harness (DSH). Install this one bundle to get e
 
 | Plugin                                                 | npm package                  | What it does                                                                                                                                  |
 | ------------------------------------------------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Sessions Insight](./plugins/sessions-insight/README.en.md) | `@cyrus/dsh-sessions-insight` | Opens up what each turn of a Claude Code, DSH or Codex session actually fed the model: composition, tool calls, compactions, cost. Includes confirmed session deletion. |
+| [Sessions Insight](./plugins/sessions-insight/README.md) | `@cyrusdoyle/dsh-sessions-insight` | Opens up what each turn of a Claude Code, DSH or Codex session actually fed the model: composition, tool calls, compactions, cost. Includes confirmed session deletion. |
 
 ## Install
 
@@ -19,13 +19,13 @@ Requires DSH 0.2.1-rc.2 or newer (see `docs/adr/0002-asar-021-is-the-contract.md
 **Install the collection (recommended)** to get every plugin at once; when a plugin is added to the collection later, upgrading the collection brings it in.
 
 ```bash
-dsh plugin --profile desktop add @cyrus/dsh-plugins
+dsh plugin --profile desktop add @cyrusdoyle/dsh-plugins
 ```
 
 **Install a single plugin**:
 
 ```bash
-dsh plugin --profile desktop add @cyrus/dsh-sessions-insight
+dsh plugin --profile desktop add @cyrusdoyle/dsh-sessions-insight
 ```
 
 Then **fully quit and reopen** DSH. "Cyrus Plugins" or "Sessions Insight" in the plugin manager means it worked.
@@ -34,7 +34,7 @@ Then **fully quit and reopen** DSH. "Cyrus Plugins" or "Sessions Insight" in the
 >
 > Do not install from the git URL (`pnpm add https://github.com/...`): the root depends on `workspace:^`, which is only rewritten to a version number when publishing to npm.
 
-**Installing from this working tree (developing the collection)**: the desktop plugin manager's "Add plugin" also accepts a local directory — point it at this checkout's absolute path. DSH records it as `"@cyrus/dsh-plugins": "link:<that path>"`: a symlink into your working tree, not a copy, and nothing is built for you. The host resolves `lib/index.js` through that link, and `lib/` is gitignored, so build it first:
+**Installing from this working tree (developing the collection)**: the desktop plugin manager's "Add plugin" also accepts a local directory — point it at this checkout's absolute path. DSH records it as `"@cyrusdoyle/dsh-plugins": "link:<that path>"`: a symlink into your working tree, not a copy, and nothing is built for you. The host resolves `lib/index.js` through that link, and `lib/` is gitignored, so build it first:
 
 ```bash
 npx tsdown
@@ -50,8 +50,8 @@ This is a pnpm monorepo. Only the collection and `plugins/*` are published; the 
 
 | Path                         | Contents                                                                  | Published                             |
 | ---------------------------- | ------------------------------------------------------------------------- | ------------------------------------- |
-| `/` (root)                   | The collection bundle: `cordis.patch.yml` + `locale/`                     | **yes**, `@cyrus/dsh-plugins`         |
-| `plugins/sessions-insight`    | The Sessions Insight plugin: host half and browser half                       | **yes**, `@cyrus/dsh-sessions-insight` |
+| `/` (root)                   | The collection bundle: `cordis.patch.yml` + `locale/`                     | **yes**, `@cyrusdoyle/dsh-plugins`         |
+| `plugins/sessions-insight`    | The Sessions Insight plugin: host half and browser half                       | **yes**, `@cyrusdoyle/dsh-sessions-insight` |
 | `packages/session-contract`  | The unified IR, wire types and their guards                               | no                                    |
 | `packages/session-readers`   | Claude Code / Codex / DSH readers                                         | no                                    |
 | `packages/plugin-kit`        | Plugin-agnostic JSON envelope and URL spelling                            | no                                    |

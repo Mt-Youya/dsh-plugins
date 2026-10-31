@@ -17,6 +17,6 @@ export { SessionFold } from "./fold.ts"
 export type { FoldInput } from "./fold.ts"
 
 /** Re-exported so the probe can print them without importing ir.ts twice. */
-export { exactMeasure } from "@cyrus/dsh-session-contract"
+export { exactMeasure } from "@cyrusdoyle/dsh-session-contract"
 export type { DshProjection } from "./projection.ts"
 export type { JsonObject } from "./records.ts"

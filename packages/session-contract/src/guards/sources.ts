@@ -2,7 +2,7 @@
  * The source vocabulary and the answers built on it: which sources exist, and
  * whether they are healthy.
  *
- * @module @cyrus/dsh-session-contract/guards/sources
+ * @module @cyrusdoyle/dsh-session-contract/guards/sources
  */
 
 import { CONTEXT_SOURCES } from "../types.ts"

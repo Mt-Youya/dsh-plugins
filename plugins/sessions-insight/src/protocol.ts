@@ -5,8 +5,8 @@
  * payload types and their guards — is the shared session contract, re-exported
  * here so the Host, the browser half and the tests keep one import path.
  *
- * @module @cyrus/dsh-sessions-insight/protocol
+ * @module @cyrusdoyle/dsh-sessions-insight/protocol
  */
 
 export * from "./protocol/paths.ts"
-export * from "@cyrus/dsh-session-contract"
+export * from "@cyrusdoyle/dsh-session-contract"

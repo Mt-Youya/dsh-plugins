@@ -21,11 +21,11 @@ export const repoRoot: string = fileURLToPath(new URL("..", import.meta.url))
 
 /** Package name → repo-relative path of its TypeScript entry. */
 export const WORKSPACE_PACKAGES = {
-  "@cyrus/dsh-plugin-kit": "packages/plugin-kit/src/index.ts",
-  "@cyrus/dsh-session-contract": "packages/session-contract/src/index.ts",
-  "@cyrus/dsh-session-readers": "packages/session-readers/src/index.ts",
-  "@cyrus/dsh-plugin-kit-host": "packages/plugin-kit-host/src/index.ts",
-  "@cyrus/dsh-plugin-kit-client": "packages/plugin-kit-client/src/index.ts",
+  "@cyrusdoyle/dsh-plugin-kit": "packages/plugin-kit/src/index.ts",
+  "@cyrusdoyle/dsh-session-contract": "packages/session-contract/src/index.ts",
+  "@cyrusdoyle/dsh-session-readers": "packages/session-readers/src/index.ts",
+  "@cyrusdoyle/dsh-plugin-kit-host": "packages/plugin-kit-host/src/index.ts",
+  "@cyrusdoyle/dsh-plugin-kit-client": "packages/plugin-kit-client/src/index.ts",
 } as const
 
 /** Names of the workspace packages, in dependency order. */

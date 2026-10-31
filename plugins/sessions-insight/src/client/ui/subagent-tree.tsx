@@ -7,7 +7,7 @@
  * disclosure keeps a session with twenty attached files from burying the turn
  * view until it is asked for.
  *
- * @module @cyrus/dsh-sessions-insight/client/subagent-tree
+ * @module @cyrusdoyle/dsh-sessions-insight/client/subagent-tree
  */
 
 import type { ReactElement } from "react"

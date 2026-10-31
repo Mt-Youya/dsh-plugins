@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises"
-import { decodeSessionLog, splitLogLines } from "@cyrus/dsh-session-readers"
+import { decodeSessionLog, splitLogLines } from "@cyrusdoyle/dsh-session-readers"
 
 /** One header line's facts. */
 export interface DshHeaderFacts {

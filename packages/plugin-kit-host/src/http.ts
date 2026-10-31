@@ -10,11 +10,11 @@
  * passed in, so `writeFail` maps whatever codes the caller defines without this
  * module importing them.
  *
- * @module @cyrus/dsh-plugin-kit-host/http
+ * @module @cyrusdoyle/dsh-plugin-kit-host/http
  */
 
 import type { IncomingHttpHeaders, IncomingMessage, OutgoingHttpHeaders, ServerResponse } from "node:http"
-import type { Envelope } from "@cyrus/dsh-plugin-kit"
+import type { Envelope } from "@cyrusdoyle/dsh-plugin-kit"
 
 /** Route handler shape, as the Host web server calls it. */
 export type RouteHandler = (req: IncomingMessage, res: ServerResponse) => void

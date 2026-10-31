@@ -3,7 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 import { zstdCompressSync } from "node:zlib"
-import { readDshListMeta, LIST_META_BYTE_LIMIT, LIST_META_FRAME_LIMIT } from "@cyrus/dsh-session-readers"
+import { readDshListMeta, LIST_META_BYTE_LIMIT, LIST_META_FRAME_LIMIT } from "@cyrusdoyle/dsh-session-readers"
 
 let scratch: string | undefined
 

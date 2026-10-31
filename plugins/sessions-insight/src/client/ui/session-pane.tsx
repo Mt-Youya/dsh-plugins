@@ -6,11 +6,11 @@
  * under a fixed header; below that the pane is one column that scrolls as a
  * whole, so nothing is ever clipped out of reach.
  *
- * @module @cyrus/dsh-sessions-insight/client/session-pane
+ * @module @cyrusdoyle/dsh-sessions-insight/client/session-pane
  */
 
 import type { ReactElement } from "react"
-import type { Turn } from "@cyrus/dsh-session-contract"
+import type { Turn } from "@cyrusdoyle/dsh-session-contract"
 import type { CostTurnValue, CostValue, SessionDetail } from "../../protocol.ts"
 import type { ApiFailure } from "../api.ts"
 import { failureText } from "../api.ts"

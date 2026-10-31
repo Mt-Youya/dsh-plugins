@@ -1,4 +1,4 @@
-English | [简体中文](./RELEASE.md)
+English | [简体中文](./RELEASE.zh.md)
 
 # Publishing to npm
 
@@ -6,8 +6,8 @@ This repository publishes two packages and nothing else:
 
 | Package                      | Directory                 | What it is                                                                         |
 | ---------------------------- | ------------------------- | ---------------------------------------------------------------------------------- |
-| `@cyrus/dsh-sessions-insight` | `plugins/sessions-insight` | The Sessions Insight plugin itself (a member package)                                  |
-| `@cyrus/dsh-plugins`         | repository root           | The collection bundle: only `cordis.patch.yml` and `locale/`, depending on members |
+| `@cyrusdoyle/dsh-sessions-insight` | `plugins/sessions-insight` | The Sessions Insight plugin itself (a member package)                                  |
+| `@cyrusdoyle/dsh-plugins`         | repository root           | The collection bundle: only `cordis.patch.yml` and `locale/`, depending on members |
 
 `packages/*` are inlined into the member's `lib/` at build time and are **not published**. They are not marked `private` today, so **never run `pnpm -r publish`**: it would publish them too.
 
@@ -59,7 +59,7 @@ npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run &
 Bump the member when it changed; **when the member is bumped, bump the collection too** (see "Versioning rules" below).
 
 ```bash
-pnpm --filter @cyrus/dsh-sessions-insight version patch --no-git-tag-version
+pnpm --filter @cyrusdoyle/dsh-sessions-insight version patch --no-git-tag-version
 ```
 
 ```bash
@@ -83,7 +83,7 @@ git tag dsh-sessions-insight@0.0.3 && git tag dsh-plugins@0.0.2
 Pack without uploading and look at what the tarballs contain:
 
 ```bash
-pnpm --filter @cyrus/dsh-sessions-insight publish --dry-run
+pnpm --filter @cyrusdoyle/dsh-sessions-insight publish --dry-run
 ```
 
 ```bash
@@ -97,7 +97,7 @@ The member's tarball should have `lib/index.js`, `lib/client.js`, `cordis.patch.
 `prepublishOnly` runs typecheck, tests and the build again, and `prepack` checks the loading contract; any failure stops the upload. Add `--otp=<6-digit code>` if 2FA is on.
 
 ```bash
-pnpm --filter @cyrus/dsh-sessions-insight publish --registry=https://registry.npmjs.org/
+pnpm --filter @cyrusdoyle/dsh-sessions-insight publish --registry=https://registry.npmjs.org/
 ```
 
 ### 7. Publish the collection
@@ -109,11 +109,11 @@ pnpm publish --registry=https://registry.npmjs.org/
 ### 8. Verify
 
 ```bash
-npm view @cyrus/dsh-sessions-insight version --registry=https://registry.npmjs.org/
+npm view @cyrusdoyle/dsh-sessions-insight version --registry=https://registry.npmjs.org/
 ```
 
 ```bash
-npm view @cyrus/dsh-plugins dependencies --registry=https://registry.npmjs.org/
+npm view @cyrusdoyle/dsh-plugins dependencies --registry=https://registry.npmjs.org/
 ```
 
 ### 9. Push
@@ -124,10 +124,10 @@ git push && git push --tags
 
 ### 10. Wait for the mirror, then install
 
-npmmirror usually syncs within minutes. To sync right away, open <https://npmmirror.com/package/@cyrus/dsh-plugins> and press "Sync"; do the same for the member.
+npmmirror usually syncs within minutes. To sync right away, open <https://npmmirror.com/package/@cyrusdoyle/dsh-plugins> and press "Sync"; do the same for the member.
 
 ```bash
-dsh plugin --profile desktop add @cyrus/dsh-plugins
+dsh plugin --profile desktop add @cyrusdoyle/dsh-plugins
 ```
 
 Fully quit and reopen DeepSeek Harness. The plugin manager should list "Cyrus Plugins" and the sidebar should show "Sessions Insight".
@@ -142,13 +142,13 @@ Fully quit and reopen DeepSeek Harness. The plugin manager should list "Cyrus Pl
 
 The collection and the member each carry a `cordis.patch.yml`, and both insert the row `id: sessions-insight` into the loader tree:
 
-- install the collection `@cyrus/dsh-plugins` to get every plugin at once;
-- install the member `@cyrus/dsh-sessions-insight` to get just that one.
+- install the collection `@cyrusdoyle/dsh-plugins` to get every plugin at once;
+- install the member `@cyrusdoyle/dsh-sessions-insight` to get just that one.
 
 **If both are in `dsh.profile.bundles`, DSH fails at boot with `duplicate loader entry id: sessions-insight`.** Remove one before switching:
 
 ```bash
-dsh plugin --profile desktop remove @cyrus/dsh-sessions-insight
+dsh plugin --profile desktop remove @cyrusdoyle/dsh-sessions-insight
 ```
 
 ## Adding a plugin to the collection
@@ -170,4 +170,4 @@ dsh plugin --profile desktop remove @cyrus/dsh-sessions-insight
 | `ERR_PNPM_GIT_BRANCH`                                  | Not on `main`                                           | Switch to `main`, or pass `--publish-branch <branch>`                       |
 | `Cannot resolve workspace protocol…`                   | `pnpm install` never ran at the root                    | Run `pnpm install` first                                                    |
 | DSH boot fails with `duplicate loader entry id`        | Collection and member are both in `dsh.profile.bundles` | Remove one; see "Pick one install method" above                             |
-| The plugin manager says the package declares no bundle | The installed package is not the one with `dsh.bundle`  | Install `@cyrus/dsh-plugins` or `@cyrus/dsh-sessions-insight`, not a git URL |
+| The plugin manager says the package declares no bundle | The installed package is not the one with `dsh.bundle`  | Install `@cyrusdoyle/dsh-plugins` or `@cyrusdoyle/dsh-sessions-insight`, not a git URL |

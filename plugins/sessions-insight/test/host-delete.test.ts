@@ -92,9 +92,16 @@ describe("deleting original session logs", () => {
     const outside = join(home, "outside.jsonl")
     await writeFile(outside, "keep")
     const link = join(root, "link.jsonl")
-    await symlink(outside, link)
+    const linkedPath = process.platform === "win32" ? join(link, "outside.jsonl") : link
+    if (process.platform === "win32") {
+      // Directory junctions exercise path escapes without Windows symlink privileges.
+      await symlink(home, link, "junction")
+    } else {
+      await symlink(outside, link)
+    }
     expect(await deleteLogs(root, [path, outside])).toMatchObject({ ok: false, error: "forbidden" })
     expect(await deleteLogs(root, [path, link])).toMatchObject({ ok: false, error: "forbidden" })
+    expect(await deleteLogs(root, [path, linkedPath])).toMatchObject({ ok: false, error: "forbidden" })
     await access(path)
     expect(await readFile(outside, "utf8")).toBe("keep")
   })

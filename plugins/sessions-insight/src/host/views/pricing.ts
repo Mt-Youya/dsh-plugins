@@ -17,7 +17,7 @@
  * `unlistedChannels`, so a reader sees "at least this much" (the panel's `≥`).
  * A model absent from a table prices as `null` and lands in `unpricedModels`.
  *
- * @module @cyrus/dsh-sessions-insight/host/pricing
+ * @module @cyrusdoyle/dsh-sessions-insight/host/pricing
  */
 
 /** ISO-4217 codes these tables can express. */

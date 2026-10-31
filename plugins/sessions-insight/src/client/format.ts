@@ -3,7 +3,7 @@
  * numbers into text the panel can print without losing precision, and keeps
  * every rounding rule in one place.
  *
- * @module @cyrus/dsh-sessions-insight/client/format
+ * @module @cyrusdoyle/dsh-sessions-insight/client/format
  */
 
 const GROUPED = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 })

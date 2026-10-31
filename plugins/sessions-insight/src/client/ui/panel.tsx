@@ -17,7 +17,7 @@
  * the container breakpoint the session pane collapses to one scrolling column.
  * This module only orchestrates — every view lives in its own file.
  *
- * @module @cyrus/dsh-sessions-insight/client/panel
+ * @module @cyrusdoyle/dsh-sessions-insight/client/panel
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react"

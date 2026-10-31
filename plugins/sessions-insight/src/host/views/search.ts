@@ -11,12 +11,12 @@
  * `remaining`, `truncated` and a `nextCursor` the caller can send back to keep
  * sweeping from where the budget ran out.
  *
- * @module @cyrus/dsh-sessions-insight/host/search
+ * @module @cyrusdoyle/dsh-sessions-insight/host/search
  */
 
 import type { SearchHit, SearchQuery, SearchValue, SourceProblem } from "../../protocol.ts"
 import { SEARCH_DEADLINE_MS } from "../../protocol.ts"
-import type { Session } from "@cyrus/dsh-session-contract"
+import type { Session } from "@cyrusdoyle/dsh-session-contract"
 import type { SearchCandidate, SessionSource } from "../sources/source.ts"
 import { cleanTitle, snippetAround } from "../sources/source.ts"
 

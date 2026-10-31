@@ -12,27 +12,27 @@
  *   count across every segment, so touching *any* segment drops the parse.
  *
  * @see docs/PLAN.md (Codex 归一化红线)
- * @module @cyrus/dsh-sessions-insight/host/codex
+ * @module @cyrusdoyle/dsh-sessions-insight/host/codex
  */
 
 import { fingerprintOf, readSnapshot, snapshotPath, walkFingerprint, writeSnapshot } from "./snapshot.ts"
 import { readFile, readdir, stat } from "node:fs/promises"
 import { basename, resolve } from "node:path"
-import { readCodexSession } from "@cyrus/dsh-session-readers"
+import { readCodexSession } from "@cyrusdoyle/dsh-session-readers"
 import {
   defaultCodexRoot,
   indexCodexCorpus,
   type CodexCorpusIndex,
   type CodexFile,
   type CodexSessionPlan,
-} from "@cyrus/dsh-session-readers"
-import type { Session } from "@cyrus/dsh-session-contract"
+} from "@cyrusdoyle/dsh-session-readers"
+import type { Session } from "@cyrusdoyle/dsh-session-contract"
 import type { SegmentInfo, SessionSummary, SourceStatus, WorkdirEntry } from "../../protocol.ts"
 import { LIST_ITEM_UNPARSED, isSafeId } from "../../protocol.ts"
 import type { ParsedSession, SearchCandidate, SessionSource, SourceFailure } from "./source.ts"
 import { cleanTitle, firstInputOf } from "./source.ts"
 import { deleteLogs } from "./delete.ts"
-import { Lru } from "@cyrus/dsh-plugin-kit-host"
+import { Lru } from "@cyrusdoyle/dsh-plugin-kit-host"
 
 /** Milliseconds the corpus index is reused before re-indexing. */
 export const DEFAULT_CODEX_SCAN_TTL_MS = 30_000

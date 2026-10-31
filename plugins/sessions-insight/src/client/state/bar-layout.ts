@@ -14,10 +14,10 @@
  *
  * @see docs/IR.md (对账的边界)
  * @see docs/adr/0005-honest-attribution-residual.md
- * @module @cyrus/dsh-sessions-insight/client/bar-layout
+ * @module @cyrusdoyle/dsh-sessions-insight/client/bar-layout
  */
 
-import type { Attribution, ContextPart } from "@cyrus/dsh-session-contract"
+import type { Attribution, ContextPart } from "@cyrusdoyle/dsh-session-contract"
 import { formatShare } from "../format.ts"
 
 /** One paintable slice. */

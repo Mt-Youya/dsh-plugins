@@ -2,7 +2,7 @@
  * The handoff contract: the prepared brief, the apply/status answers and the
  * two request bodies the Host decodes.
  *
- * @module @cyrus/dsh-session-contract/guards/handoff
+ * @module @cyrusdoyle/dsh-session-contract/guards/handoff
  */
 
 import { CONTEXT_SOURCES } from "../types.ts"

@@ -7,22 +7,22 @@
  * zstd frames, not the body. A body parse happens when a session is opened.
  *
  * @see docs/PLAN.md (DSH 归一化红线)
- * @module @cyrus/dsh-sessions-insight/host/dsh
+ * @module @cyrusdoyle/dsh-sessions-insight/host/dsh
  */
 
 import { mkdir, readFile, readdir, rename, stat, writeFile } from "node:fs/promises"
 import { basename, join } from "node:path"
 import { homedir } from "node:os"
-import { DEFAULT_PROJECTION_ROOT, readDshSession } from "@cyrus/dsh-session-readers"
+import { DEFAULT_PROJECTION_ROOT, readDshSession } from "@cyrusdoyle/dsh-session-readers"
 import { deleteLogs } from "./delete.ts"
-import type { DshListMeta } from "@cyrus/dsh-session-readers"
-import { readDshListMeta } from "@cyrus/dsh-session-readers"
-import type { Session } from "@cyrus/dsh-session-contract"
+import type { DshListMeta } from "@cyrusdoyle/dsh-session-readers"
+import { readDshListMeta } from "@cyrusdoyle/dsh-session-readers"
+import type { Session } from "@cyrusdoyle/dsh-session-contract"
 import type { SegmentInfo, SessionSummary, SourceStatus, WorkdirEntry } from "../../protocol.ts"
 import { LIST_ITEM_UNPARSED, isSafeId } from "../../protocol.ts"
 import type { ParsedSession, SearchCandidate, SessionSource, SourceFailure, WorkdirOptions } from "./source.ts"
 import { cleanTitle, firstInputOf } from "./source.ts"
-import { Lru } from "@cyrus/dsh-plugin-kit-host"
+import { Lru } from "@cyrusdoyle/dsh-plugin-kit-host"
 
 /** Default sessions root. */
 export function defaultDshRoot(): string {

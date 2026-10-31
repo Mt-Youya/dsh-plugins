@@ -10,11 +10,11 @@
  * normalizes by the parts and says so in the legend instead of pretending the
  * total is real.
  *
- * @module @cyrus/dsh-sessions-insight/client/stacked-bar
+ * @module @cyrusdoyle/dsh-sessions-insight/client/stacked-bar
  */
 
 import type { ReactElement } from "react"
-import type { Attribution, ContextPart, Measure } from "@cyrus/dsh-session-contract"
+import type { Attribution, ContextPart, Measure } from "@cyrusdoyle/dsh-session-contract"
 import { barLayout } from "../state/bar-layout.ts"
 import { compactTokens, formatShare, formatTokens } from "../format.ts"
 import { t } from "../locale.ts"

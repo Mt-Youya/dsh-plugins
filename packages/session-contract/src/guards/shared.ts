@@ -4,7 +4,7 @@
  * Object shape, finite numbers and string arrays: the checks each view guard
  * would otherwise repeat.
  *
- * @module @cyrus/dsh-session-contract/guards/shared
+ * @module @cyrusdoyle/dsh-session-contract/guards/shared
  */
 
 function isRecord(value: unknown): value is Record<string, unknown> {

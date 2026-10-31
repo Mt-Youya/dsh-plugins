@@ -1,5 +1,5 @@
 window.__ModuleLoader__.load({
-	id: "@cyrus/dsh-sessions-insight",
+	id: "@cyrusdoyle/dsh-sessions-insight",
 	factory: (require) => {
 		var module = { exports: {} };
 		var exports = module.exports;

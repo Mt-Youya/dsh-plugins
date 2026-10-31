@@ -14,17 +14,17 @@
  * whole boot when a plugin's apply throws, and an external plugin must not be
  * able to take the GUI down.
  *
- * @module @cyrus/dsh-sessions-insight/client
+ * @module @cyrusdoyle/dsh-sessions-insight/client
  */
 
-import { registerLocale, registerPanel, type ClientContext } from "@cyrus/dsh-plugin-kit-client"
+import { registerLocale, registerPanel, type ClientContext } from "@cyrusdoyle/dsh-plugin-kit-client"
 import type { ReactElement } from "react"
 import { LOCALE_NS, en, setRuntimeTranslate, t, zh } from "./locale.ts"
 import { ContextInsightPanel } from "./ui/panel.tsx"
 import { createApi } from "./api.ts"
 import { injectStyles } from "./styles.ts"
 
-export type { ClientContext, Dispose, LocaleFace, SlotsFace } from "@cyrus/dsh-plugin-kit-client"
+export type { ClientContext, Dispose, LocaleFace, SlotsFace } from "@cyrusdoyle/dsh-plugin-kit-client"
 
 /** Panel id shared by the sidebar row and the main-slot occupant. */
 export const PANEL_ID = "sessions-insight"

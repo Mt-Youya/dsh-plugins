@@ -2,8 +2,8 @@
  * Build one internal workspace package as a library.
  *
  * Internal packages are published siblings, not private modules: a consumer of
- * `@cyrus/dsh-session-readers` installs `@cyrus/dsh-session-contract` alongside it, so the
- * `@cyrus/dsh-*` specifiers in the emitted files stay bare and resolvable rather than
+ * `@cyrusdoyle/dsh-session-readers` installs `@cyrusdoyle/dsh-session-contract` alongside it, so the
+ * `@cyrusdoyle/dsh-*` specifiers in the emitted files stay bare and resolvable rather than
  * being inlined per package. The plugin build is the opposite case and inlines
  * them (see `plugin-config.ts`).
  *

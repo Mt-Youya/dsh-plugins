@@ -7,7 +7,7 @@
  * `node:vm` realm (M1's note). The fallback only appears in unbundled contexts
  * such as the test runner, never in a packed plugin.
  *
- * @module @cyrus/dsh-sessions-insight/version
+ * @module @cyrusdoyle/dsh-sessions-insight/version
  */
 
 declare const __DSH_PLUGIN_VERSION__: string | undefined

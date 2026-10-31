@@ -9,10 +9,10 @@
  * The failure vocabulary stays the caller's: `codes` names what that plugin can
  * answer with, and anything else degrades to `fallback`.
  *
- * @module @cyrus/dsh-plugin-kit-client/fetch
+ * @module @cyrusdoyle/dsh-plugin-kit-client/fetch
  */
 
-import { decodeEnvelope } from "@cyrus/dsh-plugin-kit"
+import { decodeEnvelope } from "@cyrusdoyle/dsh-plugin-kit"
 
 /** One failed call, already classified. */
 export interface ApiFailure {

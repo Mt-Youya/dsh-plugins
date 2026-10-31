@@ -6,7 +6,7 @@
  * evicting its oldest entry past capacity. Callers embed `mtimeMs` and `size`
  * in the key, so a rewritten file can never be served from a stale slot.
  *
- * @module @cyrus/dsh-plugin-kit-host/lru
+ * @module @cyrusdoyle/dsh-plugin-kit-host/lru
  */
 
 /** Bounded least-recently-used map. */

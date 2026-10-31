@@ -4,10 +4,10 @@
  * Kept out of the component so the one rule worth testing — every compaction of
  * a turn collapses into a single row, never one row per boundary — needs no DOM.
  *
- * @module @cyrus/dsh-sessions-insight/client/turn-rows
+ * @module @cyrusdoyle/dsh-sessions-insight/client/turn-rows
  */
 
-import type { CompactionPoint, Turn } from "@cyrus/dsh-session-contract"
+import type { CompactionPoint, Turn } from "@cyrusdoyle/dsh-session-contract"
 
 /** One row of the flattened strip. */
 export type TurnRow =

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import type { Session, Turn, Usage } from "@cyrus/dsh-session-contract"
+import type { Session, Turn, Usage } from "@cyrusdoyle/dsh-session-contract"
 import { costOfSession } from "../src/host/views/cost.ts"
 import {
   TABLES,

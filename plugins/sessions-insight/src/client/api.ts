@@ -4,18 +4,18 @@
  * Every answer is decoded through a protocol guard, so a drifted Host produces
  * a typed failure the panel can render instead of a crash deep in a component.
  * The transport — fetch, JSON decoding, envelope decoding and failure
- * classification — is `@cyrus/dsh-plugin-kit-client`; what this module adds is the
+ * classification — is `@cyrusdoyle/dsh-plugin-kit-client`; what this module adds is the
  * endpoint list and the guards each endpoint's payload is checked against.
  *
  * URLs are document-relative on purpose: the page carries `<base href="./">`
  * and the routes are mounted at the site root.
  *
- * @module @cyrus/dsh-sessions-insight/client/api
+ * @module @cyrusdoyle/dsh-sessions-insight/client/api
  */
 
 import { HANDOFF_REVEAL_URL, isHandoffRevealValue, type HandoffRevealValue } from "../protocol.ts"
 import { t } from "./locale.ts"
-import { requestJson, type ApiFailure, type ApiResult } from "@cyrus/dsh-plugin-kit-client"
+import { requestJson, type ApiFailure, type ApiResult } from "@cyrusdoyle/dsh-plugin-kit-client"
 import type {
   BriefValue,
   DeleteSessionValue,
@@ -53,7 +53,7 @@ import {
   isWorkdirsValue,
 } from "../protocol.ts"
 
-export type { ApiFailure, ApiResult } from "@cyrus/dsh-plugin-kit-client"
+export type { ApiFailure, ApiResult } from "@cyrusdoyle/dsh-plugin-kit-client"
 
 /** The reads the panel performs. */
 export interface Api {

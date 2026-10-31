@@ -3,4 +3,4 @@
 # profile's bundle layers and before the user's own cordis.patch.yml.
 - insert:
     - id: sessions-insight
-      name: "@cyrus/dsh-sessions-insight"
+      name: "@cyrusdoyle/dsh-sessions-insight"

@@ -36,7 +36,7 @@ import {
   type ContextSlice,
   type ContextPart,
   type Measure,
-} from "@cyrus/dsh-session-contract"
+} from "@cyrusdoyle/dsh-session-contract"
 import { codexMeasureOf, codexProjectedMeasure } from "./calibration.ts"
 import { isObject, type JsonObject } from "./records.ts"
 import { isToolCallItem, toolInput } from "./tools.ts"

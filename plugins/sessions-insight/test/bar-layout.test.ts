@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import type { Attribution, Measure } from "@cyrus/dsh-session-contract"
+import type { Attribution, Measure } from "@cyrusdoyle/dsh-session-contract"
 import { barLayout } from "../src/client/state/bar-layout.ts"
 
 const exact = (tokens: number): Measure => ({ tokens, precision: "exact", basis: "usage" })

@@ -10,8 +10,8 @@ import {
   measureOf,
   PIXELS_PER_TOKEN,
   tokensOf,
-} from "@cyrus/dsh-session-readers"
-import { estimateMeasure, exactMeasure, sumMeasures } from "@cyrus/dsh-session-contract"
+} from "@cyrusdoyle/dsh-session-readers"
+import { estimateMeasure, exactMeasure, sumMeasures } from "@cyrusdoyle/dsh-session-contract"
 
 describe("estimation calipers", () => {
   it("marks every character-derived number as an estimate", () => {

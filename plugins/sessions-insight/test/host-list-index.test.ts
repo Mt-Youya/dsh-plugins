@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, utimes, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, it, vi } from "vitest"
-import type { DshListMeta } from "@cyrus/dsh-session-readers"
+import type { DshListMeta } from "@cyrusdoyle/dsh-session-readers"
 import { DshSource } from "../src/host/sources/dsh.ts"
 import { listOptions } from "../src/host/http/routes.ts"
 

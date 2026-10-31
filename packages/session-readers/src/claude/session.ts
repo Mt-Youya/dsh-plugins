@@ -9,7 +9,7 @@
  */
 
 import { basename } from "node:path"
-import type { Session } from "@cyrus/dsh-session-contract"
+import type { Session } from "@cyrusdoyle/dsh-session-contract"
 import { readTranscript } from "./read.ts"
 import { listSubagentFiles, resolveSubagentFile } from "./subagents.ts"
 export interface ClaudeReadStats {

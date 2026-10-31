@@ -1,5 +1,5 @@
 {
-  "name": "@cyrus/dsh-session-contract",
+  "name": "@cyrusdoyle/dsh-session-contract",
   "version": "0.0.0",
   "private": false,
   "description": "The sessions-insight IR and the session wire contract: types, guards and versioned payloads.",
@@ -21,6 +21,6 @@
     "build": "tsdown"
   },
   "dependencies": {
-    "@cyrus/dsh-plugin-kit": "workspace:*"
+    "@cyrusdoyle/dsh-plugin-kit": "workspace:*"
   }
 }

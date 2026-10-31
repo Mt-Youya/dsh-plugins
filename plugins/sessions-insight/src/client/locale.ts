@@ -8,7 +8,7 @@
  *
  * Wording follows GLOSSARY.md: 轮次 / 压缩点 / 子代理会话 / 估算口径.
  *
- * @module @cyrus/dsh-sessions-insight/client/locale
+ * @module @cyrusdoyle/dsh-sessions-insight/client/locale
  */
 
 /** Locale namespace this plugin owns. */

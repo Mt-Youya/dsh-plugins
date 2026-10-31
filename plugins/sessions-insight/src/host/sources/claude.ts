@@ -8,21 +8,21 @@
  * from a stale slot.
  *
  * @see docs/API.md (缓存与失效)
- * @module @cyrus/dsh-sessions-insight/host/claude
+ * @module @cyrusdoyle/dsh-sessions-insight/host/claude
  */
 
 import { fingerprintOf, readSnapshot, snapshotPath, walkFingerprint, writeSnapshot } from "./snapshot.ts"
 import { open, readdir, stat } from "node:fs/promises"
 import { basename, join } from "node:path"
-import { readClaudeSession } from "@cyrus/dsh-session-readers"
-import { humanText } from "@cyrus/dsh-session-readers"
-import type { Session } from "@cyrus/dsh-session-contract"
+import { readClaudeSession } from "@cyrusdoyle/dsh-session-readers"
+import { humanText } from "@cyrusdoyle/dsh-session-readers"
+import type { Session } from "@cyrusdoyle/dsh-session-contract"
 import type { SegmentInfo, SessionSummary, SourceStatus, WorkdirEntry } from "../../protocol.ts"
 import { LIST_ITEM_UNPARSED, isSafeId } from "../../protocol.ts"
 import type { ParsedSession, SearchCandidate, SessionSource, SourceFailure } from "./source.ts"
 import { cleanTitle, firstInputOf } from "./source.ts"
 import { deleteLogs } from "./delete.ts"
-import { Lru } from "@cyrus/dsh-plugin-kit-host"
+import { Lru } from "@cyrusdoyle/dsh-plugin-kit-host"
 import { decodeProjectDirName, resolveInside } from "./paths.ts"
 
 /** Milliseconds a directory scan is reused before walking the tree again. */

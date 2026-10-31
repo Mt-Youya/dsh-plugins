@@ -7,12 +7,12 @@
  * read its corpus answers with a state instead of throwing, and a source that
  * *does* throw is caught by the route layer and demoted to one failed badge.
  *
- * @module @cyrus/dsh-sessions-insight/host/source
+ * @module @cyrusdoyle/dsh-sessions-insight/host/source
  */
 
 import type { ContextSource, SegmentInfo, SessionSummary, SourceStatus, WorkdirEntry } from "../../protocol.ts"
 import { isIdShaped } from "../../protocol.ts"
-import type { Session } from "@cyrus/dsh-session-contract"
+import type { Session } from "@cyrusdoyle/dsh-session-contract"
 
 /** A failure any reader route may answer with. */
 export interface SourceFailure {

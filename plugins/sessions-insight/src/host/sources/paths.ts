@@ -7,7 +7,7 @@
  * joined, so the containment check is the second line rather than the only one.
  *
  * @see docs/API.md (路径参数只接受白名单根目录下的已存在路径)
- * @module @cyrus/dsh-sessions-insight/host/paths
+ * @module @cyrusdoyle/dsh-sessions-insight/host/paths
  */
 
 import { realpath } from "node:fs/promises"

@@ -1,7 +1,7 @@
 /**
  * The `/cost` contract: priced turns, price tables and the reference column.
  *
- * @module @cyrus/dsh-session-contract/guards/cost
+ * @module @cyrusdoyle/dsh-session-contract/guards/cost
  */
 
 import { CONTEXT_SOURCES } from "../types.ts"

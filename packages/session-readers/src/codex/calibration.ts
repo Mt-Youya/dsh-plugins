@@ -29,7 +29,7 @@
  */
 
 import { CHARS_PER_TOKEN_CJK, CHARS_PER_TOKEN_SCHEMA, type CharCounts } from "../attribution.ts"
-import type { Measure } from "@cyrus/dsh-session-contract"
+import type { Measure } from "@cyrusdoyle/dsh-session-contract"
 
 /** Fitted prose/code mix coefficient for Codex instructions (see the header). */
 export const CODEX_CHARS_PER_TOKEN_TEXT = 3.27

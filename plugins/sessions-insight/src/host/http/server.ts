@@ -2,7 +2,7 @@
  * This plugin's binding of the shared HTTP plumbing to its own wire vocabulary.
  *
  * The mechanisms — same-origin gate, envelope writers, bounded body reader —
- * live in `@cyrus/dsh-plugin-kit-host` and know nothing about sessions-insight. What
+ * live in `@cyrusdoyle/dsh-plugin-kit-host` and know nothing about sessions-insight. What
  * stays here is the part that is genuinely this plugin's: which failure code
  * maps to which status, and which two codes a refused request answers with.
  *
@@ -10,7 +10,7 @@
  * touch the response after the call — so every branch writes exactly one and
  * returns.
  *
- * @module @cyrus/dsh-sessions-insight/host/http
+ * @module @cyrusdoyle/dsh-sessions-insight/host/http
  */
 
 import type { IncomingMessage, OutgoingHttpHeaders, ServerResponse } from "node:http"
@@ -18,10 +18,10 @@ import {
   guardRequest as kitGuardRequest,
   statusOf as kitStatusOf,
   writeFail as kitWriteFail,
-} from "@cyrus/dsh-plugin-kit-host"
+} from "@cyrusdoyle/dsh-plugin-kit-host"
 import type { ApiErrorCode } from "../../protocol.ts"
 
-export type { RouteHandler, WebRoute } from "@cyrus/dsh-plugin-kit-host"
+export type { RouteHandler, WebRoute } from "@cyrusdoyle/dsh-plugin-kit-host"
 export {
   MAX_BODY_BYTES,
   isJsonContentType,
@@ -30,7 +30,7 @@ export {
   requestUrl,
   writeJson,
   writeOk,
-} from "@cyrus/dsh-plugin-kit-host"
+} from "@cyrusdoyle/dsh-plugin-kit-host"
 
 /**
  * HTTP status for each failure code.

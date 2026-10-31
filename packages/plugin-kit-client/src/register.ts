@@ -7,7 +7,7 @@
  * `ui-layout` / `ui-sidebar` does not matter, and a shell that cannot serve the
  * seats leaves the panel absent instead of failing boot.
  *
- * @module @cyrus/dsh-plugin-kit-client/register
+ * @module @cyrusdoyle/dsh-plugin-kit-client/register
  */
 
 /** A registration disposer, as the slots service returns it. */

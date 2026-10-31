@@ -11,7 +11,7 @@
  * must not fail to boot against a newer Host because a private type moved (see
  * docs/adr/0002-asar-021-is-the-contract.md).
  *
- * @module @cyrus/dsh-sessions-insight
+ * @module @cyrusdoyle/dsh-sessions-insight
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http"
@@ -54,7 +54,7 @@ export {
   isWithin,
   resolveInside,
 } from "./host/sources/paths.ts"
-export { Lru } from "@cyrus/dsh-plugin-kit-host"
+export { Lru } from "@cyrusdoyle/dsh-plugin-kit-host"
 
 /**
  * Version the health route reports; defined once in `src/version.ts` so the

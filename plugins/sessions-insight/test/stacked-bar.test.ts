@@ -1,7 +1,7 @@
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
-import type { Attribution } from "@cyrus/dsh-session-contract"
+import type { Attribution } from "@cyrusdoyle/dsh-session-contract"
 import { t } from "../src/client/locale.ts"
 import { PartLegend, StackedBar } from "../src/client/ui/stacked-bar.tsx"
 

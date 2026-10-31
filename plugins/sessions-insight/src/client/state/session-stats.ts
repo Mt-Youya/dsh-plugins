@@ -5,10 +5,10 @@
  * what share of the window it fills — needs no DOM. Only loaded turns count:
  * the header says so by naming the loaded range next to the numbers.
  *
- * @module @cyrus/dsh-sessions-insight/client/session-stats
+ * @module @cyrusdoyle/dsh-sessions-insight/client/session-stats
  */
 
-import type { Turn } from "@cyrus/dsh-session-contract"
+import type { Turn } from "@cyrusdoyle/dsh-session-contract"
 
 /** What the header tiles print. */
 export interface SessionStats {

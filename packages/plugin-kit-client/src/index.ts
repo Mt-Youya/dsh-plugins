@@ -5,7 +5,7 @@
  * registrations. Nothing here knows which plugin is calling it: the codes, the
  * style element id and the panel identity are arguments.
  *
- * @module @cyrus/dsh-plugin-kit-client
+ * @module @cyrusdoyle/dsh-plugin-kit-client
  */
 
 export * from "./fetch.ts"

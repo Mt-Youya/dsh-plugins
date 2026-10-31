@@ -15,7 +15,7 @@
  * @see docs/adr/0005-honest-attribution-residual.md
  */
 
-import type { Turn } from "@cyrus/dsh-session-contract"
+import type { Turn } from "@cyrusdoyle/dsh-session-contract"
 import { DshAttributionWindow } from "./attribution.ts"
 import { isCompactionConsistent, isCompactionEvent, readCompaction } from "./compaction.ts"
 import type { DshProjection, ProjectionRequest } from "./projection.ts"

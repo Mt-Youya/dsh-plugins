@@ -7,7 +7,7 @@
  * header, tiles, chart and rows in the session pane — so the page does not jump
  * when the answer lands, and nothing is left as an empty black field.
  *
- * @module @cyrus/dsh-sessions-insight/client/states
+ * @module @cyrusdoyle/dsh-sessions-insight/client/states
  */
 
 import type { ReactElement, ReactNode } from "react"

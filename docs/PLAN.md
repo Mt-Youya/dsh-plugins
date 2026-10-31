@@ -1,4 +1,4 @@
-# 计划：@cyrus/dsh-sessions-insight
+# 计划：@cyrusdoyle/dsh-sessions-insight
 
 DSH Web GUI 的「会话洞察」插件（Sessions Insight）。只读解析三个来源的会话，统一成以轮次为一等公民的 IR，把模型每轮实际收到的 prompt 构成拆开给人看；并把旧会话摘要交接进 DSH 继续。
 

@@ -20,7 +20,7 @@
 import { readFileSync } from "node:fs"
 import { basename, dirname, join } from "node:path"
 import { homedir } from "node:os"
-import type { Session } from "@cyrus/dsh-session-contract"
+import type { Session } from "@cyrusdoyle/dsh-session-contract"
 import { SessionFold } from "./fold.ts"
 import { decodeSessionLog, splitLogLines } from "./frames.ts"
 import { isProjectionFresh, readProjection, type DshProjection, type ProjectionAbsence } from "./projection.ts"

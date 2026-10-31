@@ -9,7 +9,7 @@
  * @see docs/IR.md (dataQuality 的词表)
  */
 
-import type { Session, Turn } from "@cyrus/dsh-session-contract"
+import type { Session, Turn } from "@cyrusdoyle/dsh-session-contract"
 import type { AttributionReport } from "./attribution.ts"
 import { CODEX_CALIPER_TOKEN } from "./calibration.ts"
 import {

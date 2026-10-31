@@ -7,7 +7,7 @@
  * conversion here means a plugin defines its paths once and derives the other
  * spelling rather than hand-writing both.
  *
- * @module @cyrus/dsh-plugin-kit/url
+ * @module @cyrusdoyle/dsh-plugin-kit/url
  */
 
 /**

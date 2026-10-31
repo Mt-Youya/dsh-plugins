@@ -14,7 +14,7 @@
  * call_id, web_search does not and gets a synthetic id from its own id.
  */
 
-import type { ToolCall } from "@cyrus/dsh-session-contract"
+import type { ToolCall } from "@cyrusdoyle/dsh-session-contract"
 import { booleanField, isObject, stringField, type JsonObject, type JsonValue } from "./records.ts"
 
 /** A call the model made. */

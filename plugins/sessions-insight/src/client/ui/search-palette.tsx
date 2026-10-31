@@ -11,7 +11,7 @@
  * Keyboard: ↑↓ move, Enter opens the selected hit (or escalates to deep when
  * nothing is selected), Esc closes. Results are grouped by source.
  *
- * @module @cyrus/dsh-sessions-insight/client/search-palette
+ * @module @cyrusdoyle/dsh-sessions-insight/client/search-palette
  */
 
 import { useEffect, useId, useMemo, useRef, useState } from "react"

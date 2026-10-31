@@ -7,7 +7,7 @@
  * imported from somewhere above — this module knows nothing about which plugins
  * exist.
  *
- * @module @cyrus/dsh-plugin-kit/envelope
+ * @module @cyrusdoyle/dsh-plugin-kit/envelope
  */
 
 /** A successful answer. */

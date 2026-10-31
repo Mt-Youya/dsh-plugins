@@ -11,10 +11,10 @@
  * call's input. A section with no evidence says 日志中无记录 rather than filling
  * the gap with plausible prose.
  *
- * @module @cyrus/dsh-sessions-insight/host/brief
+ * @module @cyrusdoyle/dsh-sessions-insight/host/brief
  */
 
-import type { Session, ToolCall, Turn } from "@cyrus/dsh-session-contract"
+import type { Session, ToolCall, Turn } from "@cyrusdoyle/dsh-session-contract"
 
 /** Hard cap on the brief, in characters. */
 export const BRIEF_LIMIT = 2000

@@ -5,7 +5,7 @@
  * it reaches the browser. They ship together because a guard that drifts from
  * the type it guards is the failure this package exists to prevent.
  *
- * @module @cyrus/dsh-session-contract
+ * @module @cyrusdoyle/dsh-session-contract
  */
 
 export * from "./ir.ts"

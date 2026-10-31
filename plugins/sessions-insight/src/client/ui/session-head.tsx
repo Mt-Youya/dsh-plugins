@@ -5,13 +5,13 @@
  * is the context now, how high did it get, how many times was it compacted,
  * and what did it cost — before they read a single row.
  *
- * @module @cyrus/dsh-sessions-insight/client/session-head
+ * @module @cyrusdoyle/dsh-sessions-insight/client/session-head
  */
 
 import { useState } from "react"
 import type { ReactElement } from "react"
 import type { CostValue, SessionDetail } from "../../protocol.ts"
-import type { Turn } from "@cyrus/dsh-session-contract"
+import type { Turn } from "@cyrusdoyle/dsh-session-contract"
 import { compactTokens, formatBytes, formatShare, formatTime, tildePath } from "../format.ts"
 import { sessionLabel } from "../labels.ts"
 import { t } from "../locale.ts"

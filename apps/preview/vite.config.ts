@@ -7,7 +7,7 @@
  * repository root still emits the plugin's `lib/index.js` and `lib/client.js`.
  *
  * The harness lives in `apps/` but the code it serves does not: workspace
- * aliases point the `@cyrus/dsh-*` specifiers at each package's `src`, and
+ * aliases point the `@cyrusdoyle/dsh-*` specifiers at each package's `src`, and
  * `server.fs.allow` opens the whole repository to the dev server.
  */
 

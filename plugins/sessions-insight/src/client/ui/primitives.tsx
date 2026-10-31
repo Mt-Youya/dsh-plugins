@@ -6,7 +6,7 @@
  * can see), and control surfaces live in `theme/components.css` as `ci-btn` /
  * `ci-row`, so nothing here restates a button's background.
  *
- * @module @cyrus/dsh-sessions-insight/client/primitives
+ * @module @cyrusdoyle/dsh-sessions-insight/client/primitives
  */
 
 import type { ReactElement, ReactNode } from "react"

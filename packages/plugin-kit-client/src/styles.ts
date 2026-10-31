@@ -6,7 +6,7 @@
  * module scope would run before the factory is ever called). Injection is
  * idempotent by element id: a duplicated factory run must not stack copies.
  *
- * @module @cyrus/dsh-plugin-kit-client/styles
+ * @module @cyrusdoyle/dsh-plugin-kit-client/styles
  */
 
 /**

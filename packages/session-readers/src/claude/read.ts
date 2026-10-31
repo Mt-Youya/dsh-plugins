@@ -9,8 +9,8 @@
  * @see docs/PLAN.md (各来源的归一化红线 · Claude)
  */
 
-import { exactMeasure } from "@cyrus/dsh-session-contract"
-import type { Turn, Usage } from "@cyrus/dsh-session-contract"
+import { exactMeasure } from "@cyrusdoyle/dsh-session-contract"
+import type { Turn, Usage } from "@cyrusdoyle/dsh-session-contract"
 import { ContextWindow } from "./attribution.ts"
 import { isCompactSummary, readCompactionBoundary, toCompactionPoint, type CompactionBoundary } from "./compaction.ts"
 import {

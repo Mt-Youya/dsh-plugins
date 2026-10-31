@@ -8,7 +8,7 @@
  * numbers, so the adapter tracks the boundary and attaches the summary to it.
  */
 
-import type { CompactionPoint, Measure } from "@cyrus/dsh-session-contract"
+import type { CompactionPoint, Measure } from "@cyrusdoyle/dsh-session-contract"
 import { epochOf, numberField, objectField, stringField, type JsonObject } from "./records.ts"
 
 /** The metadata half of a compaction event. */

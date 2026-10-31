@@ -12,11 +12,11 @@
  * than imported so the browser bundle never pulls a module that decodes images
  * with Node's Buffer. `CHAR_CALIBRATION_NOTE` there is the source of truth.
  *
- * @module @cyrus/dsh-sessions-insight/client/precision
+ * @module @cyrusdoyle/dsh-sessions-insight/client/precision
  */
 
 import type { ReactElement } from "react"
-import type { Basis, Measure } from "@cyrus/dsh-session-contract"
+import type { Basis, Measure } from "@cyrusdoyle/dsh-session-contract"
 import { formatTokens } from "../format.ts"
 import { t } from "../locale.ts"
 

@@ -3,7 +3,7 @@
 # 只构建 + 校验，不改 profile。
 #
 # 插件由 DSH 的「添加插件」界面安装（输入仓库根目录即可）；安装后 profile 里的
-# node_modules/@cyrus/dsh-plugins 指向本仓库，所以改完代码只需要重建产物，然后
+# node_modules/@cyrusdoyle/dsh-plugins 指向本仓库，所以改完代码只需要重建产物，然后
 # 在界面点「立即重启」（或完全退出重开）。
 #
 # 用法：./scripts/install-plugin.sh [profile]（默认 desktop）
@@ -12,7 +12,7 @@ set -euo pipefail
 PROFILE="${1:-desktop}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROFILE_DIR="$HOME/.dsh/profiles/$PROFILE"
-NAME="@cyrus/dsh-plugins"
+NAME="@cyrusdoyle/dsh-plugins"
 
 [ -d "$PROFILE_DIR" ] || { echo "没有这个 profile：$PROFILE" >&2; exit 1; }
 

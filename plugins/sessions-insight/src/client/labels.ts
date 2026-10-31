@@ -6,7 +6,7 @@
  * has to be distinguishable from its neighbours — so it is labelled 未命名会话
  * and carries the first human input instead of a uuid.
  *
- * @module @cyrus/dsh-sessions-insight/client/labels
+ * @module @cyrusdoyle/dsh-sessions-insight/client/labels
  */
 
 import { clip } from "./format.ts"

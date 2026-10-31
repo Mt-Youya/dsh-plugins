@@ -1,7 +1,7 @@
 /**
  * The turn window request and the turn guard.
  *
- * @module @cyrus/dsh-session-contract/guards/turns
+ * @module @cyrusdoyle/dsh-session-contract/guards/turns
  */
 
 import type { CompactionPoint, Turn, Usage } from "../ir.ts"

@@ -9,7 +9,7 @@
  * survives retries and parallel calls.
  */
 
-import type { ToolCall } from "@cyrus/dsh-session-contract"
+import type { ToolCall } from "@cyrusdoyle/dsh-session-contract"
 import { arrayField, booleanField, isObject, objectField, stringField, type JsonObject } from "./records.ts"
 
 /** One assembled call, possibly still open. */

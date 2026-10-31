@@ -1,5 +1,5 @@
 {
-  "name": "@cyrus/dsh-plugin-kit-client",
+  "name": "@cyrusdoyle/dsh-plugin-kit-client",
   "version": "0.0.0",
   "private": false,
   "description": "Browser-side plumbing for a DSH plugin: envelope-decoding fetch, one-shot style injection, slot and locale registration.",
@@ -21,6 +21,6 @@
     "build": "tsdown"
   },
   "dependencies": {
-    "@cyrus/dsh-plugin-kit": "workspace:*"
+    "@cyrusdoyle/dsh-plugin-kit": "workspace:*"
   }
 }

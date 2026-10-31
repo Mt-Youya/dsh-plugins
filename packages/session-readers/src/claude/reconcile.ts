@@ -9,7 +9,7 @@
  * @see docs/adr/0005-honest-attribution-residual.md
  */
 
-import type { ContextPart, Measure } from "@cyrus/dsh-session-contract"
+import type { ContextPart, Measure } from "@cyrusdoyle/dsh-session-contract"
 
 /**
  * Upper bound of a correction that can still be called measurement error.

@@ -21,8 +21,8 @@
  * @see docs/adr/0005-honest-attribution-residual.md
  */
 
-import { exactMeasure } from "@cyrus/dsh-session-contract"
-import type { Session, Turn, Usage } from "@cyrus/dsh-session-contract"
+import { exactMeasure } from "@cyrusdoyle/dsh-session-contract"
+import type { Session, Turn, Usage } from "@cyrusdoyle/dsh-session-contract"
 import type { ResolvedRead } from "./assemble.ts"
 import { CodexWindow } from "./attribution.ts"
 import { readCompacted, toCompactionPoint } from "./compaction.ts"

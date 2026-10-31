@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import type { Session, ToolCall, Turn } from "@cyrus/dsh-session-contract"
+import type { Session, ToolCall, Turn } from "@cyrusdoyle/dsh-session-contract"
 import { BRIEF_LIMIT, NO_RECORD, extractBrief } from "../src/host/views/brief.ts"
 
 const WORKDIR = "/Users/example/project"

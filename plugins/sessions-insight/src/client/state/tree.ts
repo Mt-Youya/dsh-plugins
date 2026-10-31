@@ -9,7 +9,7 @@
  * Everything here is pure so it can be tested without a DOM: the component only
  * paints what `flattenTree` returns and moves the cursor with `nextIndex`.
  *
- * @module @cyrus/dsh-sessions-insight/client/tree
+ * @module @cyrusdoyle/dsh-sessions-insight/client/tree
  */
 
 import type { ContextSource, WorkdirEntry } from "../../protocol.ts"

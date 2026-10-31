@@ -6,7 +6,7 @@
  * in their tooltip) when a corpus is unreadable — one failing source never
  * blanks the page, so the bar is where that failure stays visible.
  *
- * @module @cyrus/dsh-sessions-insight/client/toolbar
+ * @module @cyrusdoyle/dsh-sessions-insight/client/toolbar
  */
 
 import type { ReactElement } from "react"

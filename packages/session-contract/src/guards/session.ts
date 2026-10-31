@@ -2,7 +2,7 @@
  * Guards for the session inventory views: one session's detail page, the
  * workdir roll-up and the session list.
  *
- * @module @cyrus/dsh-session-contract/guards/session
+ * @module @cyrusdoyle/dsh-session-contract/guards/session
  */
 
 import { CONTEXT_SOURCES } from "../types.ts"

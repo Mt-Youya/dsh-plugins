@@ -6,7 +6,7 @@
  * use a lightened brand tone so they clear 4.5:1 on the dark panel background;
  * the raw brand colour is only used for the glyph itself.
  *
- * @module @cyrus/dsh-sessions-insight/client/icons
+ * @module @cyrusdoyle/dsh-sessions-insight/client/icons
  */
 
 import type { ReactElement } from "react"

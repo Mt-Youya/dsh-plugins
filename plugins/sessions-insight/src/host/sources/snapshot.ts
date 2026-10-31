@@ -12,7 +12,7 @@
  * header facts the list shows). Bodies are never stored, and a changed file
  * always invalidates its source's snapshot.
  *
- * @module @cyrus/dsh-sessions-insight/host/snapshot
+ * @module @cyrusdoyle/dsh-sessions-insight/host/snapshot
  */
 
 import { mkdir, readdir, readFile, rename, stat, writeFile } from "node:fs/promises"

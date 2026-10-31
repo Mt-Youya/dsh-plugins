@@ -5,11 +5,11 @@
  * of the context, the compaction boundaries (only when there are any), the tool
  * calls, then the subagent files.
  *
- * @module @cyrus/dsh-sessions-insight/client/turn-detail
+ * @module @cyrusdoyle/dsh-sessions-insight/client/turn-detail
  */
 
 import type { ReactElement } from "react"
-import type { Turn } from "@cyrus/dsh-session-contract"
+import type { Turn } from "@cyrusdoyle/dsh-session-contract"
 import type { SegmentInfo } from "../../protocol.ts"
 import { compactTokens, formatFactor, formatShare, formatTime } from "../format.ts"
 import { t } from "../locale.ts"

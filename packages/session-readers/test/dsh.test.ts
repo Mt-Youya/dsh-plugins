@@ -3,9 +3,9 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 import { zstdCompressSync } from "node:zlib"
-import { readDshSession } from "@cyrus/dsh-session-readers"
-import { decodeSessionLog } from "@cyrus/dsh-session-readers"
-import { parseProjection, isProjectionFresh, type DshProjection } from "@cyrus/dsh-session-readers"
+import { readDshSession } from "@cyrusdoyle/dsh-session-readers"
+import { decodeSessionLog } from "@cyrusdoyle/dsh-session-readers"
+import { parseProjection, isProjectionFresh, type DshProjection } from "@cyrusdoyle/dsh-session-readers"
 
 let scratch: string | undefined
 

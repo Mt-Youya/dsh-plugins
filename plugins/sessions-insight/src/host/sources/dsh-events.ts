@@ -7,13 +7,13 @@
  * peer-scoped `follow` stream, and works exactly the same in an isolated
  * `DSH_HOME`.
  *
- * @module @cyrus/dsh-sessions-insight/host/dsh-events
+ * @module @cyrusdoyle/dsh-sessions-insight/host/dsh-events
  */
 
 import { access, readdir, readFile } from "node:fs/promises"
 import { join } from "node:path"
-import { decodeSessionLog, splitLogLines } from "@cyrus/dsh-session-readers"
-import { parseLogLine } from "@cyrus/dsh-session-readers"
+import { decodeSessionLog, splitLogLines } from "@cyrusdoyle/dsh-session-readers"
+import { parseLogLine } from "@cyrusdoyle/dsh-session-readers"
 
 /** One observed event. */
 export interface ObservedEvent {

@@ -14,7 +14,7 @@
  * @see docs/IR.md (precision, basis)
  */
 
-import type { Measure } from "@cyrus/dsh-session-contract"
+import type { Measure } from "@cyrusdoyle/dsh-session-contract"
 
 /**
  * Compact JSON tool schemas: 2.26 characters per token.

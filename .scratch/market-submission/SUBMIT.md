@@ -2,8 +2,8 @@
 
 ## 结论
 
-- 本项目唯一可收录插件：`@cyrus/dsh-sessions-insight@0.0.4`（`plugins/sessions-insight`，Sessions Insight）
-- 根包 `@cyrus/dsh-plugins` 是**纯聚合包**（`cordis.patch.yml` 只是把依赖插件逐条 insert）→ 评审规则第 7 条明确不收录
+- 本项目唯一可收录插件：`@cyrusdoyle/dsh-sessions-insight@0.0.4`（`plugins/sessions-insight`，Sessions Insight）
+- 根包 `@cyrusdoyle/dsh-plugins` 是**纯聚合包**（`cordis.patch.yml` 只是把依赖插件逐条 insert）→ 评审规则第 7 条明确不收录
 - 上游已有同形态先例，命名照抄：`data/plugins/BitDG__dsh-plugins--plugins-music-player.yml`（`name: BitDG/dsh-plugins#music-player`）
 
 ## 已核对（证据）

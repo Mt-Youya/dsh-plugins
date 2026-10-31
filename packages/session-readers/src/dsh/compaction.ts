@@ -11,7 +11,7 @@
  * continuing from it, so `replacedHistory` is true.
  */
 
-import { exactMeasure, type CompactionPoint } from "@cyrus/dsh-session-contract"
+import { exactMeasure, type CompactionPoint } from "@cyrusdoyle/dsh-session-contract"
 import { numberField, stringField, type JsonObject } from "./records.ts"
 
 /** Event types that mark a compaction boundary. */

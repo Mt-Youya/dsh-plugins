@@ -4,8 +4,8 @@
  * The Host owns every projection of the IR; the browser only decodes. Route
  * paths are the one part of the wire nobody else can name, so they stay here;
  * the IR, the payload types and their guards come from
- * `@cyrus/dsh-session-contract`, and the document-relative spelling comes from
- * `@cyrus/dsh-plugin-kit`.
+ * `@cyrusdoyle/dsh-session-contract`, and the document-relative spelling comes from
+ * `@cyrusdoyle/dsh-plugin-kit`.
  *
  * Rules that shaped this file (docs/API.md):
  * - every number travels as a `Measure`, never as a bare token count;
@@ -13,10 +13,10 @@
  * - a source that cannot answer says `available:false` with a reason instead
  *   of failing the whole page.
  *
- * @module @cyrus/dsh-sessions-insight/protocol/paths
+ * @module @cyrusdoyle/dsh-sessions-insight/protocol/paths
  */
 
-import { browserUrl } from "@cyrus/dsh-plugin-kit"
+import { browserUrl } from "@cyrusdoyle/dsh-plugin-kit"
 
 /** Root every route hangs off. The listener mounts it at the site root. */
 export const API_ROOT = "/api/dsh-sessions-insight"

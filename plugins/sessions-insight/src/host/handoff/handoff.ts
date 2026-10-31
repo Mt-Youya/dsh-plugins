@@ -16,7 +16,7 @@
  *   stream is peer-scoped and refuses calls made outside a Remote invocation,
  *   while the log is exactly what the status machine needs.
  *
- * @module @cyrus/dsh-sessions-insight/host/handoff
+ * @module @cyrusdoyle/dsh-sessions-insight/host/handoff
  */
 
 import { handoffProgress } from "./progress.ts"

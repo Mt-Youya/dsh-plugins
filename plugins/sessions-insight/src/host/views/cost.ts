@@ -21,10 +21,10 @@
  * `(tableId, currency)` — never merged, never converted. The OpenRouter table is
  * the reference column only, so Claude/GPT turns carry no primary amount.
  *
- * @module @cyrus/dsh-sessions-insight/host/cost
+ * @module @cyrusdoyle/dsh-sessions-insight/host/cost
  */
 
-import type { Session, Usage } from "@cyrus/dsh-session-contract"
+import type { Session, Usage } from "@cyrusdoyle/dsh-session-contract"
 import type { ContextSource } from "../../protocol.ts"
 import type { Currency, PricingTable, TableId } from "./pricing.ts"
 import { PRIMARY_ORDER, TABLES, TABLE_IDS, displayKey, lookupPrice, primaryTableFor } from "./pricing.ts"

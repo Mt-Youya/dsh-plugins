@@ -8,7 +8,7 @@
  * names callers already import, plus the public read entry.
  *
  * @see docs/IR.md (adapter 必须遵守, 对账的边界)
- * @module @cyrus/dsh-sessions-insight/core/codex
+ * @module @cyrusdoyle/dsh-sessions-insight/core/codex
  */
 
 import { resolveRead, type CodexReadOptions } from "./assemble.ts"

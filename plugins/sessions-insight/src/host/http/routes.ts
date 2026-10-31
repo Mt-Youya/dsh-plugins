@@ -9,7 +9,7 @@
  * blank the page.
  *
  * @see docs/API.md
- * @module @cyrus/dsh-sessions-insight/host/routes
+ * @module @cyrusdoyle/dsh-sessions-insight/host/routes
  */
 
 import type {

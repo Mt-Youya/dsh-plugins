@@ -1,5 +1,5 @@
 {
-  "name": "@cyrus/dsh-plugin-kit",
+  "name": "@cyrusdoyle/dsh-plugin-kit",
   "version": "0.0.0",
   "private": false,
   "description": "Plugin-agnostic wire primitives: the JSON envelope, its decoder, and URL spelling.",

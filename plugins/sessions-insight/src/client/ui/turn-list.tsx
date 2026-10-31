@@ -15,11 +15,11 @@
  * move the focus ring. The list only ever receives one page of turns (the Host
  * slices), which keeps a several-hundred-turn session from rendering in one go.
  *
- * @module @cyrus/dsh-sessions-insight/client/turn-list
+ * @module @cyrusdoyle/dsh-sessions-insight/client/turn-list
  */
 
 import type { KeyboardEvent, ReactElement } from "react"
-import type { CompactionPoint, Turn } from "@cyrus/dsh-session-contract"
+import type { CompactionPoint, Turn } from "@cyrusdoyle/dsh-session-contract"
 import type { CostTurnValue } from "../../protocol.ts"
 import { compactTokens, formatShare, formatShortTime, formatUsd } from "../format.ts"
 import { t } from "../locale.ts"

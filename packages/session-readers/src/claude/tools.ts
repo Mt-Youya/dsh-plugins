@@ -7,7 +7,7 @@
  * that does not pair stays `unknown` rather than being dropped.
  */
 
-import type { ToolCall } from "@cyrus/dsh-session-contract"
+import type { ToolCall } from "@cyrusdoyle/dsh-session-contract"
 import {
   arrayField,
   booleanField,
