@@ -99,6 +99,8 @@ export function createPluginConfig(options: PluginBuildOptions) {
       outDir: options.outDir,
       format: "cjs",
       platform: "browser",
+      // Inlined UI dependencies must not read Node globals in the renderer.
+      define: { "process.env.NODE_ENV": JSON.stringify("production") },
       sourcemap: true,
       dts: false,
       alias: options.alias,

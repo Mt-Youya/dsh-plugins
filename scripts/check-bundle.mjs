@@ -9,6 +9,7 @@
 import { readFileSync } from "node:fs"
 import { createRequire } from "node:module"
 import { join } from "node:path"
+import { runInNewContext } from "node:vm"
 
 const root = process.argv[2] ?? "."
 const client = readFileSync(join(root, "lib/client.js"), "utf8")
@@ -30,7 +31,8 @@ for (const name of ["apply", "handleHealth", "createRoutes", "createSources"]) {
   }
 }
 
-// Evaluate the client bundle the way the shell does: one global, one factory.
+// Evaluate in a browser-like realm with no implicit Node globals.
+// new Function() in this Node process would incorrectly expose process/Buffer.
 let registered
 const sandbox = {
   window: {
@@ -41,12 +43,12 @@ const sandbox = {
     },
   },
 }
-new Function("window", client.replace(/^/, "\n"))(sandbox.window)
+runInNewContext(client, sandbox, { filename: join(root, "lib/client.js"), timeout: 5000 })
 if (registered === undefined) failures.push("client bundle did not call __ModuleLoader__.load")
 else {
   const require = createRequire(import.meta.url)
   const exports = registered.factory((name) => {
-    // Exercise the actual external APIs, including Radix's forwardRef and portal.
+    // Exercise the actual external APIs, including the UI library's forwardRef and portal.
     // Any unbundled third-party import still fails the deployment contract.
     if (/^react(-dom)?(\/.*)?$/.test(name)) return require(name)
     throw new Error(`unexpected require: ${name}`)
