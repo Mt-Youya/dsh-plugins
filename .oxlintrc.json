@@ -1,6 +1,26 @@
+// oxlint 配置（允许注释）
+// 文档：https://oxc.rs/docs/guide/usage/linter/config.html
+// 规则表（含是否可自动修复）：https://oxc.rs/docs/guide/usage/linter/rules.html
+//
+// 分工：排版 / import 语句顺序交给 oxfmt（见 .oxfmtrc.json）；
+//       这里负责"语义 + 可自动修复的写法统一"。
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "oxc"],
+
+  // 内置插件。注意：一旦写了 plugins，就会覆盖默认插件集合，必须把自己要的写全。
+  // typescript / unicorn / oxc 是默认就有的；这里额外加 import（ESM 问题）和 react（React 19 规则）。
+  "plugins": ["typescript", "unicorn", "oxc", "import", "react"],
+
+  // 本地 JS 插件（oxlint alpha API）。内置 `func-style` 只有检测、没有 fixer，
+  // `oxlint --fix` 永远改不动箭头函数；这里用等价规则 + fixer 补上这一环。
+  // 只转换"模块级 const + 多行代码块"的具名箭头函数：
+  //   export const foo = (a: number) => { ... }  →  export function foo(a: number) { ... }
+  // 单行能写完的、回调里的、用到 this/arguments 的、let/var 的一律跳过。
+  "jsPlugins": ["./scripts/oxlint-plugin-arrow-to-function.mjs"],
+
+  // 按"类别"批量开关，避免逐条列几百条规则。
+  // correctness（确定是错）报 error；suspicious/perf（大概率是问题）报 warn 不挡路；
+  // style/pedantic/restriction/nursery 关掉，需要的单条在下面显式打开。
   "categories": {
     "correctness": "error",
     "suspicious": "warn",
@@ -10,11 +30,18 @@
     "style": "off",
     "nursery": "off"
   },
+
   "env": {
     "browser": true,
     "node": true,
     "es2024": true
   },
+
+  "options": {
+    // 清理已经失效的 oxlint-disable 注释，防止"假豁免"越积越多
+    "reportUnusedDisableDirectives": "warn"
+  },
+
   "ignorePatterns": [
     "node_modules",
     "dist",
@@ -25,10 +52,49 @@
     ".content-collections",
     "coverage",
     "*.d.ts",
-    ".wrangler"
+    "**/routeTree.gen.ts",
+    ".wrangler",
+    "films",
+    "design"
   ],
+
   "rules": {
+    // ───── 现有项目约定（保留）─────
     "no-console": "off",
-    "no-debugger": "error"
+    "no-debugger": "error",
+    "typescript/no-extraneous-class": ["warn", { "allowWithDecorator": true }],
+
+    // ───── import 具名导入内部排序（可自动修复）─────
+    // 只排 { b, a } → { a, b }；语句之间的分组/顺序由 oxfmt 的 sortImports 负责，
+    // 所以这里必须 ignoreDeclarationSort: true，否则两个工具会互相打架、每次运行都改一遍。
+    "sort-imports": ["error", { "ignoreDeclarationSort": true, "ignoreMemberSort": false, "ignoreCase": true }],
+
+    // ───── 可自动修复的写法统一（`pnpm lint:fix` 或编辑器保存时自动改）─────
+    "arrow-body-style": ["warn", "as-needed"], // () => { return x }  →  () => x
+    "object-shorthand": "warn", // { foo: foo }  →  { foo }
+    "prefer-template": "warn", // "a" + b  →  `a${b}`
+    "prefer-object-spread": "warn", // Object.assign({}, a)  →  { ...a }
+    "prefer-const": "warn", // 不再重新赋值就用 const
+    "no-var": "error", // 禁止 var
+    "unicorn/prefer-node-protocol": "warn", // require("fs") / from "fs"  →  "node:fs"
+    "import/no-duplicates": "warn", // 同一个模块 import 了两次
+    // 配合 tsconfig 的 verbatimModuleSyntax：只作类型使用的导入必须写成 `import type`
+    "typescript/consistent-type-imports": ["warn", { "prefer": "type-imports", "fixStyle": "separate-type-imports" }],
+
+    // ───── 具名箭头函数 → function 声明（可自动修复）─────
+    // 由上面的本地插件提供 fixer：`pnpm lint:fix` 会自动改，不需要手工。
+    // 只针对上面描述的窄范围，等价于"模块级、多行、具名"这一种情况。
+    "local/prefer-function-declaration": "error",
+
+    // ───── React 19 / 新 JSX transform ─────
+    // 新版 JSX transform 不需要在文件里 import React，这条规则在这里只会制造 1500+ 条误报。
+    "react/react-in-jsx-scope": "off",
+    // 下面几条是 React Compiler 时代的正确性规则，规则本身有价值但目前存量代码会报错，
+    // 先降为 warn 做提示；把存量改干净后再删掉这几行即回到 correctness 的 error。
+    "react/set-state-in-effect": "warn",
+    "react/refs": "warn",
+    "react/purity": "warn",
+    "react/immutability": "warn",
+    "react/exhaustive-deps": "warn"
   }
 }

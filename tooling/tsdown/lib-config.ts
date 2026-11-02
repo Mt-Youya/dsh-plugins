@@ -11,6 +11,7 @@
  */
 
 import { defineConfig } from "tsdown"
+
 import { workspaceAlias } from "../aliases.ts"
 
 /** Where one package keeps its sources. */
@@ -28,8 +29,8 @@ export interface LibBuildOptions {
  */
 export function createLibConfig(options: LibBuildOptions) {
   return defineConfig({
-    entry: [options.root + "src/index.ts"],
-    outDir: options.root + "lib",
+    entry: [`${options.root}src/index.ts`],
+    outDir: `${options.root}lib`,
     format: "esm",
     platform: options.platform ?? "neutral",
     target: "esnext",

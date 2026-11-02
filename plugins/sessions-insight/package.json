@@ -61,7 +61,12 @@
     "release:minor": "pnpm version minor --no-git-tag-version && pnpm pack",
     "prepublishOnly": "pnpm typecheck && pnpm test && pnpm build"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@base-ui/react": "^1.9.0",
+    "@hugeicons/core-free-icons": "^4.4.0",
+    "@hugeicons/react": "^1.1.10",
+    "cn": "^0.5.1"
+  },
   "devDependencies": {
     "@cyrusdoyle/dsh-plugin-kit": "workspace:*",
     "@cyrusdoyle/dsh-plugin-kit-client": "workspace:*",
@@ -74,7 +79,7 @@
   },
   "icon": "icon.svg",
   "engines": {
-    "node": ">=24.19.0"
+    "node": ">=24.22.1"
   },
   "dsh": {
     "engines": {

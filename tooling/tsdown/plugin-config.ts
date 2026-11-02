@@ -19,8 +19,9 @@
  * @see docs/adr/0002-asar-021-is-the-contract.md
  */
 
-import { defineConfig } from "tsdown"
 import { readFileSync } from "node:fs"
+
+import { defineConfig } from "tsdown"
 
 /**
  * The CJS body rolldown emits reads and writes `module.exports`/`exports` as
@@ -75,7 +76,7 @@ export function createPluginConfig(options: PluginBuildOptions) {
 
   return defineConfig([
     {
-      entry: [options.srcDir + "index.ts"],
+      entry: [`${options.srcDir}index.ts`],
       outDir: options.outDir,
       format: "esm",
       platform: "node",
@@ -94,7 +95,7 @@ export function createPluginConfig(options: PluginBuildOptions) {
       define: { __DSH_PLUGIN_VERSION__: JSON.stringify(manifest.version) },
     },
     {
-      entry: { client: options.srcDir + "client/index.tsx" },
+      entry: { client: `${options.srcDir}client/index.tsx` },
       outDir: options.outDir,
       format: "cjs",
       platform: "browser",
@@ -102,7 +103,20 @@ export function createPluginConfig(options: PluginBuildOptions) {
       dts: false,
       alias: options.alias,
       deps: {
-        alwaysBundle: Object.keys(options.alias),
+        alwaysBundle: [
+          ...Object.keys(options.alias),
+          /^@base-ui\//,
+          /^@hugeicons\//,
+          "cn",
+          /^@radix-ui\//,
+          /^@floating-ui\//,
+          /^react-remove-scroll/,
+          /^react-style-singleton/,
+          "aria-hidden",
+          "get-nonce",
+          "detect-node-es",
+          "tslib",
+        ],
         // The shell owns these; bundling either copy would break hooks and context.
         neverBundle: [/^react(-dom)?(\/.*)?$/],
       },

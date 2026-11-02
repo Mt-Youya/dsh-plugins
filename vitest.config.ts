@@ -1,4 +1,5 @@
 import { defineConfig } from "vitest/config"
+
 import { viteAlias } from "./tooling/aliases.ts"
 
 /**

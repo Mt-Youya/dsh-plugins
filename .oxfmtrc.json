@@ -1,12 +1,74 @@
+// oxfmt 配置（格式化 + 自动排序）。文件名用 .json：oxc 两个工具的 schema 都声明了
+// allowComments，所以注释可以直接写在 .json 里（与 .oxlintrc.json 保持一致）。
+// 文档：https://oxc.rs/docs/guide/usage/formatter/config-file-reference.html
+// 排序能力：https://oxc.rs/docs/guide/usage/formatter/sorting.html
+//
+// 注意：oxfmt 只做"排版 + 语句/类名排序"，不做语法改写
+//（例如箭头函数改 function 属于代码改写，不是格式化的职责，见 .oxlintrc.json 里的说明）。
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "printWidth": 120,
+
+  // ───────── 排版基础：沿用仓库现有风格，只为"更少 diff 噪音"做增量调整 ─────────
+  "printWidth": 120, // 一行 120 字符才折行（默认 100，TS 类型注解容易爆行）
   "tabWidth": 2,
   "useTabs": false,
-  "semi": false,
-  "singleQuote": false,
-  "trailingComma": "es5",
-  "arrowParens": "always",
-  "endOfLine": "lf",
-  "ignorePatterns": ["**/next-env.d.ts"]
+  "semi": false, // 不写行尾分号（仓库现有风格）
+  "singleQuote": false, // JS/TS 用双引号
+  "jsxSingleQuote": false, // JSX 属性用双引号
+  "quoteProps": "as-needed", // 对象键能不加引号就不加
+  "trailingComma": "all", // 多行参数/数组/对象都补尾逗号：以后增删行 git diff 只多一行，不牵连上一行
+  "arrowParens": "always", // 单参数箭头函数也保留括号 (x) => x
+  "bracketSpacing": true, // { a: 1 }
+  "bracketSameLine": false, // 多行 JSX 的 `>` 单独一行
+  "objectWrap": "preserve", // 对象字面量原本换行就保持换行（Prettier 行为，不制造二次重排）
+  "endOfLine": "lf", // 统一 LF，避免 CRLF 造成整文件 diff
+  "insertFinalNewline": true,
+  "proseWrap": "preserve", // Markdown 已在 ignorePatterns 中，不影响
+  "embeddedLanguageFormatting": "auto", // 模板字符串里的 CSS / GraphQL / HTML 也格式化
+
+  // ───────── 自动排序 1/3：import 语句 ─────────
+  // 只重排"语句"，括号里的具名导入由 oxlint 的 sort-imports 负责（两边分工见 .oxlintrc.json）。
+  "sortImports": {
+    // 分组顺序 = 阅读顺序，组与组之间空一行：
+    //   ① Node 内置（node:fs） ② 第三方（react / zod） ③ 工作区内部包（@mykaoyan/*）
+    //   ④ 相对路径（../ / ./ / .） ⑤ 样式文件 ⑥ 兜底
+    "groups": ["builtin", "external", "internal", ["parent", "sibling", "index"], "style", "unknown"],
+    // @mykaoyan/* 是 pnpm workspace 内部包；不登记会被误判成 external
+    "internalPattern": ["@mykaoyan/"],
+    "newlinesBetween": true, // 组间空一行
+    "order": "asc", // 组内按模块路径升序
+    "ignoreCase": true, // 大小写不敏感，避免 React / zod 这种大小写混排时顺序反直觉
+    "sortSideEffects": false, // 有副作用的 import（如 import "./x.css"）保持原位，最安全
+    "partitionByNewline": false // 允许跨空行重排，保证"排一次就稳定"，不会反复横跳
+  },
+
+  // ───────── 自动排序 2/3：Tailwind class ─────────
+  // 必须指向真正 @import "tailwindcss" 的入口，否则插件解析不到主题会静默不生效；
+  "sortTailwindcss": {
+    "stylesheet": "./plugins/sessions-insight/src/client/theme/app.css",
+    "functions": ["cn", "clsx", "cva", "twMerge"], // cn()/clsx() 的字符串参数同样参与排序
+    "preserveWhitespace": false,
+    "preserveDuplicates": false
+  },
+
+  // ───────── 自动排序 3/3：package.json 字段 ─────────
+  "sortPackageJson": {
+    "sortScripts": false // 字段按约定顺序排；scripts 保留手写顺序（有阅读/执行语义，别按字母打乱）
+  },
+
+  // JSDoc 重排默认关闭：它会改写注释的换行、大写化描述，对中文注释收益小、风险大。
+  // 需要时改 true（或传对象配置）。
+  "jsdoc": false,
+
+  // 生成物、外部契约、内容型文件不参与格式化
+  "ignorePatterns": [
+    "**/next-env.d.ts",
+    "**/*.md",
+    "**/routeTree.gen.ts",
+    "**/worker-configuration.d.ts",
+    "apps/web/public/**",
+    "cli/contracts/openapi.json",
+    "skills/mykaoyan/references/progress.schema.json",
+    "packages/db/supabase/migrations/meta/**"
+  ]
 }

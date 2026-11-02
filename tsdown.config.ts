@@ -13,6 +13,7 @@
  */
 
 import { fileURLToPath } from "node:url"
+
 import { workspaceAlias } from "./tooling/aliases.ts"
 import { createPluginConfig } from "./tooling/tsdown/plugin-config.ts"
 
@@ -20,8 +21,8 @@ import { createPluginConfig } from "./tooling/tsdown/plugin-config.ts"
 const root = fileURLToPath(new URL(".", import.meta.url))
 
 export default createPluginConfig({
-  srcDir: root + "plugins/sessions-insight/src/",
-  outDir: root + "lib/",
-  manifestPath: root + "package.json",
+  srcDir: `${root}plugins/sessions-insight/src/`,
+  outDir: `${root}lib/`,
+  manifestPath: `${root}package.json`,
   alias: workspaceAlias(),
 })
