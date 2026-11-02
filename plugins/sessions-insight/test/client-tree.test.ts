@@ -1,17 +1,18 @@
 import { describe, expect, it } from "vitest"
-import type { ContextSource, WorkdirEntry } from "../src/protocol.ts"
+
 import {
-  DEFAULT_SESSION_LIMIT,
   buildProjects,
+  DEFAULT_SESSION_LIMIT,
   flattenTree,
   nextIndex,
   readExpanded,
   sessionKey,
-  writeExpanded,
   type TreeSession,
+  writeExpanded,
 } from "../src/client/state/tree.ts"
+import type { ContextSource, WorkdirEntry } from "../src/protocol.ts"
 
-const split = (path: string) => {
+function split(path: string) {
   const index = path.lastIndexOf("/")
   return index <= 0 ? { parent: "", leaf: path } : { parent: path.slice(0, index + 1), leaf: path.slice(index + 1) }
 }
@@ -26,7 +27,7 @@ function workdir(path: string, counts: [ContextSource, number][], at = 1): Workd
 }
 
 function session(source: ContextSource, id: string, workdir: string, at = 1): TreeSession {
-  return { source, id, workdir, title: "T-" + id, updatedAt: at, bytes: 10 }
+  return { source, id, workdir, title: `T-${id}`, updatedAt: at, bytes: 10 }
 }
 
 const PROJECTS = buildProjects(
@@ -38,11 +39,11 @@ const PROJECTS = buildProjects(
         ["dsh", 115],
         ["codex", 5],
       ],
-      300
+      300,
     ),
     workdir("/Users/me/auto-chat", [["claude", 2]], 200),
   ],
-  split
+  split,
 )
 
 function flatten(over: Partial<Parameters<typeof flattenTree>[0]> = {}) {
@@ -89,7 +90,7 @@ describe("folding", () => {
     const open = flatten({ sessions, expanded: new Set(["/Users/me/auto-chat"]) })
     expect(open.map((row) => row.kind)).toEqual(["project", "project", "session", "session"])
     expect(
-      open.filter((row) => row.kind === "session").map((row) => (row.kind === "session" ? row.session.id : ""))
+      open.filter((row) => row.kind === "session").map((row) => (row.kind === "session" ? row.session.id : "")),
     ).toEqual(["a", "b"])
   })
 
@@ -100,7 +101,7 @@ describe("folding", () => {
     ])
     const rows = flatten({ sessions, expanded: new Set(["/Users/me/postgraduate", "/Users/me/auto-chat"]) })
     expect(
-      rows.filter((row) => row.kind === "project").map((row) => (row.kind === "project" ? row.project.workdir : ""))
+      rows.filter((row) => row.kind === "project").map((row) => (row.kind === "project" ? row.project.workdir : "")),
     ).toEqual(["/Users/me/postgraduate", "/Users/me/auto-chat"])
   })
 })
@@ -108,7 +109,7 @@ describe("folding", () => {
 describe("truncation", () => {
   it('renders one page plus a "show all" row, then everything once the limit is raised', () => {
     const many = Array.from({ length: 115 }, (_, index) =>
-      session("dsh", "s" + String(index), "/Users/me/postgraduate")
+      session("dsh", `s${String(index)}`, "/Users/me/postgraduate"),
     )
     const sessions = new Map([["/Users/me/postgraduate", many]])
     const page = flatten({ sessions, expanded: new Set(["/Users/me/postgraduate"]) })
@@ -190,8 +191,8 @@ describe("persisted expansion", () => {
             throw new Error("quota")
           },
         },
-        ["/a"]
-      )
+        ["/a"],
+      ),
     ).not.toThrow()
   })
 })

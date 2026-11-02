@@ -18,6 +18,7 @@
  */
 
 import type { Attribution, ContextPart } from "@cyrusdoyle/dsh-session-contract"
+
 import { formatShare } from "../format.ts"
 
 /** One paintable slice. */

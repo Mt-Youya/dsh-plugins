@@ -11,6 +11,7 @@
  */
 
 import type { ReactElement } from "react"
+
 import type { SegmentInfo } from "../../protocol.ts"
 import { basename, formatBytes } from "../format.ts"
 import { t } from "../locale.ts"
@@ -40,13 +41,13 @@ export function SubagentTree({
             <Glyph name="chevron" size={11} className="ci-chevron" />
             {t("subagents.files", { count: attached.length })}
           </summary>
-          <ul className="mt-1.5 mb-0 p-0 list-none font-mono text-[11px]">
+          <ul className="mt-1.5 mb-0 list-none p-0 font-mono text-[11px]">
             <li className="flex items-baseline gap-1.5 py-0.5 ps-0">
               <span className="text-fg-dim" aria-hidden="true">
                 ▸
               </span>
               <span className="truncate">{basename(segments[0]?.name ?? "")}</span>
-              <span className="text-fg-dim text-[10px]">{formatBytes(segments[0]?.bytes ?? 0)}</span>
+              <span className="text-[10px] text-fg-dim">{formatBytes(segments[0]?.bytes ?? 0)}</span>
               <Chip>{t("subagents.main")}</Chip>
             </li>
             {attached.map((segment) => (
@@ -55,7 +56,7 @@ export function SubagentTree({
                   └
                 </span>
                 <span className="truncate">{segment.name}</span>
-                <span className="text-fg-dim text-[10px]">{formatBytes(segment.bytes)}</span>
+                <span className="text-[10px] text-fg-dim">{formatBytes(segment.bytes)}</span>
               </li>
             ))}
           </ul>
@@ -64,7 +65,7 @@ export function SubagentTree({
       {turnSubagents.length === 0 ? (
         <p className="m-0 text-[11.5px] text-fg-dim">{t("turns.noSubagents")}</p>
       ) : (
-        <ul className="flex flex-wrap gap-1.5 mt-1.5 mb-2 p-0 list-none">
+        <ul className="mt-1.5 mb-2 flex list-none flex-wrap gap-1.5 p-0">
           {turnSubagents.map((id) => (
             <li key={id}>
               <Chip tone="mono">

@@ -208,7 +208,7 @@ export const PRIMARY_ORDER: readonly TableId[] = ["official"]
 export function primaryTableFor(
   provider: string | undefined,
   model: string | undefined,
-  tables: Partial<Record<TableId, PricingTable>> = TABLES
+  tables: Partial<Record<TableId, PricingTable>> = TABLES,
 ): TableId | null {
   for (const id of PRIMARY_ORDER) {
     const table = tables[id]
@@ -242,7 +242,7 @@ export const PRICING: PricingTable = OFFICIAL
 export function lookupPrice(
   table: PricingTable,
   provider: string | undefined,
-  model: string | undefined
+  model: string | undefined,
 ): (ModelPrice & { currency: Currency }) | undefined {
   if (provider === undefined || model === undefined) return undefined
   // Exact spelling first, then the dot-folded one: the tables keep the spelling

@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest"
 import type { Turn } from "@cyrusdoyle/dsh-session-contract"
+import { describe, expect, it } from "vitest"
+
 import { formatShortTime, tildePath } from "../src/client/format.ts"
 import { sessionStats } from "../src/client/state/session-stats.ts"
 import { filterProjects, type TreeProject } from "../src/client/state/tree.ts"

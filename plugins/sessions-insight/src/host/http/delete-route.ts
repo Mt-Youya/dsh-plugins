@@ -1,7 +1,7 @@
 import { isDeleteSessionValue } from "../../protocol.ts"
-import type { RouteDeps } from "./routes.ts"
 import { clearListCache } from "./list-cache.ts"
 import { route } from "./route-utils.ts"
+import type { RouteDeps } from "./routes.ts"
 import type { RouteHandler } from "./server.ts"
 import { guardRequest, isJsonContentType, readJsonBody, writeFail, writeOk } from "./server.ts"
 
@@ -27,6 +27,14 @@ export function handleDeleteSession(deps: RouteDeps): RouteHandler {
       const answer = await source.remove(body.id)
       if (!answer.ok) {
         writeFail(res, answer.error, answer.detail)
+        return
+      }
+      try {
+        await deps.metadata?.remove(body.source, body.id)
+      } catch {
+        // Original logs are already gone: do not report an irreversible success as a retryable failure.
+        console.warn("[sessions-insight] deleted session metadata cleanup failed")
+        writeOk(res, { ...body, metadataWarning: "metadata-cleanup-failed" })
         return
       }
       writeOk(res, body)

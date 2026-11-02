@@ -14,11 +14,13 @@
  */
 
 import type { IncomingMessage, OutgoingHttpHeaders, ServerResponse } from "node:http"
+
 import {
   guardRequest as kitGuardRequest,
   statusOf as kitStatusOf,
   writeFail as kitWriteFail,
 } from "@cyrusdoyle/dsh-plugin-kit-host"
+
 import type { ApiErrorCode } from "../../protocol.ts"
 
 export type { RouteHandler, WebRoute } from "@cyrusdoyle/dsh-plugin-kit-host"
@@ -73,7 +75,7 @@ export function writeFail(
   res: ServerResponse,
   code: ApiErrorCode,
   detail?: string,
-  headers: OutgoingHttpHeaders = {}
+  headers: OutgoingHttpHeaders = {},
 ): void {
   kitWriteFail(res, STATUS_BY_CODE, code, detail, headers)
 }

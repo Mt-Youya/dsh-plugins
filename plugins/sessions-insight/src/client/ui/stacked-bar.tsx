@@ -13,12 +13,13 @@
  * @module @cyrusdoyle/dsh-sessions-insight/client/stacked-bar
  */
 
-import type { ReactElement } from "react"
 import type { Attribution, ContextPart, Measure } from "@cyrusdoyle/dsh-session-contract"
-import { barLayout } from "../state/bar-layout.ts"
+import type { ReactElement } from "react"
+
 import { compactTokens, formatShare, formatTokens } from "../format.ts"
 import { t } from "../locale.ts"
-import { MeasureValue, measureTip } from "./precision.tsx"
+import { barLayout } from "../state/bar-layout.ts"
+import { measureTip, MeasureValue } from "./precision.tsx"
 
 export type { BarLayout, BarSegment } from "../state/bar-layout.ts"
 
@@ -55,7 +56,7 @@ export function StackedBar({
   const layout = barLayout(attribution)
   return (
     <div
-      className={`flex w-full bg-bg-3 ${dense ? "h-1.5 rounded-full overflow-hidden" : "relative h-3 rounded-sm"}`}
+      className={`flex w-full bg-bg-3 ${dense ? "h-1.5 overflow-hidden rounded-full" : "relative h-3 rounded-sm"}`}
       role={dense ? "img" : "group"}
       aria-label={label}
     >
@@ -72,8 +73,8 @@ export function StackedBar({
             key={segment.key}
             className={
               segment.kind === "unknown"
-                ? "h-full flex-none first:rounded-s-sm last:rounded-e-sm after:w-max after:max-w-full bg-[repeating-linear-gradient(45deg,var(--color-fg-dim)_0_2px,transparent_2px_5px)] shadow-[inset_0_0_0_1px_var(--color-fg-dim)]"
-                : "h-full flex-none first:rounded-s-sm last:rounded-e-sm after:w-max after:max-w-full"
+                ? "h-full flex-none bg-[repeating-linear-gradient(45deg,var(--color-fg-dim)_0_2px,transparent_2px_5px)] shadow-[inset_0_0_0_1px_var(--color-fg-dim)] after:w-max after:max-w-full first:rounded-s-sm last:rounded-e-sm"
+                : "h-full flex-none after:w-max after:max-w-full first:rounded-s-sm last:rounded-e-sm"
             }
             data-part={segment.part ?? "unknown"}
             style={
@@ -102,13 +103,13 @@ export function PartLegend({ attribution }: { attribution: Attribution }): React
   const layout = barLayout(attribution)
   return (
     <div>
-      <ul className="flex flex-wrap gap-x-5 gap-y-2 mt-3 mb-0 p-0 list-none">
+      <ul className="mt-3 mb-0 flex list-none flex-wrap gap-x-5 gap-y-2 p-0">
         {attribution.parts
           .filter((slice) => slice.measure.tokens !== 0)
           .map((slice) => (
-            <li className="inline-flex gap-1.5 items-center text-[11px]" key={slice.part} data-part={slice.part}>
+            <li className="inline-flex items-center gap-1.5 text-[11px]" key={slice.part} data-part={slice.part}>
               <span
-                className="w-2.5 h-2.5 rounded-[3px]"
+                className="h-2.5 w-2.5 rounded-[3px]"
                 style={{ background: partColor(slice.part) }}
                 aria-hidden="true"
               />
@@ -121,9 +122,9 @@ export function PartLegend({ attribution }: { attribution: Attribution }): React
             </li>
           ))}
         {layout.residual > 0 ? (
-          <li className="inline-flex gap-1.5 items-center text-[11px]" data-part="unknown">
+          <li className="inline-flex items-center gap-1.5 text-[11px]" data-part="unknown">
             <span
-              className="w-2.5 h-2.5 rounded-[3px] bg-[repeating-linear-gradient(45deg,var(--color-fg-dim)_0_1px,transparent_1px_3px)]"
+              className="h-2.5 w-2.5 rounded-[3px] bg-[repeating-linear-gradient(45deg,var(--color-fg-dim)_0_1px,transparent_1px_3px)]"
               aria-hidden="true"
             />
             <span>{t("turns.unknown")}</span>
@@ -141,12 +142,12 @@ export function PartLegend({ attribution }: { attribution: Attribution }): React
         </p>
       ) : null}
       {layout.overCounted > 0 ? (
-        <p className="mt-2 mb-0 px-2 py-1 bg-bg-1 text-[10.5px] text-warn" role="note">
+        <p className="mt-2 mb-0 bg-bg-1 px-2 py-1 text-[10.5px] text-warn" role="note">
           {t("turns.overCounted", { tokens: formatTokens(layout.overCounted) })}
         </p>
       ) : null}
       {layout.normalizedByParts ? (
-        <p className="mt-2 mb-0 px-2 py-1 bg-bg-1 text-[10.5px] text-warn" role="note">
+        <p className="mt-2 mb-0 bg-bg-1 px-2 py-1 text-[10.5px] text-warn" role="note">
           {t("turns.normalizedByParts")}
         </p>
       ) : null}

@@ -12,8 +12,8 @@
 
 import { access, readdir, readFile } from "node:fs/promises"
 import { join } from "node:path"
-import { decodeSessionLog, splitLogLines } from "@cyrusdoyle/dsh-session-readers"
-import { parseLogLine } from "@cyrusdoyle/dsh-session-readers"
+
+import { decodeSessionLog, parseLogLine, splitLogLines } from "@cyrusdoyle/dsh-session-readers"
 
 /** One observed event. */
 export interface ObservedEvent {

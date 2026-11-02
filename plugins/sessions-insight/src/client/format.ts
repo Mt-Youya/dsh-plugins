@@ -27,9 +27,9 @@ export function compactTokens(value: number): string {
   const abs = Math.abs(value)
   const sign = value < 0 ? "-" : ""
   if (abs < 1000) return sign + String(Math.round(abs))
-  if (abs < 10_000) return sign + (abs / 1000).toFixed(1) + "k"
-  if (abs < 1_000_000) return sign + String(Math.round(abs / 1000)) + "k"
-  return sign + (abs / 1_000_000).toFixed(1) + "M"
+  if (abs < 10_000) return `${sign + (abs / 1000).toFixed(1)}k`
+  if (abs < 1_000_000) return `${sign + String(Math.round(abs / 1000))}k`
+  return `${sign + (abs / 1_000_000).toFixed(1)}M`
 }
 
 /**
@@ -58,7 +58,7 @@ export function formatMoney(amount: number, currency: string | undefined): strin
  */
 export function formatShare(part: number, whole: number): string {
   if (!Number.isFinite(whole) || whole <= 0) return "—"
-  return (Math.round((part / whole) * 1000) / 10).toFixed(1) + "%"
+  return `${(Math.round((part / whole) * 1000) / 10).toFixed(1)}%`
 }
 
 /**
@@ -66,7 +66,7 @@ export function formatShare(part: number, whole: number): string {
  * @param factor - `reconciled.factor`.
  */
 export function formatFactor(factor: number): string {
-  return "×" + (Math.round(factor * 1000) / 1000).toFixed(3)
+  return `×${(Math.round(factor * 1000) / 1000).toFixed(3)}`
 }
 
 /**
@@ -74,9 +74,9 @@ export function formatFactor(factor: number): string {
  * @param bytes - byte count.
  */
 export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return String(bytes) + " B"
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + " KB"
-  return (bytes / (1024 * 1024)).toFixed(1) + " MB"
+  if (bytes < 1024) return `${String(bytes)} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 const TIME = new Intl.DateTimeFormat(undefined, {
@@ -125,10 +125,10 @@ export function formatShortTime(epoch: number, now: number = Date.now()): string
 export function formatDuration(from: number, to?: number): string {
   if (to === undefined || !Number.isFinite(to) || to < from) return "—"
   const ms = to - from
-  if (ms < 1000) return String(Math.round(ms)) + " ms"
-  if (ms < 60_000) return (ms / 1000).toFixed(1) + " s"
+  if (ms < 1000) return `${String(Math.round(ms))} ms`
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)} s`
   const minutes = Math.floor(ms / 60_000)
-  return String(minutes) + " min " + String(Math.round((ms % 60_000) / 1000)) + " s"
+  return `${String(minutes)} min ${String(Math.round((ms % 60_000) / 1000))} s`
 }
 
 /** A path split into the part a two-line label shows. */

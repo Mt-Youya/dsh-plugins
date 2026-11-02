@@ -1,7 +1,9 @@
 import { appendFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+
 import { afterEach, describe, expect, it } from "vitest"
+
 import { CodexSource } from "../src/host/sources/codex.ts"
 import { fingerprintOf, walkFingerprint, writeSnapshot } from "../src/host/sources/snapshot.ts"
 
@@ -20,7 +22,7 @@ async function fixture() {
   await mkdir(root)
   await writeFile(
     join(root, `rollout-2026-10-22T15-19-00-${ID}.jsonl`),
-    JSON.stringify({ type: "session_meta", payload: { id: ID, session_id: ID, cwd: WORKDIR } }) + "\n"
+    `${JSON.stringify({ type: "session_meta", payload: { id: ID, session_id: ID, cwd: WORKDIR } })}\n`,
   )
   const names = join(home, "session_index.jsonl")
   const indexPath = join(home, "snapshot.json")
@@ -29,7 +31,7 @@ async function fixture() {
 }
 
 function name(title: string, id = ID): string {
-  return JSON.stringify({ id, thread_name: title, updated_at: "2026-10-22T07:19:00Z" }) + "\n"
+  return `${JSON.stringify({ id, thread_name: title, updated_at: "2026-10-22T07:19:00Z" })}\n`
 }
 
 describe("Codex display names", () => {
@@ -78,10 +80,10 @@ describe("Codex display names", () => {
         name("其他会话", "other"),
         '{"id":3,"thread_name":4}\n',
         '{"id":"unfinished"',
-      ].join("")
+      ].join(""),
     )
     expect((await source.list(WORKDIR))[0]?.title).toBeUndefined()
-    await writeFile(names, name("有效标题") + "not json\n" + name(" "))
+    await writeFile(names, `${name("有效标题")}not json\n${name(" ")}`)
     expect(await source.list(WORKDIR)).toMatchObject([{ title: "有效标题" }])
   })
 })

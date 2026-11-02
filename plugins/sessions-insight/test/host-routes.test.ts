@@ -1,19 +1,21 @@
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises"
 import { createServer } from "node:http"
 import type { AddressInfo } from "node:net"
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
-import { ClaudeSource } from "../src/host/sources/claude.ts"
-import type { WebRoute } from "../src/host/http/server.ts"
+
 import { createRoutes } from "../src/host/http/routes.ts"
-import { SESSIONS_PATH, SESSION_PATH, SOURCES_PATH, WORKDIRS_PATH, isSessionDetail } from "../src/protocol.ts"
+import type { WebRoute } from "../src/host/http/server.ts"
+import { ClaudeSource } from "../src/host/sources/claude.ts"
+import { isSessionDetail, SESSION_PATH, SESSIONS_PATH, SOURCES_PATH, WORKDIRS_PATH } from "../src/protocol.ts"
 
 const WORKDIR = "/tmp/example-project"
 
 /** Four records: two human inputs, each answered with a logged usage. */
 function transcript(): string {
-  const line = (record: unknown): string => JSON.stringify(record) + "\n"
+  const line = (record: unknown): string => `${JSON.stringify(record)}\n`
   return [
     line({
       type: "user",
@@ -101,7 +103,7 @@ async function startHost(root: string): Promise<Host> {
 
 async function getJson(
   url: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<{ status: number; body: Record<string, unknown>; headers: Headers }> {
   const response = await fetch(url, init)
   const body = (await response.json()) as Record<string, unknown>
@@ -235,7 +237,7 @@ describe("routes over a real corpus", () => {
 
   it("refuses a traversal id before it can reach the filesystem", async () => {
     const traversal = await getJson(
-      `${host.base}${SESSION_PATH}?source=claude&id=${encodeURIComponent("../../etc/passwd")}`
+      `${host.base}${SESSION_PATH}?source=claude&id=${encodeURIComponent("../../etc/passwd")}`,
     )
     expect(traversal.status).toBe(400)
     expect(traversal.body).toMatchObject({ ok: false, error: "bad-request", detail: "invalid-session-id" })

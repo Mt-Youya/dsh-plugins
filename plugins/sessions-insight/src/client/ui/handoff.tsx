@@ -12,6 +12,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import type { ReactElement } from "react"
+
 import type { BriefValue, CostValue, HandoffStatusValue } from "../../protocol.ts"
 import type { Api, ApiFailure } from "../api.ts"
 import { formatMoney, formatTime } from "../format.ts"
@@ -43,9 +44,9 @@ const TERMINAL = new Set(["succeeded", "failed"])
  */
 function stateClass(state: string): string {
   const base = "m-0 px-2.5 py-2 rounded-lg bg-bg-2 text-xs "
-  if (state === "succeeded") return base + "text-ok"
-  if (state === "failed") return base + "text-err"
-  return base + "text-warn"
+  if (state === "succeeded") return `${base}text-ok`
+  if (state === "failed") return `${base}text-err`
+  return `${base}text-warn`
 }
 
 export function HandoffDialog({
@@ -132,25 +133,25 @@ export function HandoffDialog({
 
   return (
     <div
-      className="fixed inset-0 z-60 bg-[rgb(0_0_0/55%)] flex items-center justify-center p-4"
+      className="fixed inset-0 z-60 flex items-center justify-center bg-[rgb(0_0_0/55%)] p-4"
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <div
-        className="w-[min(820px,94vw)] max-h-[90dvh] grid grid-rows-[auto_minmax(0,1fr)] rounded-[10px] border-[0.5px] border-line bg-bg-1 shadow-[0_18px_48px_rgb(0_0_0/50%)] overflow-hidden"
+        className="grid max-h-[90dvh] w-[min(820px,94vw)] grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-[10px] border-[0.5px] border-line bg-bg-1 shadow-[0_18px_48px_rgb(0_0_0/50%)]"
         role="dialog"
         aria-modal="true"
         aria-label={t("handoff.title")}
       >
-        <header className="flex items-center gap-3 px-5 py-4 border-b border-line-soft">
-          <div className="flex flex-col gap-1 min-w-0">
+        <header className="flex items-center gap-3 border-b border-line-soft px-5 py-4">
+          <div className="flex min-w-0 flex-col gap-1">
             <span className="text-[16px] font-semibold text-fg">{t("handoff.title")}</span>
-            <span className="text-fg-dim text-[11px]">
+            <span className="text-[11px] text-fg-dim">
               {source} · {id.slice(0, 8)}
             </span>
           </div>
           <button
             type="button"
-            className="px-2.5 py-1 rounded-md border-[0.5px] border-line bg-transparent text-fg font-[inherit] text-[11px] cursor-pointer enabled:hover:border-accent disabled:opacity-50 disabled:cursor-default ms-auto"
+            className="ms-auto cursor-pointer rounded-md border-[0.5px] border-line bg-transparent px-2.5 py-1 font-[inherit] text-[11px] text-fg enabled:hover:border-accent disabled:cursor-default disabled:opacity-50"
             onClick={onClose}
           >
             Esc
@@ -158,7 +159,7 @@ export function HandoffDialog({
         </header>
 
         {phase.kind === "preparing" ? (
-          <div className="flex flex-col gap-3 p-5 overflow-y-auto min-h-0" role="status" aria-busy="true">
+          <div className="flex min-h-0 flex-col gap-3 overflow-y-auto p-5" role="status" aria-busy="true">
             <p className="m-0 flex items-center gap-2 text-[12px] text-fg-dim">
               <span className="size-1.5 rounded-full bg-accent motion-safe:animate-pulse" aria-hidden="true" />
               {t("handoff.preparing")}
@@ -167,7 +168,7 @@ export function HandoffDialog({
             <Skeleton className="h-3 w-3/4 shrink-0 rounded-sm" />
             <Skeleton className="h-5 w-1/2 shrink-0 rounded-sm" />
             <Skeleton className="h-[min(300px,42dvh)] shrink-0 rounded-lg" />
-            <div className="pt-3 border-t border-line-soft" aria-hidden="true">
+            <div className="border-t border-line-soft pt-3" aria-hidden="true">
               <Skeleton className="h-10 w-28 rounded-lg" />
             </div>
           </div>
@@ -177,7 +178,7 @@ export function HandoffDialog({
         ) : null}
 
         {phase.kind === "ready" || phase.kind === "applying" || phase.kind === "apply-failed" ? (
-          <div className="flex flex-col gap-3 p-5 overflow-y-auto min-h-0">
+          <div className="flex min-h-0 flex-col gap-3 overflow-y-auto p-5">
             <label className="flex flex-col gap-2 text-[12px] text-fg">
               <span>{t("handoff.cwd")}</span>
               <input
@@ -188,40 +189,40 @@ export function HandoffDialog({
                 aria-describedby="ci-handoff-cwd-hint"
               />
             </label>
-            <p className="text-fg-dim text-[11px] leading-relaxed m-0" id="ci-handoff-cwd-hint">
+            <p className="m-0 text-[11px] leading-relaxed text-fg-dim" id="ci-handoff-cwd-hint">
               {t("handoff.cwdHint")}
             </p>
             <div className="flex flex-wrap gap-1.5">
-              <span className="inline-flex items-center gap-1 rounded-sm px-1.5 text-[10px] leading-4.25 whitespace-nowrap bg-bg-2 text-fg-dim">
+              <span className="inline-flex items-center gap-1 rounded-sm bg-bg-2 px-1.5 text-[10px] leading-4.25 whitespace-nowrap text-fg-dim">
                 {t("handoff.files", { count: phase.brief.fileCount })}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-sm px-1.5 text-[10px] leading-4.25 whitespace-nowrap bg-bg-2 text-fg-dim">
+              <span className="inline-flex items-center gap-1 rounded-sm bg-bg-2 px-1.5 text-[10px] leading-4.25 whitespace-nowrap text-fg-dim">
                 {t("handoff.decisions", { count: phase.brief.decisionCount })}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-sm px-1.5 text-[10px] leading-4.25 whitespace-nowrap bg-bg-2 text-fg-dim">
+              <span className="inline-flex items-center gap-1 rounded-sm bg-bg-2 px-1.5 text-[10px] leading-4.25 whitespace-nowrap text-fg-dim">
                 {t("handoff.open", { count: phase.brief.openCount })}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-sm px-1.5 text-[10px] leading-4.25 whitespace-nowrap bg-bg-2 text-fg-dim">
+              <span className="inline-flex items-center gap-1 rounded-sm bg-bg-2 px-1.5 text-[10px] leading-4.25 whitespace-nowrap text-fg-dim">
                 {t("handoff.commands", { count: phase.brief.commandCount })}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-sm px-1.5 text-[10px] leading-4.25 whitespace-nowrap bg-bg-2 text-fg-dim">
+              <span className="inline-flex items-center gap-1 rounded-sm bg-bg-2 px-1.5 text-[10px] leading-4.25 whitespace-nowrap text-fg-dim">
                 {t("handoff.chars", { count: phase.brief.chars })}
               </span>
             </div>
             <label className="flex flex-col gap-2 text-[12px] text-fg">
               <span>{t("handoff.brief")}</span>
               <textarea
-                className="box-border w-full rounded-lg border border-line bg-bg p-3 font-mono text-[12px] leading-relaxed text-fg resize-y min-h-40 max-h-[42dvh]"
+                className="box-border max-h-[42dvh] min-h-40 w-full resize-y rounded-lg border border-line bg-bg p-3 font-mono text-[12px] leading-relaxed text-fg"
                 value={briefText}
                 onChange={(event) => setBriefText(event.target.value)}
                 spellCheck={false}
                 rows={14}
               />
             </label>
-            <div className="flex flex-wrap gap-2 items-center pt-3 border-t border-line-soft">
+            <div className="flex flex-wrap items-center gap-2 border-t border-line-soft pt-3">
               <button
                 type="button"
-                className="px-4 py-2.5 rounded-lg border border-accent bg-accent text-white font-[inherit] text-[12px] font-medium cursor-pointer enabled:hover:brightness-110 disabled:opacity-50 disabled:cursor-default"
+                className="cursor-pointer rounded-lg border border-accent bg-accent px-4 py-2.5 font-[inherit] text-[12px] font-medium text-white enabled:hover:brightness-110 disabled:cursor-default disabled:opacity-50"
                 onClick={() => apply(phase.brief)}
                 disabled={phase.kind === "applying" || cwd.trim() === "" || briefText.trim() === ""}
               >
@@ -229,7 +230,7 @@ export function HandoffDialog({
               </button>
               <button
                 type="button"
-                className="px-2.5 py-1 rounded-md border-[0.5px] border-line bg-transparent text-fg font-[inherit] text-[11px] cursor-pointer enabled:hover:border-accent disabled:opacity-50 disabled:cursor-default ms-auto"
+                className="ms-auto cursor-pointer rounded-md border-[0.5px] border-line bg-transparent px-2.5 py-1 font-[inherit] text-[11px] text-fg enabled:hover:border-accent disabled:cursor-default disabled:opacity-50"
                 disabled
                 title={t("handoff.polishUnavailable")}
               >
@@ -243,7 +244,7 @@ export function HandoffDialog({
         ) : null}
 
         {phase.kind === "applied" ? (
-          <div className="flex flex-col gap-3 p-5 overflow-y-auto min-h-0">
+          <div className="flex min-h-0 flex-col gap-3 overflow-y-auto p-5">
             <p className={stateClass(phase.status.state)} data-state={phase.status.state}>
               {stateLabel(phase.status)} · {phase.sessionId.slice(0, 12)}
             </p>
@@ -266,7 +267,7 @@ export function HandoffDialog({
               <p className="m-0 text-[11px] text-fg-dim">
                 {t("handoff.updated", {
                   time: new Date(phase.status.progress.updatedAt).toLocaleTimeString(
-                    t("handoff.language") === "zh" ? "zh-CN" : "en-US"
+                    t("handoff.language") === "zh" ? "zh-CN" : "en-US",
                   ),
                 })}
               </p>
@@ -287,15 +288,15 @@ export function HandoffDialog({
               </p>
             )}
             {phase.status.detail === undefined ? null : (
-              <p className="text-fg-dim text-[10.5px] my-1.5">{phase.status.detail}</p>
+              <p className="my-1.5 text-[10.5px] text-fg-dim">{phase.status.detail}</p>
             )}
             {phase.status.seq === undefined ? null : (
-              <p className="text-fg-dim text-[10.5px] my-1.5">{t("handoff.evidence", { seq: phase.status.seq })}</p>
+              <p className="my-1.5 text-[10.5px] text-fg-dim">{t("handoff.evidence", { seq: phase.status.seq })}</p>
             )}
-            <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                className="px-4 py-2.5 rounded-lg border border-accent bg-accent text-white text-[12px] cursor-pointer disabled:opacity-50"
+                className="cursor-pointer rounded-lg border border-accent bg-accent px-4 py-2.5 text-[12px] text-white disabled:opacity-50"
                 disabled={onOpenSession === undefined}
                 onClick={() => {
                   setOpenError("")
@@ -311,7 +312,7 @@ export function HandoffDialog({
               </button>
               <button
                 type="button"
-                className="px-2.5 py-1 rounded-md border-[0.5px] border-line bg-transparent text-fg font-[inherit] text-[11px] cursor-pointer enabled:hover:border-accent disabled:opacity-50 disabled:cursor-default ms-auto"
+                className="ms-auto cursor-pointer rounded-md border-[0.5px] border-line bg-transparent px-2.5 py-1 font-[inherit] text-[11px] text-fg enabled:hover:border-accent disabled:cursor-default disabled:opacity-50"
                 onClick={onClose}
               >
                 {t("handoff.close")}
@@ -368,7 +369,7 @@ export function CostBadge({ cost, plain = false }: { cost: CostValue; plain?: bo
       className={
         plain
           ? "relative inline-flex items-baseline gap-1.5 whitespace-nowrap [&>span+span]:text-[11px] [&>span+span]:font-normal [&>span+span]:text-fg-dim"
-          : "relative inline-flex items-center gap-1 rounded-sm px-1.5 text-[10px] leading-4.25 whitespace-nowrap bg-transparent text-fg-dim font-mono border-[0.5px] border-line data-[state=provisional]:border-dashed"
+          : "relative inline-flex items-center gap-1 rounded-sm border-[0.5px] border-line bg-transparent px-1.5 font-mono text-[10px] leading-4.25 whitespace-nowrap text-fg-dim data-[state=provisional]:border-dashed"
       }
       data-tip={tip}
       tabIndex={0}
@@ -377,7 +378,7 @@ export function CostBadge({ cost, plain = false }: { cost: CostValue; plain?: bo
       {groups.length === 0 ? "—" : materialise()}
       {reference === undefined ? null : <span>{reference}</span>}
       {cost.provisional === true ? (
-        <span className="inline-flex items-center gap-1 rounded-sm px-1.25 text-[9.5px] leading-4.25 whitespace-nowrap bg-bg-2 text-fg-dim tracking-[0.02em] border-[0.5px] border-dashed border-line normal-case ms-1">
+        <span className="ms-1 inline-flex items-center gap-1 rounded-sm border-[0.5px] border-dashed border-line bg-bg-2 px-1.25 text-[9.5px] leading-4.25 tracking-[0.02em] whitespace-nowrap text-fg-dim normal-case">
           {t("cost.provisional")}
         </span>
       ) : null}

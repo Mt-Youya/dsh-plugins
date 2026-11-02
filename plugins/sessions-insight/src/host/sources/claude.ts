@@ -11,19 +11,20 @@
  * @module @cyrusdoyle/dsh-sessions-insight/host/claude
  */
 
-import { fingerprintOf, readSnapshot, snapshotPath, walkFingerprint, writeSnapshot } from "./snapshot.ts"
 import { open, readdir, stat } from "node:fs/promises"
 import { basename, join } from "node:path"
-import { readClaudeSession } from "@cyrusdoyle/dsh-session-readers"
-import { humanText } from "@cyrusdoyle/dsh-session-readers"
+
+import { Lru } from "@cyrusdoyle/dsh-plugin-kit-host"
 import type { Session } from "@cyrusdoyle/dsh-session-contract"
+import { humanText, readClaudeSession } from "@cyrusdoyle/dsh-session-readers"
+
 import type { SegmentInfo, SessionSummary, SourceStatus, WorkdirEntry } from "../../protocol.ts"
-import { LIST_ITEM_UNPARSED, isSafeId } from "../../protocol.ts"
+import { isSafeId, LIST_ITEM_UNPARSED } from "../../protocol.ts"
+import { deleteLogs } from "./delete.ts"
+import { decodeProjectDirName, resolveInside } from "./paths.ts"
+import { fingerprintOf, readSnapshot, snapshotPath, walkFingerprint, writeSnapshot } from "./snapshot.ts"
 import type { ParsedSession, SearchCandidate, SessionSource, SourceFailure } from "./source.ts"
 import { cleanTitle, firstInputOf } from "./source.ts"
-import { deleteLogs } from "./delete.ts"
-import { Lru } from "@cyrusdoyle/dsh-plugin-kit-host"
-import { decodeProjectDirName, resolveInside } from "./paths.ts"
 
 /** Milliseconds a directory scan is reused before walking the tree again. */
 export const DEFAULT_SCAN_TTL_MS = 30_000

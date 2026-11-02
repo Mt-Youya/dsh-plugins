@@ -11,6 +11,7 @@
  */
 
 import type { ReactElement, ReactNode } from "react"
+
 import { t } from "../locale.ts"
 
 /** The shimmer shared by every skeleton block. */
@@ -56,27 +57,27 @@ export function TreeSkeleton({ label }: { label: string }): ReactElement {
 export function SessionSkeleton({ label }: { label: string }): ReactElement {
   return (
     <div className="flex h-full min-h-0 flex-col" aria-busy="true" role="status">
-      <div className="flex flex-col gap-3 px-5 pt-4 pb-4 border-b border-line-soft">
+      <div className="flex flex-col gap-3 border-b border-line-soft px-5 pt-4 pb-4">
         <p className="m-0 flex items-center gap-2 text-[11.5px] text-fg-dim">
           <span className="inline-block size-1.5 rounded-full bg-accent motion-safe:animate-pulse" aria-hidden="true" />
           {label}
         </p>
         <Skeleton className="h-5 w-[46%] rounded-[5px]" />
         <Skeleton className="h-3.5 w-[68%] rounded-[4px]" />
-        <div className="grid grid-cols-2 @2xl:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 gap-2 @2xl:grid-cols-4">
           {[0, 1, 2, 3].map((tile) => (
             <Skeleton className="h-[74px] rounded-[10px]" key={tile} />
           ))}
         </div>
       </div>
       <div className="grid min-h-0 flex-1 grid-cols-1 @3xl:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
-        <div className="flex flex-col gap-2 p-3 @3xl:border-e border-line-soft">
+        <div className="flex flex-col gap-2 border-line-soft p-3 @3xl:border-e">
           <Skeleton className="h-28 rounded-[10px]" />
           {[0, 1, 2, 3, 4, 5].map((row) => (
             <Skeleton className="h-14 rounded-lg" key={row} />
           ))}
         </div>
-        <div className="hidden @3xl:flex flex-col gap-3 p-4">
+        <div className="hidden flex-col gap-3 p-4 @3xl:flex">
           <Skeleton className="h-5 w-32 rounded-[5px]" />
           <Skeleton className="h-20 rounded-[10px]" />
           <Skeleton className="h-44 rounded-[10px]" />

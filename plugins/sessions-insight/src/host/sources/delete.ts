@@ -1,4 +1,5 @@
 import { lstat, unlink } from "node:fs/promises"
+
 import { resolveInside } from "./paths.ts"
 import type { SourceFailure } from "./source.ts"
 

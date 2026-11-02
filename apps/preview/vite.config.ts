@@ -11,9 +11,11 @@
  * `server.fs.allow` opens the whole repository to the dev server.
  */
 
-import react from "@vitejs/plugin-react"
 import { fileURLToPath } from "node:url"
+
+import react from "@vitejs/plugin-react"
 import { defineConfig, type Plugin } from "vite"
+
 import { viteAlias } from "../../tooling/aliases.ts"
 
 /** This app's own directory: the served root. */
@@ -37,9 +39,10 @@ function hostRoutes(): Plugin {
           try {
             const host = (await server.ssrLoadModule(HOST_ENTRY)) as {
               createRoutes: (
-                deps: unknown
+                deps: unknown,
               ) => { kind: string; path: string; handler: (req: unknown, res: unknown) => void }[]
               createSources: () => unknown
+              SessionMetadataStore: new () => unknown
               handleHealth: (req: unknown, res: unknown) => void
             }
             const pathname = new URL(url, "http://127.0.0.1").pathname
@@ -47,9 +50,13 @@ function hostRoutes(): Plugin {
               host.handleHealth(req, res)
               return
             }
-            const routes = host.createRoutes({ sources: host.createSources(), version: "preview" })
+            const routes = host.createRoutes({
+              sources: host.createSources(),
+              version: "preview",
+              metadata: new host.SessionMetadataStore(),
+            })
             const match = routes.find((route) =>
-              route.kind === "exact" ? route.path === pathname : pathname.startsWith(route.path)
+              route.kind === "exact" ? route.path === pathname : pathname.startsWith(route.path),
             )
             if (match === undefined) {
               res.statusCode = 404

@@ -58,7 +58,7 @@ const FILE_FIELDS = ["file_path", "path", "notebook_path", "filePath"] as const
 
 function clip(text: string, limit: number): string {
   const flat = text.replace(/\s+/g, " ").trim()
-  return flat.length <= limit ? flat : flat.slice(0, limit - 1) + "…"
+  return flat.length <= limit ? flat : `${flat.slice(0, limit - 1)}…`
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -170,7 +170,7 @@ export function extractBrief(session: Session, locale = "zh"): BriefResult {
     .slice(0, 12)
     .map(
       ([path, meta]) =>
-        `${path}${english ? " (" : "（"}${[...meta.tools].join("/")}${english ? ", " : "，"}×${String(meta.count)}${english ? ")" : "）"}`
+        `${path}${english ? " (" : "（"}${[...meta.tools].join("/")}${english ? ", " : "，"}×${String(meta.count)}${english ? ")" : "）"}`,
     )
 
   const decisions = collect(assistantTexts, DECISION, 6)
@@ -179,7 +179,7 @@ export function extractBrief(session: Session, locale = "zh"): BriefResult {
     .slice(0, 3)
     .map(
       (call) =>
-        `${english ? `Tool ${call.name} failed: ` : `工具 ${call.name} 报错：`}${firstLine(outputText(call.output)) || (english ? "No output" : "无输出")}`
+        `${english ? `Tool ${call.name} failed: ` : `工具 ${call.name} 报错：`}${firstLine(outputText(call.output)) || (english ? "No output" : "无输出")}`,
     )
   const openItems = [...errors, ...collect(assistantTexts, OPEN, 6)].slice(0, 6)
   const next = collect(assistantTexts, NEXT, 4)
@@ -205,10 +205,10 @@ export function extractBrief(session: Session, locale = "zh"): BriefResult {
     background.push(`${english ? "First input: " : "首条输入："}${clip(firstInput, LINE_LIMIT)}`)
   }
   background.push(
-    `${english ? "Source: " : "来源："}${session.source} · ${session.workdir || (english ? "(unknown workdir)" : "(未知工作目录)")} · ${String(session.turns.length)} ${english ? "turns" : "轮"}`
+    `${english ? "Source: " : "来源："}${session.source} · ${session.workdir || (english ? "(unknown workdir)" : "(未知工作目录)")} · ${String(session.turns.length)} ${english ? "turns" : "轮"}`,
   )
   background.push(
-    `${english ? "Time range (UTC): " : "时间范围："}${session.turns.length === 0 ? noRecord : timeRange(session.turns)}`
+    `${english ? "Time range (UTC): " : "时间范围："}${session.turns.length === 0 ? noRecord : timeRange(session.turns)}`,
   )
   if (session.dataQuality.length > 0) {
     background.push(`${english ? "Data quality: " : "数据质量："}${session.dataQuality.slice(0, 3).join(" / ")}`)
@@ -230,7 +230,7 @@ export function extractBrief(session: Session, locale = "zh"): BriefResult {
   }))
 
   const header = `# ${english ? "Handoff brief" : "交接简报"}${title === undefined || title === "" ? "" : (english ? ": " : "：") + clip(title, 60)}`
-  let text = header + "\n"
+  let text = `${header}\n`
   sections.forEach((section, index) => {
     text += `\n## ${String(index + 1)}. ${section.title}\n`
     for (const line of section.lines) text += `- ${line}\n`

@@ -20,6 +20,7 @@ export interface TreeSession {
   id: string
   workdir: string
   title: string
+  named?: boolean
   detail?: string
   updatedAt: number
   bytes: number
@@ -51,7 +52,7 @@ export const TREE_STORAGE_KEY = "dsh-sessions-insight.tree"
 
 /** Identity of one session row. */
 export function sessionKey(source: ContextSource, id: string): string {
-  return source + ":" + id
+  return `${source}:${id}`
 }
 
 /**
@@ -61,7 +62,7 @@ export function sessionKey(source: ContextSource, id: string): string {
  */
 export function buildProjects(
   workdirs: readonly WorkdirEntry[],
-  split: (path: string) => { parent: string; leaf: string }
+  split: (path: string) => { parent: string; leaf: string },
 ): TreeProject[] {
   return workdirs.map((entry) => {
     const parts = split(entry.workdir)
@@ -104,15 +105,15 @@ export function flattenTree(input: FlattenInput): TreeRow[] {
   const rows: TreeRow[] = []
   for (const project of input.projects) {
     const expanded = input.expanded.has(project.workdir)
-    rows.push({ kind: "project", key: "p:" + project.workdir, project, expanded })
+    rows.push({ kind: "project", key: `p:${project.workdir}`, project, expanded })
     if (!expanded) continue
     if (input.loading.has(project.workdir)) {
-      rows.push({ kind: "skeleton", key: "l:" + project.workdir, workdir: project.workdir, rows: 4 })
+      rows.push({ kind: "skeleton", key: `l:${project.workdir}`, workdir: project.workdir, rows: 4 })
       continue
     }
     const sessions = input.sessions.get(project.workdir)
     if (sessions === undefined) {
-      rows.push({ kind: "skeleton", key: "l:" + project.workdir, workdir: project.workdir, rows: 4 })
+      rows.push({ kind: "skeleton", key: `l:${project.workdir}`, workdir: project.workdir, rows: 4 })
       continue
     }
     const limit = input.limits.get(project.workdir) ?? pageSize
@@ -124,7 +125,7 @@ export function flattenTree(input: FlattenInput): TreeRow[] {
     if (sessions.length > shown.length) {
       rows.push({
         kind: "more",
-        key: "m:" + project.workdir,
+        key: `m:${project.workdir}`,
         workdir: project.workdir,
         hidden: sessions.length - shown.length,
       })

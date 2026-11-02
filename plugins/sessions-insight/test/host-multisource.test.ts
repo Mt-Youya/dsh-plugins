@@ -1,26 +1,28 @@
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises"
 import { createServer } from "node:http"
 import type { AddressInfo } from "node:net"
-import { mkdtemp, writeFile, mkdir } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { describe, expect, it } from "vitest"
+
 import type { Session } from "@cyrusdoyle/dsh-session-contract"
+import { describe, expect, it } from "vitest"
+
+import { createRoutes, mergeWorkdirs } from "../src/host/http/routes.ts"
+import type { WebRoute } from "../src/host/http/server.ts"
 import { ClaudeSource, readHeaderFacts } from "../src/host/sources/claude.ts"
 import { codexChainKey } from "../src/host/sources/codex.ts"
 import { canonicalDshId, decodeBucketName } from "../src/host/sources/dsh.ts"
-import { createRoutes, mergeWorkdirs } from "../src/host/http/routes.ts"
 import type { ParsedSession, SearchCandidate, SessionSource, SourceFailure } from "../src/host/sources/source.ts"
 import { cleanTitle } from "../src/host/sources/source.ts"
-import type { WebRoute } from "../src/host/http/server.ts"
 import {
-  SESSIONS_PATH,
-  SESSION_PATH,
-  SOURCES_PATH,
-  WORKDIRS_PATH,
   type ContextSource,
+  SESSION_PATH,
+  SESSIONS_PATH,
   type SessionSummary,
+  SOURCES_PATH,
   type SourceStatus,
   type WorkdirEntry,
+  WORKDIRS_PATH,
 } from "../src/protocol.ts"
 
 const WORKDIR = "/Users/example/project"
@@ -115,7 +117,7 @@ function row(
   source: ContextSource,
   id: string,
   updatedAt: number,
-  extra: Partial<SessionSummary> = {}
+  extra: Partial<SessionSummary> = {},
 ): SessionSummary {
   return { source, id, workdir: WORKDIR, updatedAt, bytes: 10, dataQuality: [], ...extra }
 }
@@ -294,7 +296,7 @@ describe("Claude header scan", () => {
     const path = join(dir, "s1.jsonl")
     await writeFile(
       path,
-      [
+      `${[
         JSON.stringify({
           type: "user",
           uuid: "u1",
@@ -311,7 +313,7 @@ describe("Claude header scan", () => {
           timestamp: "2026-01-01T00:00:01.000Z",
           message: { id: "m1", role: "assistant", content: [{ type: "text", text: "reply" }] },
         }),
-      ].join("\n") + "\n"
+      ].join("\n")}\n`,
     )
     const facts = await readHeaderFacts(path, 64 * 1024)
     expect(facts).toMatchObject({ cwd: WORKDIR, sessionId: "s1" })
@@ -324,14 +326,14 @@ describe("Claude header scan", () => {
     await mkdir(dir)
     await writeFile(
       join(dir, "s1.jsonl"),
-      JSON.stringify({
+      `${JSON.stringify({
         type: "user",
         uuid: "u1",
         sessionId: "s1",
         cwd: WORKDIR,
         timestamp: "2026-01-01T00:00:00.000Z",
         message: { role: "user", content: "first human question" },
-      }) + "\n"
+      })}\n`,
     )
     const source = new ClaudeSource({ root, scanTtlMs: 0 })
     const rows = await source.list(WORKDIR)

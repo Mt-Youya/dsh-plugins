@@ -11,11 +11,16 @@
  * @module @cyrusdoyle/dsh-sessions-insight/client/locale
  */
 
+import { INSIGHT_EN, INSIGHT_ZH } from "./insight-dictionaries.ts"
+import { MANAGEMENT_EN, MANAGEMENT_ZH } from "./management-labels.ts"
+
 /** Locale namespace this plugin owns. */
 export const LOCALE_NS = "sessions-insight"
 
 /** Chinese dictionary; the default language. */
 export const zh = {
+  ...INSIGHT_ZH,
+  ...MANAGEMENT_ZH,
   "entry.label": "会话洞察",
   "toolbar.sidebar": "显示/隐藏项目栏",
   "search.trigger": "搜索会话与轮次…",
@@ -233,6 +238,8 @@ export type ContextInsightKey = keyof typeof zh
 
 /** English dictionary; same keys, so a missing translation is a type error. */
 export const en: Record<ContextInsightKey, string> = {
+  ...INSIGHT_EN,
+  ...MANAGEMENT_EN,
   "entry.label": "Sessions Insight",
   "toolbar.sidebar": "Show/hide projects",
   "search.trigger": "Search sessions and turns…",

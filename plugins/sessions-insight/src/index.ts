@@ -15,16 +15,20 @@
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http"
-import { ClaudeSource } from "./host/sources/claude.ts"
-import { CodexSource } from "./host/sources/codex.ts"
-import { DshSource } from "./host/sources/dsh.ts"
-import type { WebRoute } from "./host/http/server.ts"
-import { guardRequest, writeOk } from "./host/http/server.ts"
-import { claudeRootFrom, codexRootFrom, dshRootFrom, hostSessionsRoot } from "./host/sources/paths.ts"
+
 import { HandoffRunner } from "./host/handoff/handoff.ts"
 import type { SessionCommandsFace } from "./host/handoff/handoff.ts"
-import { observeSession } from "./host/sources/dsh-events.ts"
+import { clearListCache, preloadLists } from "./host/http/list-cache.ts"
 import { createRoutes, type RouteDeps } from "./host/http/routes.ts"
+import type { WebRoute } from "./host/http/server.ts"
+import { guardRequest, writeOk } from "./host/http/server.ts"
+import { AiTitleGenerator, type AiTitleHost } from "./host/management/ai-title.ts"
+import { SessionMetadataStore } from "./host/management/store.ts"
+import { ClaudeSource } from "./host/sources/claude.ts"
+import { CodexSource } from "./host/sources/codex.ts"
+import { observeSession } from "./host/sources/dsh-events.ts"
+import { DshSource } from "./host/sources/dsh.ts"
+import { claudeRootFrom, codexRootFrom, dshRootFrom, hostSessionsRoot } from "./host/sources/paths.ts"
 import type { SessionSource } from "./host/sources/source.ts"
 import { CONTEXT_SOURCES, HEALTH_PATH, type HealthOk } from "./protocol.ts"
 import { PLUGIN_VERSION } from "./version.ts"
@@ -40,6 +44,10 @@ export { extractBrief, NO_RECORD, BRIEF_LIMIT } from "./host/views/brief.ts"
 export { PRICING, lookupPrice } from "./host/views/pricing.ts"
 export { costOfSession } from "./host/views/cost.ts"
 export { searchSessions } from "./host/views/search.ts"
+export { AiTitleGenerator } from "./host/management/ai-title.ts"
+export { handleAiTitleSuggest } from "./host/http/ai-title-route.ts"
+export { SessionMetadataStore, metadataPathFrom } from "./host/management/store.ts"
+export type { MetadataStore } from "./host/management/store.ts"
 export type { ParsedSession, SearchCandidate, SessionSource, SourceFailure } from "./host/sources/source.ts"
 export { cleanTitle, firstInputOf, snippetAround } from "./host/sources/source.ts"
 export { ClaudeSource } from "./host/sources/claude.ts"
@@ -93,6 +101,15 @@ export interface HostContext {
   workspaceRegistry?: { get(id: string): { attachSession(id: string): Promise<void> } | undefined }
   /** Cordis service lookup, kept as a fallback for a lazily-activated gateway. */
   get?: (name: string) => unknown
+  /** rc.5 Cordis child fiber: missing model services suspend only this capability. */
+  inject?: (
+    services: readonly string[],
+    callback: (
+      ctx: AiTitleHost & {
+        effect: (setup: () => () => void, label?: string) => unknown
+      },
+    ) => void,
+  ) => unknown
 }
 
 /**
@@ -168,21 +185,33 @@ export function apply(ctx: HostContext): () => void {
           },
         }),
   })
-  // Warm every reader's directory scan in the background. The first ⌘K, /sources
-  // or /workdirs then answers from cache; without this the cold index build
-  // (Codex decompresses one frame per rollout) shows up inside the user's first
-  // keystroke.
-  // Delayed warm-up: the first scan must not run during boot, or a cold start
-  // can never be measured (and the panel's first paint waits for three scans).
-  // One idle callback later the readers warm themselves for later requests.
-  const warm = (): void => {
-    void Promise.allSettled(sources.map((source) => source.status()))
+  let aiHost: AiTitleHost | undefined
+  const aiTitles = new AiTitleGenerator(() => aiHost)
+  ctx.inject?.(["llm", "agentDefaultModel"], (child) => {
+    aiHost = { llm: child.llm, agentDefaultModel: child.agentDefaultModel }
+    child.effect(
+      () => () => {
+        aiHost = undefined
+        aiTitles.cancel()
+      },
+      "sessions-insight: AI title capability",
+    )
+  })
+  const deps: RouteDeps & { aiTitles: AiTitleGenerator } = {
+    sources,
+    version: PLUGIN_VERSION,
+    handoff,
+    metadata: new SessionMetadataStore(),
+    aiTitles,
   }
-  const timer = typeof globalThis.setTimeout === "function" ? globalThis.setTimeout(warm, 5_000) : undefined
-  const deps: RouteDeps = { sources, version: PLUGIN_VERSION, handoff }
+  const preload = { aborted: false }
+  let timer: ReturnType<typeof setTimeout> | undefined
   const routes: WebRoute[] = [{ kind: "exact", path: HEALTH_PATH, handler: handleHealth }, ...createRoutes(deps)]
   const release = (disposers: readonly (() => void)[]): void => {
     if (timer !== undefined) globalThis.clearTimeout(timer)
+    preload.aborted = true
+    aiTitles.dispose()
+    clearListCache(deps)
     for (const dispose of disposers) dispose()
     for (const source of sources) source.invalidate()
   }
@@ -197,6 +226,12 @@ export function apply(ctx: HostContext): () => void {
     release(disposers)
     throw error
   }
+  // Yield registration/boot, then warm only the navigation metadata once.
+  const warm = (): void => {
+    void preloadLists(deps, preload).catch(() => undefined)
+  }
+  if (typeof globalThis.setTimeout === "function") timer = globalThis.setTimeout(warm, 0)
+  else void Promise.resolve().then(warm)
   const dispose = () => release(disposers)
   return ctx.effect === undefined ? dispose : ctx.effect(() => dispose, "sessions-insight: host routes")
 }

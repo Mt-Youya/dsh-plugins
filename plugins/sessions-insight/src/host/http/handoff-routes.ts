@@ -1,8 +1,8 @@
-import { parseHandoffApply, parseHandoffPrepare, type BriefValue } from "../../protocol.ts"
+import { type BriefValue, parseHandoffApply, parseHandoffPrepare } from "../../protocol.ts"
 import { canonicalDshId } from "../sources/dsh.ts"
 import { extractBrief } from "../views/brief.ts"
-import type { RouteDeps } from "./routes.ts"
 import { ask, route } from "./route-utils.ts"
+import type { RouteDeps } from "./routes.ts"
 import type { RouteHandler } from "./server.ts"
 import { guardRequest, isJsonContentType, readJsonBody, writeFail, writeOk } from "./server.ts"
 
@@ -156,7 +156,7 @@ export function handleHandoffReveal(deps: RouteDeps): RouteHandler {
     }
     const result = await deps.handoff.reveal(
       request.id.startsWith("session-") ? request.id : `session-${request.id}`,
-      answer.value.session.workdir
+      answer.value.session.workdir,
     )
     if (!result.ok) {
       writeFail(res, result.error, result.detail)

@@ -18,8 +18,9 @@
 import { readdirSync, statSync } from "node:fs"
 import { homedir } from "node:os"
 import { join } from "node:path"
-import { readClaudeSession } from "../src/core/claude/index.ts"
+
 import { CHAR_CALIBRATION_NOTE } from "../src/core/attribution.ts"
+import { readClaudeSession } from "../src/core/claude/index.ts"
 
 const PROJECTS = join(homedir(), ".claude", "projects")
 
@@ -129,40 +130,40 @@ function renderSample(result) {
   lines.push(`### ${result.label} — ${result.file}`)
   lines.push("")
   lines.push(
-    `- size ${mb(result.size)}, parsed in ${result.parseMs.toFixed(0)} ms, ${result.session.turns.length} turns, ${result.session.segments.length} segments`
+    `- size ${mb(result.size)}, parsed in ${result.parseMs.toFixed(0)} ms, ${result.session.turns.length} turns, ${result.session.segments.length} segments`,
   )
   lines.push(
-    `- rows: ${number(result.stats.lines)} raw → ${number(result.stats.deduped)} after uuid dedupe (${number(result.stats.duplicates)} copies, ${number(result.stats.invalid)} invalid)`
+    `- rows: ${number(result.stats.lines)} raw → ${number(result.stats.deduped)} after uuid dedupe (${number(result.stats.duplicates)} copies, ${number(result.stats.invalid)} invalid)`,
   )
   lines.push(
-    `- unique message.id: ${number(result.stats.messageIds)} (usage inconsistent on ${number(result.stats.inconsistentUsage)})`
+    `- unique message.id: ${number(result.stats.messageIds)} (usage inconsistent on ${number(result.stats.inconsistentUsage)})`,
   )
   const ratio =
     result.stats.normalizedContextTokens === 0
       ? 0
       : result.stats.naiveContextTokens / result.stats.normalizedContextTokens
   lines.push(
-    `- naive usage sum ${number(result.stats.naiveContextTokens)} vs normalized ${number(result.stats.normalizedContextTokens)} = ${ratio.toFixed(2)}x inflation if summed per record`
+    `- naive usage sum ${number(result.stats.naiveContextTokens)} vs normalized ${number(result.stats.normalizedContextTokens)} = ${ratio.toFixed(2)}x inflation if summed per record`,
   )
   lines.push(
-    `- tool calls paired ${number(result.stats.pairedToolCalls)}, orphan results ${number(result.stats.orphanToolResults)}, compactions ${number(result.stats.compactions)}, subagent files ${number(result.stats.subagentFiles.length)}`
+    `- tool calls paired ${number(result.stats.pairedToolCalls)}, orphan results ${number(result.stats.orphanToolResults)}, compactions ${number(result.stats.compactions)}, subagent files ${number(result.stats.subagentFiles.length)}`,
   )
   lines.push(
-    `- attribution: exact ${number(result.exactTotal)}, raw estimate ${number(result.rawTotal)} (${percent((result.rawTotal - result.exactTotal) / (result.exactTotal || 1))}), parts ${number(result.summedTotal)}, residual ${number(result.residualTotal)}`
+    `- attribution: exact ${number(result.exactTotal)}, raw estimate ${number(result.rawTotal)} (${percent((result.rawTotal - result.exactTotal) / (result.exactTotal || 1))}), parts ${number(result.summedTotal)}, residual ${number(result.residualTotal)}`,
   )
   lines.push(
-    `- turns scaled ${result.scaled}, turns keeping a residual ${result.keptResidual}, structural gaps ${result.stats.structuralGapTurns}, negative residual without gap ${result.stats.overCountedWithoutGap}, identity Σparts+residual=total on ${result.identities}/${result.rows.length}`
+    `- turns scaled ${result.scaled}, turns keeping a residual ${result.keptResidual}, structural gaps ${result.stats.structuralGapTurns}, negative residual without gap ${result.stats.overCountedWithoutGap}, identity Σparts+residual=total on ${result.identities}/${result.rows.length}`,
   )
   lines.push(`- dataQuality: ${result.session.dataQuality.join(", ") || "(none)"}`)
   lines.push("")
   lines.push(
-    "| turn | usage.totalContext | attribution.total | match | parts sum | residual | factor | Σparts+residual | raw vs ctx |"
+    "| turn | usage.totalContext | attribution.total | match | parts sum | residual | factor | Σparts+residual | raw vs ctx |",
   )
   lines.push("| ---: | ---: | ---: | :---: | ---: | ---: | ---: | :---: | ---: |")
   for (const row of result.rows) {
     const match = row.usageContext === row.exact ? "exact" : `DRIFT ${number(row.usageContext - row.exact)}`
     lines.push(
-      `| ${row.index} | ${number(row.usageContext)} | ${number(row.exact)} | ${match} | ${number(row.summed)} | ${number(row.residual)} | ${row.factor === undefined ? "—" : row.factor.toFixed(3)} | ${row.identity ? "ok" : "BROKEN"} | ${percent(row.rawDeviation)} |`
+      `| ${row.index} | ${number(row.usageContext)} | ${number(row.exact)} | ${match} | ${number(row.summed)} | ${number(row.residual)} | ${row.factor === undefined ? "—" : row.factor.toFixed(3)} | ${row.identity ? "ok" : "BROKEN"} | ${percent(row.rawDeviation)} |`,
     )
   }
   lines.push("")
@@ -180,7 +181,7 @@ async function runSamples(samples) {
         `### ${sample.label} — ${sample.file}`,
         "",
         `FAILED: ${error instanceof Error ? error.message : String(error)}`,
-        ""
+        "",
       )
     }
   }
@@ -275,13 +276,13 @@ async function runCorpus(root) {
   lines.push("")
   lines.push(`- files ${number(files.length)}, bytes ${mb(bytes)}, failures ${failures.length}`)
   lines.push(
-    `- wall time ${(elapsedMs / 1000).toFixed(2)} s, peak RSS ${mb(rss)} (${(bytes / (1024 * 1024) / (elapsedMs / 1000)).toFixed(0)} MB/s)`
+    `- wall time ${(elapsedMs / 1000).toFixed(2)} s, peak RSS ${mb(rss)} (${(bytes / (1024 * 1024) / (elapsedMs / 1000)).toFixed(0)} MB/s)`,
   )
   lines.push(
-    `- turns ${number(turns)}, exact context ${number(exact)}, raw attribution ${number(raw)} (${percent((raw - exact) / (exact || 1))})`
+    `- turns ${number(turns)}, exact context ${number(exact)}, raw attribution ${number(raw)} (${percent((raw - exact) / (exact || 1))})`,
   )
   lines.push(
-    `- excluded ${number(implausible)} turns logging more than ${number(PLAUSIBLE_CONTEXT)} tokens (${number(implausibleTokens)} tokens) as context-above-model-window`
+    `- excluded ${number(implausible)} turns logging more than ${number(PLAUSIBLE_CONTEXT)} tokens (${number(implausibleTokens)} tokens) as context-above-model-window`,
   )
   factors.sort((left, right) => left - right)
   const pick = (quantile) => {
@@ -290,20 +291,20 @@ async function runCorpus(root) {
     return factors[index].toFixed(3)
   }
   lines.push(
-    `- reconcile: scaled ${number(scaledTurns)} turns, residual kept on ${number(residualTurns)} turns (under-attributed ${number(underAttributed)}, over-attributed ${number(overAttributed)}), factor p50/p95/max = ${pick(0.5)}/${pick(0.95)}/${pick(1)}`
+    `- reconcile: scaled ${number(scaledTurns)} turns, residual kept on ${number(residualTurns)} turns (under-attributed ${number(underAttributed)}, over-attributed ${number(overAttributed)}), factor p50/p95/max = ${pick(0.5)}/${pick(0.95)}/${pick(1)}`,
   )
   lines.push(
-    `- structural gaps ${number(structuralGapTurns)} turns; negative residual without a gap ${number(overCountedWithoutGap)} (must be 0)`
+    `- structural gaps ${number(structuralGapTurns)} turns; negative residual without a gap ${number(overCountedWithoutGap)} (must be 0)`,
   )
   lines.push(`- identity Σparts + residual === total on ${number(identities)}/${number(checkedTurns)} turns`)
   lines.push(
-    `- naive usage sum ${number(naive)} vs normalized ${number(normalized)} = ${(naive / (normalized || 1)).toFixed(2)}x`
+    `- naive usage sum ${number(naive)} vs normalized ${number(normalized)} = ${(naive / (normalized || 1)).toFixed(2)}x`,
   )
   lines.push(
-    `- with prompt_snapshot: ${withSnapshot.files} files, exact ${number(withSnapshot.exact)}, raw ${number(withSnapshot.raw)} (${percent((withSnapshot.raw - withSnapshot.exact) / (withSnapshot.exact || 1))})`
+    `- with prompt_snapshot: ${withSnapshot.files} files, exact ${number(withSnapshot.exact)}, raw ${number(withSnapshot.raw)} (${percent((withSnapshot.raw - withSnapshot.exact) / (withSnapshot.exact || 1))})`,
   )
   lines.push(
-    `- without prompt_snapshot: ${withoutSnapshot.files} files, exact ${number(withoutSnapshot.exact)}, raw ${number(withoutSnapshot.raw)} (${percent((withoutSnapshot.raw - withoutSnapshot.exact) / (withoutSnapshot.exact || 1))})`
+    `- without prompt_snapshot: ${withoutSnapshot.files} files, exact ${number(withoutSnapshot.exact)}, raw ${number(withoutSnapshot.raw)} (${percent((withoutSnapshot.raw - withoutSnapshot.exact) / (withoutSnapshot.exact || 1))})`,
   )
   for (const failure of failures.slice(0, 10)) lines.push(`- FAILED ${failure.file}: ${failure.error}`)
   for (const anomaly of anomalies.slice(0, 12))

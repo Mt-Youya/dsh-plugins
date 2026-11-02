@@ -1,21 +1,24 @@
 import type { ServerResponse } from "node:http"
-import type { RouteDeps } from "./routes.ts"
+
+import type { ContextSource } from "../../protocol.ts"
 import type { WorkdirOptions } from "../sources/source.ts"
+import { computeSessions, computeWorkdirs, type RouteDeps } from "./routes.ts"
 import { writeOk } from "./server.ts"
 
 /** Default freshness window for list answers. */
 export const LIST_TTL_MS = 15_000
 
-/**
- * Answers kept for stale-while-revalidate, keyed by request.
- *
- * Scoped per `RouteDeps` (i.e. per Host instance) rather than module-wide: two
- * instances in one process — the tests do this — must never see each other's
- * rows.
- */
-const LIST_CACHES = new WeakMap<RouteDeps, Map<string, { at: number; value: unknown }>>()
+interface ListEntry {
+  at: number
+  value?: unknown
+  inflight?: Promise<unknown>
+}
+type ListCache = Map<string, ListEntry>
 
-function cacheOf(deps: RouteDeps): Map<string, { at: number; value: unknown }> {
+/** Per Host instance, including in-flight reads shared by preload and HTTP. */
+const LIST_CACHES = new WeakMap<RouteDeps, ListCache>()
+
+function cacheOf(deps: RouteDeps): ListCache {
   let cache = LIST_CACHES.get(deps)
   if (cache === undefined) {
     cache = new Map()
@@ -24,59 +27,99 @@ function cacheOf(deps: RouteDeps): Map<string, { at: number; value: unknown }> {
   return cache
 }
 
-/**
- * Drop cached list answers, so a freshly parsed session shows its new row.
- * @param deps - route dependencies.
- */
+/** Detach the map so old reads cannot restore invalidated/deleted rows. */
 export function clearListCache(deps: RouteDeps): void {
-  // Detach the map so an older in-flight revalidation cannot restore deleted rows.
   LIST_CACHES.delete(deps)
 }
 
-/**
- * Decode the list-shaped query flags.
- * @param url - request URL.
- */
+export function workdirsListKey(options: WorkdirOptions): string {
+  return `workdirs:${String(options.includeSubagents === true)}`
+}
+
+export function sessionsListKey(workdir: string, source: ContextSource | null, options: WorkdirOptions): string {
+  return `sessions:${JSON.stringify(workdir)}:${source ?? "*"}:${String(options.includeSubagents === true)}`
+}
+
+/** Drop every source/subagent variant for just the parsed session's workdir. */
+export function clearSessionListCache(deps: RouteDeps, workdir: string): void {
+  const cache = LIST_CACHES.get(deps)
+  if (cache === undefined) return
+  const prefix = `sessions:${JSON.stringify(workdir)}:`
+  for (const key of cache.keys()) {
+    if (key.startsWith(prefix)) cache.delete(key)
+  }
+}
+
+/** Decode the list-shaped query flags. */
 export function listOptions(url: URL): WorkdirOptions {
   return { includeSubagents: url.searchParams.get("includeSubagents") === "1" }
 }
 
-/**
- * Serve a list answer from cache, or answer stale and rescan behind the reply.
- *
- * Opening the panel used to wait for a full three-source scan. Now the first
- * answer is cached, later requests inside the TTL are instant, and a request
- * after the TTL gets the previous answer immediately (`stale: true,
- * refreshing: true`) while the rescan runs in the background.
- * @param deps - route dependencies (TTL override).
- * @param key - cache key.
- * @param forced - true when the caller asked for a refresh (`refresh=1`).
- * @param res - response to write.
- * @param compute - the expensive read.
- */
+function readList<T>(cache: ListCache, key: string, compute: () => Promise<T>): Promise<T> {
+  let entry = cache.get(key)
+  if (entry?.inflight !== undefined) return entry.inflight as Promise<T>
+  if (entry === undefined) {
+    entry = { at: 0 }
+    cache.set(key, entry)
+  }
+  const target = entry
+  const pending = compute()
+    .then((value) => {
+      // A detail read can detach just this entry while preserving other lists.
+      if (cache.get(key) === target) {
+        target.value = value
+        target.at = Date.now()
+      }
+      return value
+    })
+    .finally(() => {
+      if (target.inflight === pending) target.inflight = undefined
+      if (cache.get(key) === target && target.value === undefined) cache.delete(key)
+    })
+  target.inflight = pending
+  return pending
+}
+
+/** Serve fresh or stale metadata, coalescing cold reads and revalidations. */
 export async function serveList<T>(
   deps: RouteDeps,
   key: string,
   forced: boolean,
   res: ServerResponse,
-  compute: () => Promise<T>
+  compute: () => Promise<T>,
+  project: (value: T) => Promise<T> = async (value) => value,
 ): Promise<void> {
   const ttl = deps.cacheTtlMs ?? LIST_TTL_MS
   const cache = cacheOf(deps)
   const hit = cache.get(key)
-  const now = Date.now()
-  if (!forced && hit !== undefined && now - hit.at < ttl) {
-    writeOk(res, hit.value)
+  if (!forced && hit?.value !== undefined) {
+    if (Date.now() - hit.at < ttl) {
+      writeOk(res, await project(hit.value as T))
+      return
+    }
+    writeOk(res, { ...(await project(hit.value as T)), stale: true, refreshing: true })
+    void readList(cache, key, compute).catch(() => undefined)
     return
   }
-  if (!forced && hit !== undefined) {
-    writeOk(res, Object.assign({}, hit.value as object, { stale: true, refreshing: true }))
-    void compute()
-      .then((value) => cache.set(key, { at: Date.now(), value }))
-      .catch(() => undefined)
-    return
-  }
-  const value = await compute()
-  cache.set(key, { at: Date.now(), value })
-  writeOk(res, value)
+  writeOk(res, await project(await readList(cache, key, compute)))
+}
+
+/** One-shot metadata preload, using the same computation and cache as routes. */
+export async function preloadLists(deps: RouteDeps, signal?: Pick<AbortSignal, "aborted">): Promise<void> {
+  if (signal?.aborted) return
+  const cache = cacheOf(deps)
+  const options: WorkdirOptions = { includeSubagents: false }
+  const key = workdirsListKey(options)
+  const hit = cache.get(key)
+  const value =
+    hit?.value !== undefined && Date.now() - hit.at < (deps.cacheTtlMs ?? LIST_TTL_MS)
+      ? (hit.value as Awaited<ReturnType<typeof computeWorkdirs>>)
+      : await readList(cache, key, () => computeWorkdirs(deps, options))
+  if (signal?.aborted || LIST_CACHES.get(deps) !== cache) return
+  const first = value.workdirs[0]
+  if (first === undefined) return
+  const sessionsKey = sessionsListKey(first.workdir, null, options)
+  const sessions = cache.get(sessionsKey)
+  if (sessions?.value !== undefined && Date.now() - sessions.at < (deps.cacheTtlMs ?? LIST_TTL_MS)) return
+  await readList(cache, sessionsKey, () => computeSessions(deps, first.workdir, null, options))
 }

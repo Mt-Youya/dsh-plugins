@@ -1,16 +1,18 @@
+import { access, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises"
 import { createServer } from "node:http"
 import type { AddressInfo } from "node:net"
-import { access, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+
 import { afterEach, describe, expect, it, vi } from "vitest"
+
+import { createApi } from "../src/client/api.ts"
+import { createRoutes } from "../src/host/http/routes.ts"
 import { ClaudeSource } from "../src/host/sources/claude.ts"
 import { CodexSource } from "../src/host/sources/codex.ts"
-import { DshSource } from "../src/host/sources/dsh.ts"
 import { deleteLogs } from "../src/host/sources/delete.ts"
-import { createRoutes } from "../src/host/http/routes.ts"
-import { createApi } from "../src/client/api.ts"
-import { SESSION_DELETE_PATH, SESSIONS_PATH, WORKDIRS_PATH, type ContextSource } from "../src/protocol.ts"
+import { DshSource } from "../src/host/sources/dsh.ts"
+import { type ContextSource, SESSION_DELETE_PATH, SESSIONS_PATH, WORKDIRS_PATH } from "../src/protocol.ts"
 
 const ID = "01a00000-0000-7000-8000-000000000001"
 const WORKDIR = "/tmp/delete-session-fixture"
@@ -34,7 +36,7 @@ async function fixture(kind: ContextSource) {
     kind === "codex"
       ? { type: "session_meta", payload: { id: ID, session_id: ID, cwd: WORKDIR } }
       : { type: "user", sessionId: ID, cwd: WORKDIR, message: { role: "user", content: "fixture" } }
-  await writeFile(path, JSON.stringify(content) + "\n")
+  await writeFile(path, `${JSON.stringify(content)}\n`)
   const indexPath = join(home, "index.json")
   const source =
     kind === "claude"
@@ -74,7 +76,7 @@ describe("deleting original session logs", () => {
       expect(await source.detail(ID)).toMatchObject({ ok: false, error: "not-found" })
       expect(await source.remove(ID)).toMatchObject({ ok: false, error: "not-found" })
       expect(await readFile(unrelated, "utf8")).toBe("keep")
-    }
+    },
   )
 
   it("removes copied Claude transcripts so they cannot reappear", async () => {
@@ -133,7 +135,7 @@ describe("deleting original session logs", () => {
       })
       await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve))
       cleanup.push(
-        () => new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())))
+        () => new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve()))),
       )
       const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
       const endpoint = base + SESSION_DELETE_PATH
@@ -172,7 +174,7 @@ describe("deleting original session logs", () => {
               headers: { "content-type": "application/json", [name]: value },
               body: JSON.stringify(ref),
             })
-          ).status
+          ).status,
         ).toBe(403)
       }
       expect((await post({ source: "claude", id: "../outside" })).status).toBe(400)
@@ -198,7 +200,7 @@ describe("deleting original session logs", () => {
       expect((await (await fetch(sessions)).json()).value.sessions).toEqual([])
       expect((await (await fetch(base + WORKDIRS_PATH)).json()).value.workdirs).toEqual([])
       expect((await post(ref)).status).toBe(404)
-    }
+    },
   )
 
   it("sends a typed deletion request from the client", async () => {
@@ -213,7 +215,7 @@ describe("deleting original session logs", () => {
           method: "POST",
           body: JSON.stringify({ source: "dsh", id: ID }),
           credentials: "same-origin",
-        })
+        }),
       )
     } finally {
       fetcher.mockRestore()

@@ -15,8 +15,9 @@
  * @module @cyrusdoyle/dsh-sessions-insight/client/precision
  */
 
-import type { ReactElement } from "react"
 import type { Basis, Measure } from "@cyrusdoyle/dsh-session-contract"
+import type { ReactElement } from "react"
+
 import { formatTokens } from "../format.ts"
 import { t } from "../locale.ts"
 
@@ -100,7 +101,7 @@ export function MeasureValue({
   const label = measureTip(measure)
   return (
     <span
-      className="inline-flex items-baseline gap-1 relative font-mono text-[11px] outline-offset-2"
+      className="relative inline-flex items-baseline gap-1 font-mono text-[11px] outline-offset-2"
       data-precision={measure.precision}
       data-tip={label}
       tabIndex={0}
@@ -109,11 +110,11 @@ export function MeasureValue({
       <span className={measure.precision === "exact" ? "text-fg" : "text-fg-dim italic"}>
         {formatTokens(measure.tokens)}
       </span>
-      <span className="text-fg-dim text-[10px]" aria-hidden="true">
+      <span className="text-[10px] text-fg-dim" aria-hidden="true">
         {mark}
       </span>
       {dense ? null : <PrecisionBadge precision={measure.precision} />}
-      {share === undefined ? null : <span className="text-fg-dim text-[10px]">{share}</span>}
+      {share === undefined ? null : <span className="text-[10px] text-fg-dim">{share}</span>}
     </span>
   )
 }

@@ -7,6 +7,7 @@
  * exact bytes that go into the tarball a user installs.
  */
 import { readFileSync } from "node:fs"
+import { createRequire } from "node:module"
 import { join } from "node:path"
 
 const root = process.argv[2] ?? "."
@@ -24,7 +25,7 @@ if (!client.includes("@scope (.ci-panel)")) failures.push("client bundle carries
 if (/import\s+[^;]*from\s*["']react["']/.test(client)) failures.push("client bundle left a bare ESM react import")
 
 for (const name of ["apply", "handleHealth", "createRoutes", "createSources"]) {
-  if (!new RegExp("export\\s*\\{[^}]*\\b" + name + "\\b|export\\s+(function|const)\\s+" + name).test(host)) {
+  if (!new RegExp(`export\\s*\\{[^}]*\\b${name}\\b|export\\s+(function|const)\\s+${name}`).test(host)) {
     failures.push(`host bundle does not export ${name}`)
   }
 }
@@ -43,23 +44,12 @@ const sandbox = {
 new Function("window", client.replace(/^/, "\n"))(sandbox.window)
 if (registered === undefined) failures.push("client bundle did not call __ModuleLoader__.load")
 else {
+  const require = createRequire(import.meta.url)
   const exports = registered.factory((name) => {
-    if (name === "react")
-      return {
-        createElement: () => null,
-        Fragment: Symbol("fragment"),
-        useState: () => [undefined, () => {}],
-        useEffect: () => {},
-        useMemo: (fn) => fn(),
-        useCallback: (fn) => fn,
-        useRef: () => ({ current: null }),
-      }
-    // The shell resolves React from its own copy; the factory may also pull the
-    // automatic JSX runtime, which the same copy provides.
-    if (name === "react/jsx-runtime") {
-      return { Fragment: Symbol("fragment"), jsx: () => null, jsxs: () => null, jsxDEV: () => null }
-    }
-    throw new Error("unexpected require: " + name)
+    // Exercise the actual external APIs, including Radix's forwardRef and portal.
+    // Any unbundled third-party import still fails the deployment contract.
+    if (/^react(-dom)?(\/.*)?$/.test(name)) return require(name)
+    throw new Error(`unexpected require: ${name}`)
   })
   const values = Object.values(exports ?? {})
   if (values.length === 0) failures.push("factory returned no exports")

@@ -10,19 +10,20 @@
  * @module @cyrusdoyle/dsh-sessions-insight/host/dsh
  */
 
-import { mkdir, readFile, readdir, rename, stat, writeFile } from "node:fs/promises"
-import { basename, join } from "node:path"
+import { mkdir, readdir, readFile, rename, stat, writeFile } from "node:fs/promises"
 import { homedir } from "node:os"
-import { DEFAULT_PROJECTION_ROOT, readDshSession } from "@cyrusdoyle/dsh-session-readers"
-import { deleteLogs } from "./delete.ts"
-import type { DshListMeta } from "@cyrusdoyle/dsh-session-readers"
-import { readDshListMeta } from "@cyrusdoyle/dsh-session-readers"
+import { basename, join } from "node:path"
+
+import { Lru } from "@cyrusdoyle/dsh-plugin-kit-host"
 import type { Session } from "@cyrusdoyle/dsh-session-contract"
+import { DEFAULT_PROJECTION_ROOT, readDshListMeta, readDshSession } from "@cyrusdoyle/dsh-session-readers"
+import type { DshListMeta } from "@cyrusdoyle/dsh-session-readers"
+
 import type { SegmentInfo, SessionSummary, SourceStatus, WorkdirEntry } from "../../protocol.ts"
-import { LIST_ITEM_UNPARSED, isSafeId } from "../../protocol.ts"
+import { isSafeId, LIST_ITEM_UNPARSED } from "../../protocol.ts"
+import { deleteLogs } from "./delete.ts"
 import type { ParsedSession, SearchCandidate, SessionSource, SourceFailure, WorkdirOptions } from "./source.ts"
 import { cleanTitle, firstInputOf } from "./source.ts"
-import { Lru } from "@cyrusdoyle/dsh-plugin-kit-host"
 
 /** Default sessions root. */
 export function defaultDshRoot(): string {
@@ -105,7 +106,7 @@ async function saveDshIndex(path: string, entries: DshIndexEntry[]): Promise<voi
   try {
     await mkdir(join(path, ".."), { recursive: true })
     const body: DshIndexFile = { version: 1, scannedAt: Date.now(), entries }
-    const temp = path + ".tmp-" + String(process.pid)
+    const temp = `${path}.tmp-${String(process.pid)}`
     await writeFile(temp, JSON.stringify(body))
     await rename(temp, path)
   } catch {
@@ -168,7 +169,7 @@ export function decodeBucketName(bucket: string): string {
   let inner = bucket.slice(2)
   if (inner.endsWith("--")) inner = inner.slice(0, -2)
   // The wrapper's first hyphen stood for the root separator.
-  return "/" + inner.replace(/-/g, "/")
+  return `/${inner.replace(/-/g, "/")}`
 }
 
 export { readDshHeaderFacts, type DshHeaderFacts } from "./dsh-header.ts"
@@ -333,7 +334,7 @@ export class DshSource implements SessionSource {
     try {
       return await deleteLogs(
         this.root,
-        scan.entries.filter((entry) => entry.id === id).map((entry) => entry.path)
+        scan.entries.filter((entry) => entry.id === id).map((entry) => entry.path),
       )
     } finally {
       this.invalidate()

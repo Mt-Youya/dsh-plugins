@@ -1,13 +1,15 @@
-import { mkdtemp, mkdir, symlink, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+
 import { describe, expect, it } from "vitest"
+
 import {
+  CLAUDE_ROOT_ENV,
   claudeRootFrom,
   decodeProjectDirName,
   isWithin,
   resolveInside,
-  CLAUDE_ROOT_ENV,
 } from "../src/host/sources/paths.ts"
 import { isSafeId } from "../src/protocol.ts"
 

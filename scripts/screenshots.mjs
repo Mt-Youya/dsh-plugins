@@ -17,7 +17,8 @@ import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
-import { CHROME, ORIGIN, ensureServer, sleep } from "./preview-server.mjs"
+
+import { CHROME, ensureServer, ORIGIN, sleep } from "./preview-server.mjs"
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url))
 const OUT = join(ROOT, "plugins/sessions-insight/docs/images")
@@ -77,7 +78,7 @@ async function launchChrome() {
       `--window-size=${String(WIDTH)},${String(HEIGHT)}`,
       "about:blank",
     ],
-    { stdio: "ignore" }
+    { stdio: "ignore" },
   )
   for (let attempt = 0; attempt < 50; attempt += 1) {
     await sleep(200)

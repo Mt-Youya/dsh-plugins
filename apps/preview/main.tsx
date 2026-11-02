@@ -8,6 +8,7 @@
 
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
+
 import { fillParams, setRuntimeTranslate, zh } from "../../plugins/sessions-insight/src/client/locale.ts"
 import { injectStyles } from "../../plugins/sessions-insight/src/client/styles.ts"
 import { ContextInsightPanel } from "../../plugins/sessions-insight/src/client/ui/panel.tsx"
@@ -26,7 +27,7 @@ createRoot(root).render(
     <div style={{ blockSize: "100vh", inlineSize: "100vw", overflow: "hidden" }}>
       <ContextInsightPanel />
     </div>
-  </StrictMode>
+  </StrictMode>,
 )
 
 const query = new URLSearchParams(location.search)

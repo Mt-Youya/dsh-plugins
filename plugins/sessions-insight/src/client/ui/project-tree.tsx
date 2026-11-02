@@ -10,28 +10,35 @@
  * @module @cyrusdoyle/dsh-sessions-insight/client/project-tree
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
 import type { ReactElement } from "react"
-import type { ContextSource, WorkdirEntry } from "../../protocol.ts"
+
+import type { ContextSource, SessionSummary, WorkdirEntry } from "../../protocol.ts"
+import type { SessionMetadataValue } from "../../protocol/management.ts"
 import type { Api } from "../api.ts"
 import { formatShortTime, splitPath, tildePath } from "../format.ts"
-import { SessionRow } from "./session-row.tsx"
-import { Glyph, SourceIcon, SOURCE_MARKS } from "./icons.tsx"
-import { TreeSkeleton } from "./states.tsx"
 import { t } from "../locale.ts"
+import { clientListCache } from "../state/list-cache.ts"
+import { applySessionMetadata } from "../state/management.ts"
+import { selectedSessions, selectSessions, toggleSelection, visibleSessions } from "../state/selection.ts"
 import {
-  DEFAULT_SESSION_LIMIT,
   buildProjects,
+  DEFAULT_SESSION_LIMIT,
   filterProjects,
   flattenTree,
   nextIndex,
   readExpanded,
   sessionKey,
-  writeExpanded,
   type TreeProject,
   type TreeRow,
   type TreeSession,
+  writeExpanded,
 } from "../state/tree.ts"
+import { useSessionManagement } from "../state/use-session-management.ts"
+import { Glyph, SOURCE_MARKS, SourceIcon } from "./icons.tsx"
+import { ManagementControls, SessionManagement } from "./session-management.tsx"
+import { SessionRow } from "./session-row.tsx"
+import { TreeSkeleton } from "./states.tsx"
 
 /** What the panel needs to open a session. */
 export interface TreeSelection {
@@ -48,6 +55,18 @@ function storageOf(): Storage | undefined {
   } catch {
     return undefined
   }
+}
+
+function treeSessions(sessions: readonly SessionSummary[]): TreeSession[] {
+  return sessions.map((summary) => ({
+    ...summary,
+    title: summary.title ?? summary.firstInput ?? t("sessions.untitled"),
+    named: (summary.title?.trim().length ?? 0) > 0,
+  }))
+}
+
+function cachedSessions(): Map<string, TreeSession[]> {
+  return new Map([...clientListCache().sessions].map(([workdir, value]) => [workdir, treeSessions(value.sessions)]))
 }
 
 /** One source count: glyph plus number, tinted by the source's brand. */
@@ -126,6 +145,7 @@ export function ProjectTree({
   loading,
   onDeleted,
   revision,
+  onMetadataChanged,
 }: {
   api: Api
   workdirs: readonly WorkdirEntry[]
@@ -134,24 +154,64 @@ export function ProjectTree({
   loading: boolean
   onDeleted: (session: TreeSession) => void
   revision: number
+  onMetadataChanged?: (value: SessionMetadataValue) => void
 }): ReactElement {
+  const cache = clientListCache()
+  const deletion = useSyncExternalStore(cache.subscribe, cache.deletionVersion, cache.deletionVersion)
   const allProjects = useMemo(() => buildProjects(workdirs, splitPath), [workdirs])
   const [query, setQuery] = useState("")
   const projects = useMemo(() => filterProjects(allProjects, query), [allProjects, query])
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(readExpanded(storageOf())))
-  const [sessions, setSessions] = useState<Map<string, TreeSession[]>>(() => new Map())
+  const [expanded, setExpanded] = useState<Set<string>>(() => {
+    const saved = new Set(readExpanded(storageOf()))
+    const first = selected?.workdir ?? workdirs[0]?.workdir
+    return saved.size > 0 || first === undefined ? saved : new Set([first])
+  })
+  const [sessions, setSessions] = useState<Map<string, TreeSession[]>>(cachedSessions)
+  const management = useSessionManagement(
+    api,
+    (deleted) => {
+      setSessions(
+        (current) =>
+          new Map(
+            [...current].map(([workdir, list]) => [
+              workdir,
+              list.filter(
+                (session) => sessionKey(session.source, session.id) !== sessionKey(deleted.source, deleted.id),
+              ),
+            ]),
+          ),
+      )
+      onDeleted(deleted)
+    },
+    onMetadataChanged,
+  )
+  const displaySessions = applySessionMetadata(sessions, management.metadata, management.groupFilter)
+  const chosen = selectedSessions(management.selection, applySessionMetadata(sessions, management.metadata, ""))
   const [loadingWorkdirs, setLoadingWorkdirs] = useState<Set<string>>(() => new Set())
   const [limits, setLimits] = useState<Map<string, number>>(() => new Map())
   const [focus, setFocus] = useState(-1)
   const navRef = useRef<HTMLDivElement | null>(null)
   const requested = useRef(new Set<string>())
   const generation = useRef(revision)
+  const controller = useRef(new AbortController())
+  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>())
+  const visited = useRef(new Set<string>())
+  const visible = useRef(expanded)
+  visible.current = expanded
+
+  useEffect(() => setSessions(cachedSessions()), [deletion])
 
   useEffect(() => {
     generation.current = revision
+    controller.current = new AbortController()
     requested.current.clear()
-    setSessions(new Map())
+    visited.current.clear()
     setLoadingWorkdirs(new Set())
+    return () => {
+      controller.current.abort()
+      for (const timer of timers.current.values()) clearTimeout(timer)
+      timers.current.clear()
+    }
   }, [revision])
 
   // Default: open the project that holds the selection, else the first one.
@@ -168,9 +228,12 @@ export function ProjectTree({
     async (workdir: string) => {
       if (requested.current.has(workdir)) return
       requested.current.add(workdir)
-      setLoadingWorkdirs((current) => new Set(current).add(workdir))
-      const result = await api.sessions(workdir)
-      if (generation.current !== revision) return
+      clearTimeout(timers.current.get(workdir))
+      timers.current.delete(workdir)
+      const signal = controller.current.signal
+      if (!clientListCache().sessions.has(workdir)) setLoadingWorkdirs((current) => new Set(current).add(workdir))
+      const result = await api.sessions(workdir, signal)
+      if (signal.aborted || generation.current !== revision) return
       requested.current.delete(workdir)
       setLoadingWorkdirs((current) => {
         const next = new Set(current)
@@ -179,31 +242,40 @@ export function ProjectTree({
       })
       // A failed read leaves the project empty rather than skeletal forever.
       if (!result.ok) {
-        setSessions((current) => new Map(current).set(workdir, []))
+        if (result.error === "aborted") return
+        setSessions((current) => (current.has(workdir) ? current : new Map(current).set(workdir, [])))
         return
       }
-      const rows: TreeSession[] = result.value.sessions.map((summary) => ({
-        source: summary.source,
-        id: summary.id,
-        workdir: summary.workdir,
-        title: summary.title ?? summary.firstInput ?? t("sessions.untitled"),
-        updatedAt: summary.updatedAt,
-        bytes: summary.bytes,
-      }))
-      setSessions((current) => new Map(current).set(workdir, rows))
+      setSessions((current) => new Map(current).set(workdir, treeSessions(result.value.sessions)))
+      if (result.value.refreshing) {
+        const timer = setTimeout(() => {
+          timers.current.delete(workdir)
+          if (!signal.aborted && visible.current.has(workdir)) void load(workdir)
+        }, 500)
+        timers.current.set(workdir, timer)
+      }
     },
-    [api, revision]
+    [api, revision],
   )
 
   useEffect(() => {
-    for (const workdir of expanded) {
-      if (!sessions.has(workdir)) void load(workdir)
+    const known = new Set(workdirs.map((row) => row.workdir))
+    for (const workdir of visited.current) {
+      if (expanded.has(workdir) && known.has(workdir)) continue
+      visited.current.delete(workdir)
+      clearTimeout(timers.current.get(workdir))
+      timers.current.delete(workdir)
     }
-  }, [expanded, load, sessions])
+    for (const workdir of expanded) {
+      if (!known.has(workdir) || visited.current.has(workdir)) continue
+      visited.current.add(workdir)
+      void load(workdir)
+    }
+  }, [expanded, load, workdirs])
 
   const rows = flattenTree({
     projects,
-    sessions,
+    sessions: displaySessions,
     loading: loadingWorkdirs,
     expanded,
     selected: selected === null ? null : sessionKey(selected.source, selected.id),
@@ -220,7 +292,7 @@ export function ProjectTree({
     })
   }
 
-  function openRow(row: TreeRow | undefined): void {
+  function openRow(row: TreeRow | undefined, shift = false): void {
     if (row === undefined) return
     if (row.kind === "project") {
       toggle(row.project.workdir)
@@ -231,6 +303,11 @@ export function ProjectTree({
       return
     }
     if (row.kind === "session") {
+      if (management.editing) {
+        if (!management.busy)
+          management.setSelection((current) => toggleSelection(current, row.key, visibleSessions(rows), shift))
+        return
+      }
       onSelect({ source: row.session.source, id: row.session.id, workdir: row.workdir })
     }
   }
@@ -241,7 +318,7 @@ export function ProjectTree({
       event.preventDefault()
       const next = nextIndex(rows, focus, event.key)
       setFocus(next)
-      navRef.current?.querySelector<HTMLElement>('[data-focus="' + String(next) + '"]')?.focus()
+      navRef.current?.querySelector<HTMLElement>(`[data-focus="${String(next)}"]`)?.focus()
       return
     }
     if (event.key === "ArrowRight") {
@@ -264,7 +341,7 @@ export function ProjectTree({
     }
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault()
-      openRow(row)
+      openRow(row, event.shiftKey)
     }
   }
 
@@ -281,18 +358,36 @@ export function ProjectTree({
       <div className="flex shrink-0 flex-col gap-2 px-3 pt-3 pb-2">
         <div className="flex items-center gap-2 text-[12px] font-semibold">
           <span>{t("tree.title")}</span>
-          <span className="rounded-full bg-bg-2 px-1.5 text-[10.5px] font-medium leading-4.25 text-fg-dim tabular-nums">
+          <span className="rounded-full bg-bg-2 px-1.5 text-[10.5px] leading-4.25 font-medium text-fg-dim tabular-nums">
             {query.trim() === "" ? allProjects.length : `${String(projects.length)} / ${String(allProjects.length)}`}
           </span>
+          <button
+            type="button"
+            className="ci-btn ci-btn--quiet ms-auto active:bg-hover"
+            disabled={management.busy}
+            onClick={management.toggleEditing}
+          >
+            {t(management.editing ? "management.done" : "management.edit")}
+          </button>
         </div>
+        <ManagementControls
+          state={management}
+          visible={() => management.setSelection((current) => selectSessions(current, visibleSessions(rows)))}
+        />
         <label className="flex h-7 items-center gap-1.5 rounded-[7px] border border-line-soft bg-bg px-2 text-fg-3 focus-within:border-accent">
           <Glyph name="search" size={12} />
           <input
             className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[12px] text-fg outline-none placeholder:text-fg-3"
             value={query}
-            onChange={(event) => setQuery(event.currentTarget.value)}
+            onChange={(event) => {
+              setQuery(event.currentTarget.value)
+              management.clearSelection()
+            }}
             onKeyDown={(event) => {
-              if (event.key === "Escape") setQuery("")
+              if (event.key === "Escape") {
+                setQuery("")
+                management.clearSelection()
+              }
             }}
             placeholder={t("tree.filter")}
             aria-label={t("tree.filter")}
@@ -321,6 +416,22 @@ export function ProjectTree({
                   onToggle={() => toggle(row.project.workdir)}
                   onFocus={() => setFocus(index)}
                 />
+                {management.editing &&
+                displaySessions.has(row.project.workdir) &&
+                !loadingWorkdirs.has(row.project.workdir) ? (
+                  <button
+                    type="button"
+                    className="ci-btn ci-btn--quiet ms-3 active:bg-hover"
+                    disabled={management.busy}
+                    onClick={() =>
+                      management.setSelection((current) =>
+                        selectSessions(current, displaySessions.get(row.project.workdir) ?? []),
+                      )
+                    }
+                  >
+                    {t("management.selectDirectory", { count: displaySessions.get(row.project.workdir)?.length ?? 0 })}
+                  </button>
+                ) : null}
               </div>
             )
           }
@@ -338,7 +449,7 @@ export function ProjectTree({
           }
           if (row.kind === "more") {
             return (
-              <div className="ms-3.25 border-s border-line-soft ps-1.5 py-0.5" key={row.key}>
+              <div className="ms-3.25 border-s border-line-soft py-0.5 ps-1.5" key={row.key}>
                 <button
                   type="button"
                   className="ci-btn ci-btn--quiet h-7 w-full justify-start"
@@ -355,7 +466,14 @@ export function ProjectTree({
             <SessionRow
               key={row.key}
               api={api}
-              onDeleted={onDeleted}
+              onDeleted={management.deleted}
+              editing={management.editing}
+              checked={management.selection.keys.has(row.key)}
+              busy={management.busy}
+              onCheck={(shift) => openRow(row, shift)}
+              onRename={() => void management.openDialog("rename", [row.session])}
+              onMove={() => void management.openDialog("group", [row.session])}
+              onAiRename={() => void management.openAiDialog([row.session], false)}
               row={row}
               index={index}
               onOpen={() => openRow(row)}
@@ -364,6 +482,7 @@ export function ProjectTree({
           )
         })}
       </div>
+      <SessionManagement state={management} selected={chosen} />
     </nav>
   )
 }

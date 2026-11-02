@@ -1,13 +1,14 @@
-import { describe, expect, it } from "vitest"
 import type { Session, Turn, Usage } from "@cyrusdoyle/dsh-session-contract"
+import { describe, expect, it } from "vitest"
+
 import { costOfSession } from "../src/host/views/cost.ts"
 import {
-  TABLES,
   lookupPrice,
   modelKey,
   normalizeModelId,
-  primaryTableFor,
   type PricingTable,
+  primaryTableFor,
+  TABLES,
 } from "../src/host/views/pricing.ts"
 
 function usage(input: number, cacheRead: number, cacheWrite: number, output: number): Usage {
@@ -107,7 +108,7 @@ describe("primary price and the reference column", () => {
   it("prices only the DeepSeek turn when a session mixes Claude and DeepSeek", () => {
     const report = costOfSession(
       session([turn(1, OPUS_5_5, usage(1_000_000, 0, 0, 0)), turn(2, DEEPSEEK, usage(1_000_000, 0, 0, 0))]),
-      "claude"
+      "claude",
     )
     expect(report.groups).toEqual([{ tableId: "official", currency: "USD", amount: 0.3, pricedTurns: 1 }])
     expect(report.turns[0]?.priced).toBe(false)
@@ -133,7 +134,7 @@ describe("unlisted channels", () => {
     const report = costOfSession(
       session([turn(1, { provider: "a", model: "m" }, usage(0, 2_000_000, 1_000_000, 0))]),
       "claude",
-      table
+      table,
     )
     expect(report.partial).toBe(true)
     expect(report.unlistedChannels).toEqual(["a/m#cacheRead"])
@@ -158,7 +159,7 @@ describe("unlisted channels", () => {
     const report = costOfSession(
       session([turn(1, { provider: "a", model: "m" }, usage(1_000_000, 500_000, 500_000, 1_000_000))]),
       "codex",
-      table
+      table,
     )
     expect(report.unlistedChannels).toEqual(["a/m#cacheRead", "a/m#cacheWrite"])
     expect(report.partial).toBe(true)
@@ -168,7 +169,7 @@ describe("unlisted channels", () => {
   it("answers null when no primary table lists the model", () => {
     const report = costOfSession(
       session([turn(1, { provider: "openai", model: "gpt-reserve" }, usage(1_000, 0, 0, 10))]),
-      "codex"
+      "codex",
     )
     expect(report.turns[0]).toMatchObject({ priced: false, amount: null })
     expect(report.unpricedModels).toEqual(["openai/gpt-reserve"])
@@ -200,7 +201,7 @@ describe("per-turn lines and caller tables", () => {
     const report = costOfSession(
       session([turn(1, { provider: "a", model: "m" }, usage(1_000_000, 0, 0, 1_000_000))]),
       "claude",
-      table
+      table,
     )
     expect(report.totals.usd).toBeCloseTo(3, 6)
     expect(report.groups).toEqual([{ tableId: "official", currency: "USD", amount: 3, pricedTurns: 1 }])

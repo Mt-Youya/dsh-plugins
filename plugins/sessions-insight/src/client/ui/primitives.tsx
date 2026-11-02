@@ -18,11 +18,11 @@ const CHIP_BASE =
   "inline-flex items-center gap-1 rounded-[5px] px-1.5 h-4.5 text-[10.5px] leading-none whitespace-nowrap tabular-nums"
 
 const CHIP_SKIN: Record<ChipTone, string> = {
-  neutral: CHIP_BASE + " border border-line text-fg-dim",
-  soft: CHIP_BASE + " bg-bg-2 text-fg-dim",
-  warn: CHIP_BASE + " border border-dashed border-warn/70 text-warn bg-warn/8",
-  accent: CHIP_BASE + " bg-accent/14 text-accent",
-  mono: CHIP_BASE + " border border-line text-fg-dim font-mono",
+  neutral: `${CHIP_BASE} border border-line text-fg-dim`,
+  soft: `${CHIP_BASE} bg-bg-2 text-fg-dim`,
+  warn: `${CHIP_BASE} border border-dashed border-warn/70 text-warn bg-warn/8`,
+  accent: `${CHIP_BASE} bg-accent/14 text-accent`,
+  mono: `${CHIP_BASE} border border-line text-fg-dim font-mono`,
 }
 
 /**
@@ -46,7 +46,7 @@ export function Chip({
 }): ReactElement {
   return (
     <span
-      className={tip === undefined ? CHIP_SKIN[tone] : CHIP_SKIN[tone] + " relative"}
+      className={tip === undefined ? CHIP_SKIN[tone] : `${CHIP_SKIN[tone]} relative`}
       title={title}
       data-tip={tip}
       tabIndex={tip === undefined ? undefined : 0}
@@ -73,10 +73,10 @@ export function SectionTitle({
   end?: ReactNode
 }): ReactElement {
   return (
-    <h3 className="flex items-center gap-2 m-0 mb-2.5 text-[12px] font-semibold text-fg">
+    <h3 className="m-0 mb-2.5 flex items-center gap-2 text-[12px] font-semibold text-fg">
       <span>{children}</span>
       {count === undefined ? null : (
-        <span className="rounded-full bg-bg-2 px-1.5 text-[10.5px] font-medium leading-4.25 text-fg-dim tabular-nums">
+        <span className="rounded-full bg-bg-2 px-1.5 text-[10.5px] leading-4.25 font-medium text-fg-dim tabular-nums">
           {count}
         </span>
       )}
@@ -105,8 +105,8 @@ export function Card({
     <section
       className={
         flush
-          ? "rounded-[10px] border border-line-soft bg-bg-1 min-w-0"
-          : "rounded-[10px] border border-line-soft bg-bg-1 p-3.5 min-w-0"
+          ? "min-w-0 rounded-[10px] border border-line-soft bg-bg-1"
+          : "min-w-0 rounded-[10px] border border-line-soft bg-bg-1 p-3.5"
       }
       aria-label={label}
     >
@@ -140,14 +140,14 @@ export function Stat({
   const fill = meter === undefined ? undefined : Math.max(0, Math.min(1, meter))
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded-[10px] border border-line-soft bg-bg-1 px-3 py-2.5">
-      <span className="text-[11px] text-fg-dim truncate">{label}</span>
+      <span className="truncate text-[11px] text-fg-dim">{label}</span>
       {/* Only plain text truncates: an element value may carry a tooltip that an
           overflow clip would cut off. */}
       <span
         className={
           typeof value === "string"
-            ? "text-[18px] font-semibold leading-tight tracking-[-0.01em] tabular-nums text-fg truncate"
-            : "text-[18px] font-semibold leading-tight tracking-[-0.01em] tabular-nums text-fg"
+            ? "truncate text-[18px] leading-tight font-semibold tracking-[-0.01em] text-fg tabular-nums"
+            : "text-[18px] leading-tight font-semibold tracking-[-0.01em] text-fg tabular-nums"
         }
       >
         {value}
@@ -160,7 +160,7 @@ export function Stat({
           />
         </span>
       )}
-      {hint === undefined ? null : <span className="text-[10.5px] text-fg-3 truncate">{hint}</span>}
+      {hint === undefined ? null : <span className="truncate text-[10.5px] text-fg-3">{hint}</span>}
     </div>
   )
 }
@@ -172,7 +172,7 @@ export function Stat({
  */
 export function Kbd({ children }: { children: ReactNode }): ReactElement {
   return (
-    <kbd className="inline-flex items-center rounded-[5px] border border-line bg-bg px-1.5 h-4.5 font-[inherit] text-[10.5px] text-fg-dim">
+    <kbd className="inline-flex h-4.5 items-center rounded-[5px] border border-line bg-bg px-1.5 font-[inherit] text-[10.5px] text-fg-dim">
       {children}
     </kbd>
   )

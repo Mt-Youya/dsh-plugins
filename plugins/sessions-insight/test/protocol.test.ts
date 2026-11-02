@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest"
-import { PLUGIN_VERSION } from "../src/version.ts"
+
 import {
+  browserUrl,
   CONTEXT_SOURCES,
   DEFAULT_TURN_LIMIT,
   HEALTH_PATH,
   HEALTH_URL,
-  MAX_TURN_LIMIT,
-  browserUrl,
+  type HealthOk,
   isAttribution,
   isContextSource,
   isHealthResponse,
@@ -15,9 +15,10 @@ import {
   isSafeId,
   isSessionDetail,
   isTurn,
+  MAX_TURN_LIMIT,
   parseTurnWindow,
-  type HealthOk,
 } from "../src/protocol.ts"
+import { PLUGIN_VERSION } from "../src/version.ts"
 
 describe("health wire guards", () => {
   it("accepts the payload the Host actually answers with", () => {
@@ -90,20 +91,20 @@ describe("measure guards keep precision attached", () => {
         total: { tokens: 100, precision: "exact", basis: "usage" },
         parts,
         residual: { tokens: 90, precision: "estimate", basis: "unattributed" },
-      })
+      }),
     ).toBe(true)
     expect(
-      isAttribution({ total: { tokens: 100, precision: "exact", basis: "usage" }, parts, reconciled: { factor: 1.2 } })
+      isAttribution({ total: { tokens: 100, precision: "exact", basis: "usage" }, parts, reconciled: { factor: 1.2 } }),
     ).toBe(true)
     expect(
-      isAttribution({ total: { tokens: 100, precision: "exact", basis: "usage" }, parts, reconciled: { factor: 0 } })
+      isAttribution({ total: { tokens: 100, precision: "exact", basis: "usage" }, parts, reconciled: { factor: 0 } }),
     ).toBe(false)
     expect(isAttribution({ total: 100, parts })).toBe(false)
     expect(
       isAttribution({
         total: { tokens: 1, precision: "exact", basis: "usage" },
         parts: [{ part: "mystery", measure: { tokens: 1, precision: "estimate", basis: "chars-per-token" } }],
-      })
+      }),
     ).toBe(false)
   })
 })
@@ -139,7 +140,7 @@ describe("turn and session detail guards", () => {
         compactions: [],
         subagents: [],
         attribution,
-      })
+      }),
     ).toBe(true)
     expect(
       isTurn({
@@ -150,7 +151,7 @@ describe("turn and session detail guards", () => {
         toolCalls: [],
         compactions: [],
         subagents: [],
-      })
+      }),
     ).toBe(false)
     expect(
       isTurn({
@@ -163,7 +164,7 @@ describe("turn and session detail guards", () => {
         subagents: [],
         attribution,
         usage: { input: 1 },
-      })
+      }),
     ).toBe(false)
   })
 

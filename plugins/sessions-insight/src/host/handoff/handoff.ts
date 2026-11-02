@@ -19,12 +19,13 @@
  * @module @cyrusdoyle/dsh-sessions-insight/host/handoff
  */
 
-import { handoffProgress } from "./progress.ts"
 import { stat } from "node:fs/promises"
 import { isAbsolute } from "node:path"
+
 import type { HandoffApplyValue, HandoffStatusValue } from "../../protocol.ts"
 import { isSafeId } from "../../protocol.ts"
 import type { ObservedEvent } from "../sources/dsh-events.ts"
+import { handoffProgress } from "./progress.ts"
 
 /** Session creation/queueing, as the in-process controller exposes it. */
 export interface SessionCommandsFace {
@@ -38,7 +39,7 @@ export interface SessionCommandsFace {
       mode: "queue"
       content: { type: "text"; text: string }[]
     },
-    source: { kind: "user"; rpcId: string }
+    source: { kind: "user"; rpcId: string },
   ): Promise<unknown>
 }
 
@@ -257,7 +258,7 @@ export class HandoffRunner {
     try {
       await commands.prompt(
         { requestId, sessionId, mode: "queue", content: [{ type: "text", text: brief }] },
-        { kind: "user", rpcId: requestId }
+        { kind: "user", rpcId: requestId },
       )
     } catch (error) {
       return mapCallError(error, "prompt")
@@ -310,7 +311,7 @@ export class HandoffRunner {
     const baseline = job?.baselineSeq ?? -1
     const elapsedMs = Math.max(
       0,
-      this.#now() - (job?.deliveredAt ?? events.find((event) => event.type === "turn/start")?.time ?? started)
+      this.#now() - (job?.deliveredAt ?? events.find((event) => event.type === "turn/start")?.time ?? started),
     )
     // Log order first. The time fallback only applies when the whole log sits at
     // or below the baseline, i.e. when seq cannot separate old from new.
@@ -324,7 +325,7 @@ export class HandoffRunner {
       // first turn/end that follows the prompt's own user/message.
       const from = events.reduce(
         (last, event, index) => (event.type === "user/message" && event.seq > baseline ? index : last),
-        -1
+        -1,
       )
       if (from >= 0) turnEnd = events.slice(from + 1).find((event) => event.type === "turn/end")
     }

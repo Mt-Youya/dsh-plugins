@@ -8,8 +8,9 @@
  * @module @cyrusdoyle/dsh-sessions-insight/client/turn-detail
  */
 
-import type { ReactElement } from "react"
 import type { Turn } from "@cyrusdoyle/dsh-session-contract"
+import type { ReactElement } from "react"
+
 import type { SegmentInfo } from "../../protocol.ts"
 import { compactTokens, formatFactor, formatShare, formatTime } from "../format.ts"
 import { t } from "../locale.ts"
@@ -44,13 +45,13 @@ export function TurnDetail({
       {/* Pinned: which turn this is and what the human asked stay in view while
           the cards below scroll. */}
       <div className="sticky top-0 z-10 flex flex-col gap-3 border-b border-line-soft bg-bg px-4 pt-4 pb-3">
-        <div className="flex items-end gap-3 min-w-0">
+        <div className="flex min-w-0 items-end gap-3">
           <div className="flex min-w-0 flex-col">
             <h3 className="m-0 text-[15px] font-semibold">{t("turns.selected", { index: turn.index })}</h3>
             <span className="text-[11px] text-fg-dim tabular-nums">{formatTime(turn.startedAt)}</span>
           </div>
           <div className="ms-auto flex items-baseline gap-2">
-            <span className="text-[20px] font-semibold tabular-nums tracking-[-0.01em]">{compactTokens(total)}</span>
+            <span className="text-[20px] font-semibold tracking-[-0.01em] tabular-nums">{compactTokens(total)}</span>
             {attribution.windowSize === undefined ? null : (
               <Chip tone="soft">
                 {t("stats.windowShare", {
@@ -89,10 +90,10 @@ export function TurnDetail({
         {turn.compactions.length === 0 ? null : (
           <Card label={t("turns.compaction")}>
             <SectionTitle count={turn.compactions.length}>{t("turns.compaction")}</SectionTitle>
-            <ul className="m-0 p-0 list-none">
+            <ul className="m-0 list-none p-0">
               {turn.compactions.map((point, order) => (
                 <li
-                  className="flex flex-wrap items-baseline gap-2 py-1.5 text-[11.5px] border-t border-line-soft first:border-t-0"
+                  className="flex flex-wrap items-baseline gap-2 border-t border-line-soft py-1.5 text-[11.5px] first:border-t-0"
                   key={`${String(point.at)}-${String(order)}`}
                 >
                   <span className="font-mono text-[10.5px] text-fg-dim">{formatTime(point.at)}</span>

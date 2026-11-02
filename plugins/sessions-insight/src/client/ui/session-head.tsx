@@ -8,11 +8,14 @@
  * @module @cyrusdoyle/dsh-sessions-insight/client/session-head
  */
 
+import type { Turn } from "@cyrusdoyle/dsh-session-contract"
 import { useState } from "react"
 import type { ReactElement } from "react"
+
 import type { CostValue, SessionDetail } from "../../protocol.ts"
-import type { Turn } from "@cyrusdoyle/dsh-session-contract"
+import type { SessionInsights } from "../../protocol/insights.ts"
 import { compactTokens, formatBytes, formatShare, formatTime, tildePath } from "../format.ts"
+import { insightLabel } from "../insight-labels.ts"
 import { sessionLabel } from "../labels.ts"
 import { t } from "../locale.ts"
 import { sessionStats } from "../state/session-stats.ts"
@@ -38,7 +41,7 @@ export function SessionHead({
   onHandoff,
   onOpenSession,
 }: {
-  data: SessionDetail
+  data: SessionDetail & { insights?: SessionInsights }
   turns: readonly Turn[]
   cost: CostValue | null
   onHandoff: () => void
@@ -48,17 +51,34 @@ export function SessionHead({
   const session = data.session
   const label = sessionLabel({ title: session.title, firstInput: session.firstInput })
   const mark = SOURCE_MARKS[session.source]
-  const stats = sessionStats(turns)
   const loadedAll = turns.length >= data.turnCount
+  const report = data.insights
+  const current = report?.currentAttribution?.attribution
+  const window = current?.windowSize
+  const stats =
+    report === undefined
+      ? sessionStats(loadedAll ? turns : [])
+      : {
+          current: current?.total.tokens ?? 0,
+          peak: report.peak?.measure.tokens ?? 0,
+          peakTurn: report.peak?.turnIndex,
+          window,
+          windowShare:
+            window === undefined || window <= 0 || current === undefined ? undefined : current.total.tokens / window,
+          compactions: report.compactions,
+          toolCalls: report.toolCalls,
+        }
+  const currentUnknown = report === undefined ? !loadedAll || stats.current === 0 : report.currentAttribution === null
+  const peakUnknown = report === undefined ? !loadedAll || stats.peak === 0 : report.peak === null
   return (
-    <header className="flex flex-col gap-3 px-5 pt-4 pb-4 border-b border-line-soft min-w-0">
-      <div className="flex items-start gap-3 min-w-0">
+    <header className="flex min-w-0 flex-col gap-3 border-b border-line-soft px-5 pt-4 pb-4">
+      <div className="flex min-w-0 items-start gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <h2 className="m-0 text-[16px] font-semibold leading-snug truncate" title={session.id}>
+          <h2 className="m-0 truncate text-[16px] leading-snug font-semibold" title={session.id}>
             {label.title}
           </h2>
           {label.detail === undefined ? null : (
-            <p className="m-0 text-[12px] text-fg-dim truncate" title={label.detail}>
+            <p className="m-0 truncate text-[12px] text-fg-dim" title={label.detail}>
               {label.detail}
             </p>
           )}
@@ -67,7 +87,7 @@ export function SessionHead({
               <SourceIcon source={session.source} size={12} />
               {mark.label.zh}
             </span>
-            <span className="font-mono truncate max-w-[42ch]" title={session.workdir}>
+            <span className="max-w-[42ch] truncate font-mono" title={session.workdir}>
               {session.workdir === "" ? t("workdirs.unknown") : tildePath(session.workdir)}
             </span>
             <span aria-hidden="true" className="text-fg-3">
@@ -117,10 +137,10 @@ export function SessionHead({
           {t("handoff.openFailed", { detail: openError })}
         </p>
       )}
-      <div className="grid grid-cols-2 @2xl:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 @2xl:grid-cols-4">
         <Stat
           label={t("stats.current")}
-          value={compactTokens(stats.current)}
+          value={currentUnknown ? insightLabel("insights.unrecorded") : compactTokens(stats.current)}
           {...(stats.windowShare === undefined ? {} : { meter: stats.windowShare })}
           tone={(stats.windowShare ?? 0) >= WINDOW_WARN ? "warn" : "accent"}
           hint={
@@ -134,14 +154,14 @@ export function SessionHead({
         />
         <Stat
           label={t("stats.peak")}
-          value={compactTokens(stats.peak)}
+          value={peakUnknown ? insightLabel("insights.unrecorded") : compactTokens(stats.peak)}
           hint={stats.peakTurn === undefined ? "—" : t("stats.peakAt", { index: stats.peakTurn })}
         />
         <Stat
           label={t("stats.turns")}
           value={String(data.turnCount)}
           hint={
-            loadedAll
+            report !== undefined || loadedAll
               ? t("stats.compactionsLine", { count: stats.compactions, tools: stats.toolCalls })
               : t("stats.loaded", { count: turns.length })
           }

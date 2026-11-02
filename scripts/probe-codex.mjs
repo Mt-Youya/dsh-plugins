@@ -18,18 +18,19 @@
  */
 
 import { statSync } from "node:fs"
-import { defaultCodexRoot, indexCodexCorpus } from "../src/core/codex/segments.ts"
-import { readCodexSession } from "../src/core/codex/index.ts"
+
 import { CHAR_CALIBRATION_NOTE } from "../src/core/attribution.ts"
 import { CODEX_CALIBRATION_NOTE, CODEX_CHARS_PER_TOKEN_TEXT } from "../src/core/codex/calibration.ts"
+import { readCodexSession } from "../src/core/codex/index.ts"
+import { defaultCodexRoot, indexCodexCorpus } from "../src/core/codex/segments.ts"
 
 const number = (value) => value.toLocaleString("en-US")
-const percent = (value) => (value === undefined || !Number.isFinite(value) ? "-" : (value * 100).toFixed(1) + "%")
-const multiple = (value) => (Number.isFinite(value) ? value.toFixed(3) + "x" : "-")
+const percent = (value) => (value === undefined || !Number.isFinite(value) ? "-" : `${(value * 100).toFixed(1)}%`)
+const multiple = (value) => (Number.isFinite(value) ? `${value.toFixed(3)}x` : "-")
 /** A ratio whose denominator may be zero: no usage means no ratio, not infinity. */
 const ratio = (numerator, denominator) => (denominator > 0 ? multiple(numerator / denominator) : "-")
-const mb = (bytes) => (bytes / (1024 * 1024)).toFixed(1) + " MB"
-const ms = (value) => value.toFixed(0) + " ms"
+const mb = (bytes) => `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+const ms = (value) => `${value.toFixed(0)} ms`
 
 function quantile(values, q) {
   if (values.length === 0) return undefined
@@ -54,10 +55,8 @@ function distribution(values) {
 
 function describe(name, values, format = multiple) {
   const stats = distribution(values)
-  if (stats.n === 0) return name + ": (none)"
-  return (
-    name + ": n=" + stats.n + " p50=" + format(stats.p50) + " p95=" + format(stats.p95) + " max=" + format(stats.max)
-  )
+  if (stats.n === 0) return `${name}: (none)`
+  return `${name}: n=${stats.n} p50=${format(stats.p50)} p95=${format(stats.p95)} max=${format(stats.max)}`
 }
 
 /** Pick one sample per scenario the milestone names. */
@@ -104,9 +103,9 @@ function renderTurnTable(rows, limit = 12) {
   const start = rows.findIndex((row) => row.exact > 0)
   const window = start < 0 ? rows.slice(0, limit) : rows.slice(start, start + limit)
   if (start > 0)
-    lines.push("_first " + start + " turns carry no usage (inherited history or aborted), skipped in this table_", "")
+    lines.push(`_first ${start} turns carry no usage (inherited history or aborted), skipped in this table_`, "")
   lines.push(
-    "| turn | usage.totalContext | attribution.total | match | Σ prompt/requests | cached+sum | cached trap | Σ parts | residual | residual share | factor | tools |"
+    "| turn | usage.totalContext | attribution.total | match | Σ prompt/requests | cached+sum | cached trap | Σ parts | residual | residual share | factor | tools |",
   )
   lines.push("| ---: | ---: | ---: | :---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
   for (const row of window) {
@@ -116,37 +115,16 @@ function renderTurnTable(rows, limit = 12) {
         ? "estimate (no usage)"
         : row.context === row.exact
           ? "exact"
-          : "DRIFT " + number(row.context - row.exact)
+          : `DRIFT ${number(row.context - row.exact)}`
     lines.push(
-      "| " +
-        row.index +
-        " | " +
-        number(row.context) +
-        " | " +
-        number(row.exact) +
-        " | " +
-        match +
-        " | " +
-        number(row.requests) +
-        " | " +
-        number(row.cachedAdded) +
-        " | " +
-        multiple(row.cachedTrap) +
-        " | " +
-        number(row.parts) +
-        " | " +
-        number(row.residual) +
-        " | " +
-        percent(row.residualShare) +
-        " | " +
-        row.factor.toFixed(3) +
-        " | " +
-        row.tools +
-        " |"
+      `| ${row.index} | ${number(row.context)} | ${number(row.exact)} | ${match} | ${number(row.requests)} | ${number(
+        row.cachedAdded,
+      )} | ${multiple(row.cachedTrap)} | ${number(row.parts)} | ${number(row.residual)} | ${percent(
+        row.residualShare,
+      )} | ${row.factor.toFixed(3)} | ${row.tools} |`,
     )
   }
-  if (rows.length > window.length)
-    lines.push("| …" + (rows.length - window.length) + " more turns | | | | | | | | | | | |")
+  if (rows.length > window.length) lines.push(`| …${rows.length - window.length} more turns | | | | | | | | | | | |`)
   return lines
 }
 
@@ -161,26 +139,17 @@ function renderHighlight(session) {
   const cachedAdded = usage.input + usage.cacheRead * 2 + usage.cacheWrite
   const lines = []
   lines.push(
-    "- hand-check turn " +
-      pick.index +
-      ": usage.totalContext = " +
-      number(usage.totalContext) +
-      ", attribution.total = " +
-      number(pick.attribution.total.tokens) +
-      " (" +
-      (usage.totalContext === pick.attribution.total.tokens ? "identical" : "DRIFT") +
-      ")"
+    `- hand-check turn ${pick.index}: usage.totalContext = ${number(usage.totalContext)}, attribution.total = ${number(
+      pick.attribution.total.tokens,
+    )} (${usage.totalContext === pick.attribution.total.tokens ? "identical" : "DRIFT"})`,
   )
   lines.push(
-    "- hand-check turn " +
-      pick.index +
-      " traps: Σ prompt over its requests " +
-      number(prompt) +
-      "; if cached is added " +
-      number(cachedAdded) +
-      " = " +
-      ratio(cachedAdded, prompt) +
-      "; its usage is one record per response, so reading token_count too doubles it (2.000x); thread_token_usage at the last request is cumulative (see the session trap above)"
+    `- hand-check turn ${pick.index} traps: Σ prompt over its requests ${number(prompt)}; if cached is added ${number(
+      cachedAdded,
+    )} = ${ratio(
+      cachedAdded,
+      prompt,
+    )}; its usage is one record per response, so reading token_count too doubles it (2.000x); thread_token_usage at the last request is cumulative (see the session trap above)`,
   )
   return lines
 }
@@ -202,7 +171,7 @@ function renderCompactions(session) {
   for (const turn of session.turns) for (const point of turn.compactions) points.push({ turn: turn.index, ...point })
   if (points.length === 0) return ["- compactions: none"]
   const lines = [
-    "- compactions: " + points.length,
+    `- compactions: ${points.length}`,
     "",
     "| turn | at | before | after | drop | replacedHistory | trigger |",
     "| ---: | ---: | ---: | ---: | ---: | :---: | :--- |",
@@ -210,21 +179,9 @@ function renderCompactions(session) {
   for (const point of points) {
     const drop = point.before.tokens === 0 ? "-" : multiple(point.before.tokens / point.after.tokens)
     lines.push(
-      "| " +
-        point.turn +
-        " | " +
-        new Date(point.at).toISOString() +
-        " | " +
-        number(point.before.tokens) +
-        " | " +
-        number(point.after.tokens) +
-        " | " +
-        drop +
-        " | " +
-        String(point.replacedHistory) +
-        " | " +
-        (point.trigger ?? "-") +
-        " |"
+      `| ${point.turn} | ${new Date(point.at).toISOString()} | ${number(point.before.tokens)} | ${number(
+        point.after.tokens,
+      )} | ${drop} | ${String(point.replacedHistory)} | ${point.trigger ?? "-"} |`,
     )
   }
   return lines
@@ -234,53 +191,42 @@ function renderUsageTraps(stats) {
   const lines = []
   const exact = stats.exactInputTokens || 1
   lines.push(
-    "- usage records: " +
-      number(stats.requests) +
-      " distinct responses, " +
-      number(stats.duplicateResponseIds) +
-      " duplicate response ids" +
-      (stats.requests === 0 ? " — this session logs no token_usage_record, so there is no exact anchor" : "")
+    `- usage records: ${number(stats.requests)} distinct responses, ${number(
+      stats.duplicateResponseIds,
+    )} duplicate response ids${
+      stats.requests === 0 ? " — this session logs no token_usage_record, so there is no exact anchor" : ""
+    }`,
   )
   lines.push(
-    "- exact Σ input_tokens = " +
-      number(stats.exactInputTokens) +
-      " (cached " +
-      number(stats.cachedInputTokens) +
-      " is a subset; non-cached " +
-      number(stats.nonCachedInputTokens) +
-      ")"
+    `- exact Σ input_tokens = ${number(stats.exactInputTokens)} (cached ${number(
+      stats.cachedInputTokens,
+    )} is a subset; non-cached ${number(stats.nonCachedInputTokens)})`,
   )
   lines.push(
-    "- trap 1 cached added: Σ(input + cached) = " +
-      number(stats.naiveCachedAddedTokens) +
-      " = " +
-      ratio(stats.naiveCachedAddedTokens, stats.exactInputTokens) +
-      " if the subset is summed"
+    `- trap 1 cached added: Σ(input + cached) = ${number(stats.naiveCachedAddedTokens)} = ${ratio(
+      stats.naiveCachedAddedTokens,
+      stats.exactInputTokens,
+    )} if the subset is summed`,
   )
   lines.push(
-    "- trap 2 last_token_usage: Σ = " +
-      number(stats.lastTokenUsageTokens) +
-      " = " +
-      ratio(stats.lastTokenUsageTokens, stats.exactInputTokens) +
-      " if it is read as well (" +
-      number(stats.lastTokenUsageEchoes) +
-      "/" +
-      number(stats.tokenCounts) +
-      " token_count events repeat a usage object verbatim)"
+    `- trap 2 last_token_usage: Σ = ${number(stats.lastTokenUsageTokens)} = ${ratio(
+      stats.lastTokenUsageTokens,
+      stats.exactInputTokens,
+    )} if it is read as well (${number(stats.lastTokenUsageEchoes)}/${number(
+      stats.tokenCounts,
+    )} token_count events repeat a usage object verbatim)`,
   )
   lines.push(
-    "- trap 3 thread_token_usage: Σ = " +
-      number(stats.threadCumulativeTokens) +
-      " = " +
-      ratio(stats.threadCumulativeTokens, stats.exactInputTokens) +
-      " if the cumulative counter is summed"
+    `- trap 3 thread_token_usage: Σ = ${number(stats.threadCumulativeTokens)} = ${ratio(
+      stats.threadCumulativeTokens,
+      stats.exactInputTokens,
+    )} if the cumulative counter is summed`,
   )
   lines.push(
-    "- trap 4 turn_token_usage: Σ = " +
-      number(stats.turnCumulativeTokens) +
-      " = " +
-      ratio(stats.turnCumulativeTokens, stats.exactInputTokens) +
-      " if the cumulative counter is summed"
+    `- trap 4 turn_token_usage: Σ = ${number(stats.turnCumulativeTokens)} = ${ratio(
+      stats.turnCumulativeTokens,
+      stats.exactInputTokens,
+    )} if the cumulative counter is summed`,
   )
   return lines
 }
@@ -294,21 +240,16 @@ function renderAttribution(stats, session) {
   const overShares = rows.filter((row) => row.residual < 0).map((row) => -row.residualShare)
   const factors = rows.filter((row) => row.factor !== 1).map((row) => row.factor)
   const lines = []
-  lines.push("- attribution raw estimate: " + number(stats.rawAttributionTokens))
-  lines.push("- " + describe("residual tokens (unknown mass)", positive, number))
-  lines.push("- " + describe("residual tokens (over-counted)", negative, number))
-  lines.push("- " + describe("residual share (unknown mass)", shares, percent))
-  lines.push("- " + describe("residual share (over-counted)", overShares, percent))
-  lines.push("- " + describe("reconciled.factor", factors, (value) => value.toFixed(3)))
+  lines.push(`- attribution raw estimate: ${number(stats.rawAttributionTokens)}`)
+  lines.push(`- ${describe("residual tokens (unknown mass)", positive, number)}`)
+  lines.push(`- ${describe("residual tokens (over-counted)", negative, number)}`)
+  lines.push(`- ${describe("residual share (unknown mass)", shares, percent)}`)
+  lines.push(`- ${describe("residual share (over-counted)", overShares, percent)}`)
+  lines.push(`- ${describe("reconciled.factor", factors, (value) => value.toFixed(3))}`)
   lines.push(
-    "- turns: " +
-      stats.turns +
-      ", reconciled " +
-      stats.reconciledTurns +
-      ", residual " +
-      stats.residualTurns +
-      ", tool-results above the whole window " +
-      stats.toolResultsAboveWindow
+    `- turns: ${stats.turns}, reconciled ${stats.reconciledTurns}, residual ${
+      stats.residualTurns
+    }, tool-results above the whole window ${stats.toolResultsAboveWindow}`,
   )
   return lines
 }
@@ -320,61 +261,37 @@ async function probeOne(sample, index) {
   const size = statSync(sample.file).size
   const { session, stats } = result
   const lines = []
-  lines.push("### " + sample.label + " — " + sample.file)
+  lines.push(`### ${sample.label} — ${sample.file}`)
   lines.push("")
   lines.push(
-    "- size " +
-      mb(size) +
-      ", parsed in " +
-      ms(elapsedMs) +
-      ", " +
-      stats.turns +
-      " turns, " +
-      stats.segmentFiles.length +
-      " segment files, " +
-      stats.childFiles.length +
-      " subagent files"
+    `- size ${mb(size)}, parsed in ${ms(elapsedMs)}, ${stats.turns} turns, ${
+      stats.segmentFiles.length
+    } segment files, ${stats.childFiles.length} subagent files`,
   )
   lines.push(
-    "- lines " +
-      number(stats.lines) +
-      " (invalid " +
-      number(stats.invalid) +
-      "), zstd frames " +
-      number(stats.frames) +
-      ", " +
-      mb(stats.bytes) +
-      " decompressed"
+    `- lines ${number(stats.lines)} (invalid ${number(stats.invalid)}), zstd frames ${number(stats.frames)}, ${mb(
+      stats.bytes,
+    )} decompressed`,
   )
   lines.push(
-    "- window " +
-      number(stats.windowSize ?? 0) +
-      ", tool schemas " +
-      (stats.sawToolSchemas ? "logged (partial set)" : "not logged") +
-      ", reasoning " +
-      number(stats.encryptedReasoningRecords) +
-      "/" +
-      number(stats.reasoningRecords) +
-      " encrypted"
+    `- window ${number(stats.windowSize ?? 0)}, tool schemas ${
+      stats.sawToolSchemas ? "logged (partial set)" : "not logged"
+    }, reasoning ${number(stats.encryptedReasoningRecords)}/${number(stats.reasoningRecords)} encrypted`,
   )
   const unpaired = unpairedByTool(session)
   lines.push(
-    "- tool calls " +
-      number(stats.toolCalls) +
-      ", paired " +
-      number(stats.pairedToolCalls) +
-      ", orphan results " +
-      number(stats.orphanToolResults) +
-      ", subagent threads " +
-      stats.subagentThreads.length +
-      (unpaired.length === 0
+    `- tool calls ${number(stats.toolCalls)}, paired ${number(stats.pairedToolCalls)}, orphan results ${number(
+      stats.orphanToolResults,
+    )}, subagent threads ${stats.subagentThreads.length}${
+      unpaired.length === 0
         ? ""
-        : ", unpaired by tool: " + unpaired.map(([name, count]) => name + "=" + count).join(", "))
+        : `, unpaired by tool: ${unpaired.map(([name, count]) => `${name}=${count}`).join(", ")}`
+    }`,
   )
   lines.push(...renderUsageTraps(stats))
   lines.push(...renderAttribution(stats, session))
   lines.push(...renderHighlight(session))
-  lines.push("- dataQuality: " + (session.dataQuality.join(", ") || "(none)"))
+  lines.push(`- dataQuality: ${session.dataQuality.join(", ") || "(none)"}`)
   lines.push("")
   lines.push(...renderCompactions(session))
   lines.push("")
@@ -388,16 +305,10 @@ async function runSamples(samples) {
   const out = [
     "# Codex context probe",
     "",
-    "shared table: " + CHAR_CALIBRATION_NOTE,
-    "codex override: " + CODEX_CALIBRATION_NOTE,
+    `shared table: ${CHAR_CALIBRATION_NOTE}`,
+    `codex override: ${CODEX_CALIBRATION_NOTE}`,
     "",
-    "corpus: " +
-      index.root +
-      " (" +
-      index.files.length +
-      " rollout files, " +
-      index.sessions.size +
-      " logical sessions)",
+    `corpus: ${index.root} (${index.files.length} rollout files, ${index.sessions.size} logical sessions)`,
     "",
   ]
   for (const sample of samples) {
@@ -405,10 +316,10 @@ async function runSamples(samples) {
       out.push(await probeOne(sample, index))
     } catch (error) {
       out.push(
-        "### " + sample.label + " — " + sample.file,
+        `### ${sample.label} — ${sample.file}`,
         "",
-        "FAILED: " + (error instanceof Error ? error.message : String(error)),
-        ""
+        `FAILED: ${error instanceof Error ? error.message : String(error)}`,
+        "",
       )
     }
   }
@@ -476,7 +387,7 @@ async function runCorpus(root) {
       const heap = process.memoryUsage().heapUsed
       if (heap > peakHeap && heap > heapBefore) {
         peakHeap = heap
-        peakHeapId = read.id + " " + (heap / (1024 * 1024)).toFixed(0) + " MB"
+        peakHeapId = `${read.id} ${(heap / (1024 * 1024)).toFixed(0)} MB`
       }
       for (const [name, count] of unpairedByTool(parsed))
         unpairedCalls.set(name, (unpairedCalls.get(name) ?? 0) + count)
@@ -539,129 +450,88 @@ async function runCorpus(root) {
   const out = []
   out.push("## Corpus run")
   out.push("")
-  out.push("- root " + index.root)
+  out.push(`- root ${index.root}`)
   out.push(
-    "- rollout files " +
-      number(index.files.length) +
-      " (" +
-      number(index.skipped.length) +
-      " skipped as non-session), logical sessions " +
-      number(index.sessions.size) +
-      ", failures " +
-      failures.length
+    `- rollout files ${number(index.files.length)} (${number(
+      index.skipped.length,
+    )} skipped as non-session), logical sessions ${number(index.sessions.size)}, failures ${failures.length}`,
   )
   out.push(
-    "- parsed " +
-      number(parsedFiles.size) +
-      "/" +
-      number(index.files.length) +
-      " rollout files in " +
-      number(reads.length) +
-      " reads, " +
-      number(missing.length) +
-      " never reached"
+    `- parsed ${number(parsedFiles.size)}/${number(index.files.length)} rollout files in ${number(
+      reads.length,
+    )} reads, ${number(missing.length)} never reached`,
   )
+  out.push(`- read ${mb(bytes)} compressed, ${mb(decompressed)} decompressed in ${number(frames)} zstd frames`)
+  out.push(`- lines ${number(lines)}, invalid ${number(invalid)}`)
   out.push(
-    "- read " + mb(bytes) + " compressed, " + mb(decompressed) + " decompressed in " + number(frames) + " zstd frames"
-  )
-  out.push("- lines " + number(lines) + ", invalid " + number(invalid))
-  out.push(
-    "- wall time " +
-      (elapsedMs / 1000).toFixed(2) +
-      " s, peak RSS " +
-      mb(rss) +
-      " (" +
-      (bytes / (1024 * 1024) / (elapsedMs / 1000)).toFixed(0) +
-      " MB/s)"
+    `- wall time ${(elapsedMs / 1000).toFixed(2)} s, peak RSS ${mb(rss)} (${(
+      bytes /
+      (1024 * 1024) /
+      (elapsedMs / 1000)
+    ).toFixed(0)} MB/s)`,
   )
   out.push("")
   out.push(
-    "- turns " +
-      number(turns) +
-      " (" +
-      number(turnsWithoutUsage) +
-      " without usage), usage records " +
-      number(requests) +
-      ", exact Σ input_tokens " +
-      number(exact) +
-      ", cached " +
-      number(cached) +
-      " (subset, not added)"
+    `- turns ${number(turns)} (${number(turnsWithoutUsage)} without usage), usage records ${number(
+      requests,
+    )}, exact Σ input_tokens ${number(exact)}, cached ${number(cached)} (subset, not added)`,
   )
   out.push(
-    "- sessions that log no token_usage_record at all: " +
-      number(noUsageSessions) +
-      " (their turns have no exact anchor)"
+    `- sessions that log no token_usage_record at all: ${number(noUsageSessions)} (their turns have no exact anchor)`,
   )
   out.push(
-    "- roots " +
-      number(usageByKind.root.reads) +
-      " reads (" +
-      number(usageByKind.root.withUsage) +
-      " with usage), subagent threads " +
-      number(usageByKind.child.reads) +
-      " (" +
-      number(usageByKind.child.withUsage) +
-      " with usage)"
+    `- roots ${number(usageByKind.root.reads)} reads (${number(
+      usageByKind.root.withUsage,
+    )} with usage), subagent threads ${number(usageByKind.child.reads)} (${number(
+      usageByKind.child.withUsage,
+    )} with usage)`,
   )
-  out.push("- largest retained heap after one read: " + peakHeapId)
-  out.push("- trap 1 cached added: " + number(naiveCached) + " = " + ratio(naiveCached, exact))
-  out.push("- trap 2 last_token_usage: " + number(lastToken) + " = " + ratio(lastToken, exact))
-  out.push("- trap 3 thread_token_usage: " + number(threadCumulative) + " = " + ratio(threadCumulative, exact))
-  out.push("- trap 4 turn_token_usage: " + number(turnCumulative) + " = " + ratio(turnCumulative, exact))
+  out.push(`- largest retained heap after one read: ${peakHeapId}`)
+  out.push(`- trap 1 cached added: ${number(naiveCached)} = ${ratio(naiveCached, exact)}`)
+  out.push(`- trap 2 last_token_usage: ${number(lastToken)} = ${ratio(lastToken, exact)}`)
+  out.push(`- trap 3 thread_token_usage: ${number(threadCumulative)} = ${ratio(threadCumulative, exact)}`)
+  out.push(`- trap 4 turn_token_usage: ${number(turnCumulative)} = ${ratio(turnCumulative, exact)}`)
   out.push(
-    "- tool calls " +
-      number(toolCalls) +
-      ", paired " +
-      number(paired) +
-      " (" +
-      percent(paired / (toolCalls || 1)) +
-      "), orphan results " +
-      number(orphans) +
-      (unpairedCalls.size === 0
+    `- tool calls ${number(toolCalls)}, paired ${number(paired)} (${percent(
+      paired / (toolCalls || 1),
+    )}), orphan results ${number(orphans)}${
+      unpairedCalls.size === 0
         ? ""
-        : ", unpaired by tool: " + [...unpairedCalls].map(([name, count]) => name + "=" + count).join(", "))
+        : `, unpaired by tool: ${[...unpairedCalls].map(([name, count]) => `${name}=${count}`).join(", ")}`
+    }`,
   )
-  out.push("- compactions " + number(compactions) + ", measured drops " + number(drops))
+  out.push(`- compactions ${number(compactions)}, measured drops ${number(drops)}`)
   out.push(
-    "- attribution raw estimate " +
-      number(raw) +
-      ", exact " +
-      number(exact) +
-      " (raw is a fraction of the prompt: the tool schemas are not in the log)"
+    `- attribution raw estimate ${number(raw)}, exact ${number(
+      exact,
+    )} (raw is a fraction of the prompt: the tool schemas are not in the log)`,
   )
   const positive = residual.filter((value) => value > 0)
   const negative = residual.filter((value) => value < 0)
-  out.push("- " + describe("residual tokens (unknown mass)", positive, number))
-  out.push("- " + describe("residual tokens (over-counted)", negative, number))
-  out.push("- " + describe("residual share (unknown mass)", shares, percent))
-  out.push("- " + describe("residual share (over-counted)", overShares, percent))
-  out.push("- " + describe("reconciled.factor", factors, (value) => value.toFixed(3)))
+  out.push(`- ${describe("residual tokens (unknown mass)", positive, number)}`)
+  out.push(`- ${describe("residual tokens (over-counted)", negative, number)}`)
+  out.push(`- ${describe("residual share (unknown mass)", shares, percent)}`)
+  out.push(`- ${describe("residual share (over-counted)", overShares, percent)}`)
+  out.push(`- ${describe("reconciled.factor", factors, (value) => value.toFixed(3))}`)
   out.push(
-    "- turns whose tool-results estimate alone exceeds the whole window (logged output is far larger than what was sent): " +
-      number(toolAboveWindow)
+    `- turns whose tool-results estimate alone exceeds the whole window (logged output is far larger than what was sent): ${number(
+      toolAboveWindow,
+    )}`,
   )
   const residualTotal = residualWithoutTools.tokens + residualWithTools.tokens
   out.push(
-    "- residual source: without a tool-definitions slice " +
-      number(residualWithoutTools.turns) +
-      " turns / " +
-      number(residualWithoutTools.tokens) +
-      " tokens (" +
-      percent(residualWithoutTools.tokens / (residualTotal || 1)) +
-      "); with one " +
-      number(residualWithTools.turns) +
-      " turns / " +
-      number(residualWithTools.tokens) +
-      " tokens"
+    `- residual source: without a tool-definitions slice ${number(residualWithoutTools.turns)} turns / ${number(
+      residualWithoutTools.tokens,
+    )} tokens (${percent(residualWithoutTools.tokens / (residualTotal || 1))}); with one ${number(
+      residualWithTools.turns,
+    )} turns / ${number(residualWithTools.tokens)} tokens`,
   )
   out.push("")
   out.push("### dataQuality tokens")
   out.push("")
   out.push("| token | sessions |")
   out.push("| --- | ---: |")
-  for (const [key, count] of [...quality].sort((a, b) => b[1] - a[1]).slice(0, 16))
-    out.push("| " + key + " | " + count + " |")
+  for (const [key, count] of [...quality].sort((a, b) => b[1] - a[1]).slice(0, 16)) out.push(`| ${key} | ${count} |`)
   out.push("")
   out.push("### plaintext subset: files are segments, not sessions")
   out.push("")
@@ -673,15 +543,9 @@ async function runCorpus(root) {
     groups.set(file.meta.sessionId, list)
   }
   out.push(
-    "- plaintext rollout files " +
-      number(plaintext.length) +
-      " → logical sessions " +
-      number(groups.size) +
-      " (all rollout files: " +
-      number(index.files.length) +
-      " → " +
-      number(index.sessions.size) +
-      ")"
+    `- plaintext rollout files ${number(plaintext.length)} → logical sessions ${number(
+      groups.size,
+    )} (all rollout files: ${number(index.files.length)} → ${number(index.sessions.size)})`,
   )
   out.push("")
   out.push("| session | plaintext files | segments | subagent threads | workdir |")
@@ -690,25 +554,13 @@ async function runCorpus(root) {
     const plan = index.sessions.get(id)
     const segments = plan === undefined ? files.length : plan.root.files.length
     const children = plan === undefined ? 0 : plan.children.length
-    out.push(
-      "| " +
-        id +
-        " | " +
-        files.length +
-        " | " +
-        segments +
-        " | " +
-        children +
-        " | …" +
-        String(plan?.workdir ?? "").slice(-28) +
-        " |"
-    )
+    out.push(`| ${id} | ${files.length} | ${segments} | ${children} | …${String(plan?.workdir ?? "").slice(-28)} |`)
   }
   out.push("")
   if (failures.length > 0) {
     out.push("### failures")
     out.push("")
-    for (const failure of failures.slice(0, 20)) out.push("- " + failure.id + ": " + failure.error)
+    for (const failure of failures.slice(0, 20)) out.push(`- ${failure.id}: ${failure.error}`)
   }
   return out.join("\n")
 }

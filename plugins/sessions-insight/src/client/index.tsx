@@ -17,12 +17,13 @@
  * @module @cyrusdoyle/dsh-sessions-insight/client
  */
 
-import { registerLocale, registerPanel, type ClientContext } from "@cyrusdoyle/dsh-plugin-kit-client"
+import { type ClientContext, registerLocale, registerPanel } from "@cyrusdoyle/dsh-plugin-kit-client"
 import type { ReactElement } from "react"
-import { LOCALE_NS, en, setRuntimeTranslate, t, zh } from "./locale.ts"
-import { ContextInsightPanel } from "./ui/panel.tsx"
-import { createApi } from "./api.ts"
+
+import { createApi, preloadSessionLists } from "./api.ts"
+import { en, LOCALE_NS, setRuntimeTranslate, t, zh } from "./locale.ts"
 import { injectStyles } from "./styles.ts"
+import { ContextInsightPanel } from "./ui/panel.tsx"
 
 export type { ClientContext, Dispose, LocaleFace, SlotsFace } from "@cyrusdoyle/dsh-plugin-kit-client"
 
@@ -91,7 +92,7 @@ export function apply(ctx: ClientContext & { get?: (name: string) => unknown }):
       () => () => {
         globalThis.__dshContextInsightApplied = undefined
       },
-      "sessions-insight: apply claim"
+      "sessions-insight: apply claim",
     )
   }
 
@@ -100,6 +101,18 @@ export function apply(ctx: ClientContext & { get?: (name: string) => unknown }):
   injectStyles()
 
   registerLocale(ctx, LOCALE_NS, { zh, en }, setRuntimeTranslate)
+
+  const preload = new AbortController()
+  const timer = setTimeout(() => {
+    void preloadSessionLists(createApi(), preload.signal).catch(() => undefined)
+  }, 0)
+  ctx.effect?.(
+    () => () => {
+      clearTimeout(timer)
+      preload.abort()
+    },
+    "sessions-insight: preload lists",
+  )
 
   try {
     registerPanel(ctx, {

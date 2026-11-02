@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest"
 import type { Session, Turn } from "@cyrusdoyle/dsh-session-contract"
-import { searchSessions } from "../src/host/views/search.ts"
+import { describe, expect, it } from "vitest"
+
 import type { ParsedSession, SearchCandidate, SessionSource, SourceFailure } from "../src/host/sources/source.ts"
+import { searchSessions } from "../src/host/views/search.ts"
 import type { ContextSource, SegmentInfo, SessionSummary, SourceStatus, WorkdirEntry } from "../src/protocol.ts"
-import { parseSearchQuery, isSearchValue } from "../src/protocol.ts"
+import { isSearchValue, parseSearchQuery } from "../src/protocol.ts"
 
 const WORKDIR = "/Users/example/project"
 
@@ -124,7 +125,7 @@ describe("cross-source search", () => {
     ])
     const value = await searchSessions(
       { sources: [claude, dsh] },
-      { q: "shard", sources: ["claude", "dsh"], limit: 30, tier: "deep", cursor: 0 }
+      { q: "shard", sources: ["claude", "dsh"], limit: 30, tier: "deep", cursor: 0 },
     )
     expect(isSearchValue(value)).toBe(true)
     expect(value.hits.map((hit) => `${hit.source}:${hit.sessionId}:${hit.turnIndex}`)).toEqual([
@@ -147,7 +148,7 @@ describe("cross-source search", () => {
     ])
     const value = await searchSessions(
       { sources: [source] },
-      { q: "shard", sources: ["claude"], limit: 1, tier: "deep", cursor: 0 }
+      { q: "shard", sources: ["claude"], limit: 1, tier: "deep", cursor: 0 },
     )
     expect(value.hits).toHaveLength(1)
     expect(value.truncated).toBe(true)
@@ -163,11 +164,11 @@ describe("cross-source search", () => {
         session("claude", "c2", [turn(1, "shard two", "b")], { updatedAt: 20 }),
         session("claude", "c3", [turn(1, "shard three", "c")], { updatedAt: 10 }),
       ],
-      { delayMs: PARSE_COST_MS }
+      { delayMs: PARSE_COST_MS },
     )
     const value = await searchSessions(
       { sources: [source], deadlineMs: 0 },
-      { q: "shard", sources: ["claude"], limit: 30, tier: "deep", cursor: 0 }
+      { q: "shard", sources: ["claude"], limit: 30, tier: "deep", cursor: 0 },
     )
     expect(value.truncated).toBe(true)
     expect(value.scanned).toBe(0)
@@ -180,7 +181,7 @@ describe("cross-source search", () => {
     const broken = new StaticSource("codex", [], { failDetail: "zstd frame exploded" })
     const value = await searchSessions(
       { sources: [good, broken] },
-      { q: "shard", sources: ["claude", "codex"], limit: 30, tier: "deep", cursor: 0 }
+      { q: "shard", sources: ["claude", "codex"], limit: 30, tier: "deep", cursor: 0 },
     )
     expect(value.hits).toHaveLength(1)
     expect(value.failures).toHaveLength(1)
@@ -208,12 +209,12 @@ describe("cross-source search", () => {
     const source = new StaticSource("claude", [withTool])
     const byInput = await searchSessions(
       { sources: [source] },
-      { q: "pnpm test", sources: ["claude"], limit: 5, tier: "deep", cursor: 0 }
+      { q: "pnpm test", sources: ["claude"], limit: 5, tier: "deep", cursor: 0 },
     )
     expect(byInput.hits[0]?.field).toBe("tool")
     const byOutput = await searchSessions(
       { sources: [source] },
-      { q: "secret-output-marker", sources: ["claude"], limit: 5, tier: "deep", cursor: 0 }
+      { q: "secret-output-marker", sources: ["claude"], limit: 5, tier: "deep", cursor: 0 },
     )
     expect(byOutput.hits).toHaveLength(0)
   })

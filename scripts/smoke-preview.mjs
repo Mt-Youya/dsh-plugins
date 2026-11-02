@@ -8,7 +8,8 @@
  * this script only starts the dev server, reads them, and decides.
  */
 import { spawnSync } from "node:child_process"
-import { CHROME, ORIGIN, ensureServer } from "./preview-server.mjs"
+
+import { CHROME, ensureServer, ORIGIN } from "./preview-server.mjs"
 
 function measure(theme) {
   const url = `${ORIGIN}/?theme=${theme}&probe=1`
@@ -23,7 +24,7 @@ function measure(theme) {
       "--dump-dom",
       url,
     ],
-    { encoding: "utf8", timeout: 60_000 }
+    { encoding: "utf8", timeout: 60_000 },
   )
   if (run.status !== 0) throw new Error(`chrome exited ${run.status} for ${theme}`)
   const title = run.stdout.match(/<title>([^<]*)<\/title>/)?.[1] ?? ""

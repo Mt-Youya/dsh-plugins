@@ -14,9 +14,11 @@
  * @module @cyrusdoyle/dsh-sessions-insight/host/search
  */
 
+import type { Session } from "@cyrusdoyle/dsh-session-contract"
+
 import type { SearchHit, SearchQuery, SearchValue, SourceProblem } from "../../protocol.ts"
 import { SEARCH_DEADLINE_MS } from "../../protocol.ts"
-import type { Session } from "@cyrusdoyle/dsh-session-contract"
+import type { MetadataStore } from "../management/store.ts"
 import type { SearchCandidate, SessionSource } from "../sources/source.ts"
 import { cleanTitle, snippetAround } from "../sources/source.ts"
 
@@ -28,6 +30,7 @@ export interface SearchDeps {
   sources: readonly SessionSource[]
   /** Budget override; tests use a tiny value to force truncation. */
   deadlineMs?: number
+  metadata?: MetadataStore
 }
 
 function problemOf(source: SessionSource, error: unknown): SourceProblem {
@@ -48,7 +51,7 @@ interface Queued {
  */
 async function collect(
   deps: SearchDeps,
-  query: SearchQuery
+  query: SearchQuery,
 ): Promise<{ queue: Queued[]; failures: SourceProblem[]; failed: Set<string> }> {
   const inScope = deps.sources.filter((source) => query.sources.includes(source.id))
   const failures: SourceProblem[] = []
@@ -64,11 +67,19 @@ async function collect(
         }
         return { source, candidates: [] as SearchCandidate[] }
       }
-    })
+    }),
   )
+  const metadata = await deps.metadata?.read()
+  const aliases = new Map(metadata?.entries.map((entry) => [`${entry.source}:${entry.id}`, entry.title]))
   const queue: Queued[] = []
   for (const listing of listings) {
-    for (const candidate of listing.candidates) queue.push({ source: listing.source, candidate })
+    for (const candidate of listing.candidates) {
+      const manualTitle = aliases.get(`${listing.source.id}:${candidate.id}`)
+      queue.push({
+        source: listing.source,
+        candidate: manualTitle === undefined ? candidate : { ...candidate, manualTitle },
+      })
+    }
   }
   queue.sort((left, right) => right.candidate.updatedAt - left.candidate.updatedAt)
   return { queue, failures, failed }
@@ -88,8 +99,9 @@ async function fastSearch(deps: SearchDeps, query: SearchQuery): Promise<SearchV
     if (hits.length >= query.limit) break
     const candidate = item.candidate
     const fields: string[] = []
-    const title = cleanTitle(candidate.title, candidate.id)
+    const title = candidate.manualTitle ?? cleanTitle(candidate.title, candidate.id)
     if (title !== undefined) fields.push(title)
+    if (candidate.manualTitle !== undefined && candidate.title !== undefined) fields.push(candidate.title)
     if (candidate.firstInput !== undefined) fields.push(candidate.firstInput)
     if (candidate.workdir !== "") fields.push(candidate.workdir)
     const matched = fields.find((field) => field.toLowerCase().includes(needle))
@@ -151,7 +163,7 @@ function firstHit(
   session: Session,
   source: SessionSource,
   candidate: SearchCandidate,
-  needle: string
+  needle: string,
 ): SearchHit | undefined {
   for (const turn of session.turns) {
     const user = turn.userInput.join(" ")
@@ -176,7 +188,7 @@ function firstHit(
         snippet,
         tier: "deep",
       }
-      const title = cleanTitle(candidate.title ?? session.title, session.id)
+      const title = candidate.manualTitle ?? cleanTitle(candidate.title ?? session.title, session.id)
       if (title !== undefined) hit.title = title
       if (candidate.firstInput !== undefined) hit.firstInput = candidate.firstInput
       return hit
@@ -211,6 +223,22 @@ async function deepSearch(deps: SearchDeps, query: SearchQuery): Promise<SearchV
     const item = queue[cursor]
     cursor += 1
     if (item === undefined) break
+    const alias = item.candidate.manualTitle
+    const aliasSnippet = alias === undefined ? undefined : snippetAround(alias, needle)
+    if (aliasSnippet !== undefined) {
+      hits.push({
+        source: item.source.id,
+        sessionId: item.candidate.id,
+        workdir: item.candidate.workdir,
+        turnIndex: 0,
+        at: item.candidate.updatedAt,
+        field: "metadata",
+        snippet: aliasSnippet,
+        tier: "deep",
+        title: alias,
+      })
+      continue
+    }
     let parsed
     try {
       parsed = await item.source.detail(item.candidate.id)

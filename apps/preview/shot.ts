@@ -48,12 +48,12 @@ function openSession(): string | undefined {
 async function stageSession(source: "claude" | "dsh"): Promise<void> {
   const row = await until(
     () => panel()?.querySelector<HTMLButtonElement>(`button.ci-row[data-key^="${source}:"]`),
-    `no ${source} session in the tree`
+    `no ${source} session in the tree`,
   )
   row.click()
   await until(
     () => row.dataset["key"] === `${source}:${openSession()}` && row.dataset["selected"] === "true",
-    `${source} session never opened`
+    `${source} session never opened`,
   )
 }
 
@@ -64,7 +64,7 @@ async function stageSearch(): Promise<void> {
   // Scoped to the dialog: the project filter is an input[type=search] too.
   const input = await until(
     () => document.querySelector<HTMLInputElement>('[role="dialog"] input[type="search"]'),
-    "palette never opened"
+    "palette never opened",
   )
   // React tracks the value through the native setter; assigning `.value`
   // directly would be invisible to its onChange.
@@ -73,7 +73,7 @@ async function stageSearch(): Promise<void> {
   input.dispatchEvent(new Event("input", { bubbles: true }))
   await until(
     () => document.querySelectorAll('[role="dialog"] [role="listbox"] li').length >= 3,
-    "search found fewer than 3 hits"
+    "search found fewer than 3 hits",
   )
 }
 
@@ -82,12 +82,12 @@ async function stageHandoff(): Promise<void> {
   await stageSession("claude")
   const button = await until(
     () => panel()?.querySelector<HTMLButtonElement>("article header button"),
-    "handoff button missing"
+    "handoff button missing",
   )
   button.click()
   await until(
     () => document.querySelector<HTMLTextAreaElement>('[role="dialog"] textarea')?.value.trim(),
-    "handoff brief never rendered"
+    "handoff brief never rendered",
   )
 }
 
@@ -109,7 +109,7 @@ export function stageShot(scene: string): void {
       document.title = "shot:ready"
     },
     (error: unknown) => {
-      document.title = "shot:failed:" + (error instanceof Error ? error.message : String(error))
-    }
+      document.title = `shot:failed:${error instanceof Error ? error.message : String(error)}`
+    },
   )
 }

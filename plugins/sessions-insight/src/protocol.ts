@@ -9,4 +9,7 @@
  */
 
 export * from "./protocol/paths.ts"
+export * from "./protocol/management.ts"
+export * from "./protocol/insights.ts"
+export * from "./protocol/ai-title.ts"
 export * from "@cyrusdoyle/dsh-session-contract"

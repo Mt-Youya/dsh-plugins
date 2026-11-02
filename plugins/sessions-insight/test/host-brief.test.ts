@@ -1,11 +1,12 @@
-import { describe, expect, it } from "vitest"
 import type { Session, ToolCall, Turn } from "@cyrusdoyle/dsh-session-contract"
-import { BRIEF_LIMIT, NO_RECORD, extractBrief } from "../src/host/views/brief.ts"
+import { describe, expect, it } from "vitest"
+
+import { BRIEF_LIMIT, extractBrief, NO_RECORD } from "../src/host/views/brief.ts"
 
 const WORKDIR = "/Users/example/project"
 
 function call(over: Partial<ToolCall> & { name: string }): ToolCall {
-  return { id: "call-" + over.name + String(Math.random()), status: "ok", startedAt: 1, input: {}, ...over }
+  return { id: `call-${over.name}${String(Math.random())}`, status: "ok", startedAt: 1, input: {}, ...over }
 }
 
 function turn(index: number, user: string, assistant: string, calls: ToolCall[] = []): Turn {
@@ -55,7 +56,7 @@ const RICH = session([
       call({ name: "Bash", input: { command: "pnpm test --filter handoff" } }),
       call({ name: "Bash", input: { command: "ls -la" } }),
       call({ name: "Bash", input: { command: "pnpm typecheck" }, status: "error", output: "error TS2345: bad type" }),
-    ]
+    ],
   ),
 ])
 
@@ -112,10 +113,9 @@ describe("handoff brief extraction", () => {
   })
 
   it("stays inside the 2000 character contract", () => {
-    const longPath = (index: number): string =>
-      "/Users/example/project/" + "deeply/".repeat(20) + "file-" + String(index) + ".ts"
+    const longPath = (index: number): string => `/Users/example/project/${"deeply/".repeat(20)}file-${String(index)}.ts`
     const calls = Array.from({ length: 12 }, (_, index) =>
-      call({ name: "Write", input: { file_path: longPath(index) } })
+      call({ name: "Write", input: { file_path: longPath(index) } }),
     )
     const long = session([
       turn(
@@ -123,9 +123,9 @@ describe("handoff brief extraction", () => {
         "x".repeat(500),
         Array.from(
           { length: 8 },
-          (_, index) => `- 决定采用方案 ${String(index)} 并在较长的一行里记录它的完整理由`
+          (_, index) => `- 决定采用方案 ${String(index)} 并在较长的一行里记录它的完整理由`,
         ).join("\n"),
-        calls
+        calls,
       ),
     ])
     const brief = extractBrief(long)

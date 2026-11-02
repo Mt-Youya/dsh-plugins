@@ -9,8 +9,9 @@
  * @module @cyrusdoyle/dsh-sessions-insight/client/tool-detail
  */
 
-import type { ReactElement } from "react"
 import type { ToolCall } from "@cyrusdoyle/dsh-session-contract"
+import type { ReactElement } from "react"
+
 import { clip, formatDuration } from "../format.ts"
 import { t } from "../locale.ts"
 import { Glyph } from "./icons.tsx"
@@ -110,7 +111,7 @@ function DiffBlock({ before, after }: { before: string; after: string }): ReactE
   const added = after === "" ? [] : after.split("\n")
   return (
     <div>
-      <span className="block mb-1 text-[10.5px] text-fg-dim">{t("tools.diff")}</span>
+      <span className="mb-1 block text-[10.5px] text-fg-dim">{t("tools.diff")}</span>
       <pre className="ci-pre max-h-55">
         {removed.map((line, index) => (
           <span
@@ -166,10 +167,10 @@ function ToolEntry({ call }: { call: ToolCall }): ReactElement {
   return (
     <li className={failed ? "rounded-lg border border-err/40 bg-err/5" : "rounded-lg border border-line-soft bg-bg"}>
       <details className="ci-fold" open={failed}>
-        <summary className="flex items-center gap-2 min-w-0 px-2.5 py-2 text-[12px]">
+        <summary className="flex min-w-0 items-center gap-2 px-2.5 py-2 text-[12px]">
           <Glyph name="chevron" size={11} className="ci-chevron shrink-0 text-fg-3" />
-          <span className="font-mono font-semibold shrink-0">{call.name}</span>
-          <span className={STATUS_SKIN[status] + " shrink-0"}>{statusLabel}</span>
+          <span className="shrink-0 font-mono font-semibold">{call.name}</span>
+          <span className={`${STATUS_SKIN[status]} shrink-0`}>{statusLabel}</span>
           {fact === undefined ? null : (
             <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-fg-dim" title={fact.body}>
               {fact.body.split("\n")[0]}
@@ -182,14 +183,14 @@ function ToolEntry({ call }: { call: ToolCall }): ReactElement {
         <div className="flex flex-col gap-2 px-2.5 pb-2.5">
           {fact === undefined ? null : (
             <div>
-              <span className="block mb-1 text-[10.5px] text-fg-dim">{fact.label}</span>
+              <span className="mb-1 block text-[10.5px] text-fg-dim">{fact.label}</span>
               <pre className="ci-pre">{clip(fact.body, PREVIEW_CHARS)}</pre>
             </div>
           )}
           {before === undefined && after === undefined ? null : <DiffBlock before={before ?? ""} after={after ?? ""} />}
           {output === "" ? null : (
             <div>
-              <span className={failed ? "block mb-1 text-[10.5px] text-err" : "block mb-1 text-[10.5px] text-fg-dim"}>
+              <span className={failed ? "mb-1 block text-[10.5px] text-err" : "mb-1 block text-[10.5px] text-fg-dim"}>
                 {failed ? `${t("tools.output")} · ${t("tools.status.error")}` : t("tools.output")}
               </span>
               <pre className="ci-pre max-h-80">{clip(output, PREVIEW_CHARS * 4)}</pre>

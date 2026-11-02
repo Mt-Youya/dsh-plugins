@@ -18,15 +18,16 @@
  * @module @cyrusdoyle/dsh-sessions-insight/client/turn-list
  */
 
-import type { KeyboardEvent, ReactElement } from "react"
 import type { CompactionPoint, Turn } from "@cyrusdoyle/dsh-session-contract"
+import type { KeyboardEvent, ReactElement } from "react"
+
 import type { CostTurnValue } from "../../protocol.ts"
 import { compactTokens, formatShare, formatShortTime, formatUsd } from "../format.ts"
 import { t } from "../locale.ts"
+import { buildTurnRows } from "../state/turn-rows.ts"
 import { Glyph } from "./icons.tsx"
 import { Chip } from "./primitives.tsx"
-import { StackedBar, barLayout } from "./stacked-bar.tsx"
-import { buildTurnRows } from "../state/turn-rows.ts"
+import { barLayout, StackedBar } from "./stacked-bar.tsx"
 
 /**
  * One turn's compaction boundaries, collapsed.
@@ -47,7 +48,7 @@ function CompactionsRow({ points, turn }: { points: CompactionPoint[]; turn: Tur
   return (
     <li className="my-1 px-1 text-[11px] text-warn" data-turn={turn.index}>
       <details className="ci-fold rounded-lg border border-dashed border-warn/50 bg-warn/6">
-        <summary className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-2.5 py-1.5 min-w-0">
+        <summary className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 px-2.5 py-1.5">
           <Glyph name="chevron" size={10} className="ci-chevron" />
           <span className="font-semibold">{t("compactions.count", { count: points.length })}</span>
           <span className="font-mono tabular-nums">{range}</span>
@@ -55,7 +56,7 @@ function CompactionsRow({ points, turn }: { points: CompactionPoint[]; turn: Tur
             {first?.replacedHistory === true ? t("turns.compactionReplaced") : t("turns.compactionContinued")}
           </span>
         </summary>
-        <ul className="m-0 px-2.5 pb-1.5 list-none text-fg-dim">
+        <ul className="m-0 list-none px-2.5 pb-1.5 text-fg-dim">
           {points.map((point, order) => (
             <li className="flex flex-wrap gap-2 py-0.5" key={`${String(point.at)}-${String(order)}`}>
               <span className="font-mono">{formatShortTime(point.at)}</span>
@@ -84,9 +85,9 @@ function CompactionsRow({ points, turn }: { points: CompactionPoint[]; turn: Tur
  * @param cost - that turn's priced line.
  */
 function costTip(index: number, cost: CostTurnValue): string {
-  const rate = cost.cacheHitRate === null ? "—" : String(Math.round(cost.cacheHitRate * 100)) + "%"
+  const rate = cost.cacheHitRate === null ? "—" : `${String(Math.round(cost.cacheHitRate * 100))}%`
   const line = t("cost.turnTip", { index, model: cost.model ?? "—", rate })
-  return cost.provisional === true ? line + " · " + t("cost.provisional") : line
+  return cost.provisional === true ? `${line} · ${t("cost.provisional")}` : line
 }
 
 /**
@@ -175,7 +176,7 @@ function TurnRow({
                   : t("turns.reconciled", { factor: turn.attribution.reconciled.factor.toFixed(3) })
               }
             >
-              {turn.attribution.reconciled === undefined ? "" : "×" + turn.attribution.reconciled.factor.toFixed(2)}
+              {turn.attribution.reconciled === undefined ? "" : `×${turn.attribution.reconciled.factor.toFixed(2)}`}
             </span>
             <span className="flex min-w-0 items-center gap-1.5">
               {turn.subagents.length === 0 ? null : (
@@ -246,7 +247,7 @@ export function TurnList({
   }
   return (
     <ul
-      className="m-0 flex flex-col gap-0.5 p-1.5 list-none"
+      className="m-0 flex list-none flex-col gap-0.5 p-1.5"
       role="list"
       aria-label={t("turns.title")}
       style={{ ["--ci-time-w" as string]: timeWidth }}

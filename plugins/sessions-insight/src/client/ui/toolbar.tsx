@@ -10,6 +10,7 @@
  */
 
 import type { ReactElement } from "react"
+
 import type { SourceStatus } from "../../protocol.ts"
 import { t } from "../locale.ts"
 import { BrandMark, Glyph, SOURCE_MARKS, SourceIcon } from "./icons.tsx"
@@ -35,7 +36,7 @@ export function reasonText(reason: string | undefined): string | undefined {
  */
 function SourceStrip({ sources }: { sources: SourceStatus[] }): ReactElement {
   return (
-    <ul className="hidden @4xl:flex items-center gap-1.5 m-0 p-0 list-none min-w-0" aria-label={t("sources.title")}>
+    <ul className="m-0 hidden min-w-0 list-none items-center gap-1.5 p-0 @4xl:flex" aria-label={t("sources.title")}>
       {sources.map((entry) => {
         const mark = SOURCE_MARKS[entry.source]
         const tip = entry.available
@@ -46,8 +47,8 @@ function SourceStrip({ sources }: { sources: SourceStatus[] }): ReactElement {
             key={entry.source}
             className={
               entry.available
-                ? "inline-flex items-center gap-1.5 h-6 rounded-full border border-line-soft bg-bg-1 ps-1.5 pe-2 text-[11px] whitespace-nowrap"
-                : "inline-flex items-center gap-1.5 h-6 rounded-full border border-dashed border-line ps-1.5 pe-2 text-[11px] whitespace-nowrap opacity-60"
+                ? "inline-flex h-6 items-center gap-1.5 rounded-full border border-line-soft bg-bg-1 ps-1.5 pe-2 text-[11px] whitespace-nowrap"
+                : "inline-flex h-6 items-center gap-1.5 rounded-full border border-dashed border-line ps-1.5 pe-2 text-[11px] whitespace-nowrap opacity-60"
             }
             title={tip}
           >
@@ -89,7 +90,7 @@ export function Toolbar({
   onRefresh: () => void
 }): ReactElement {
   return (
-    <header className="flex items-center gap-3 h-12 shrink-0 px-3 border-b border-line-soft bg-bg min-w-0">
+    <header className="flex h-12 min-w-0 shrink-0 items-center gap-3 border-b border-line-soft bg-bg px-3">
       <button
         type="button"
         className="ci-icon-btn"
@@ -100,12 +101,12 @@ export function Toolbar({
       >
         <Glyph name="sidebar" size={15} />
       </button>
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex min-w-0 items-center gap-2">
         <BrandMark size={24} />
         <h1 className="m-0 text-[13.5px] font-semibold whitespace-nowrap">{t("entry.label")}</h1>
       </div>
       <SourceStrip sources={sources} />
-      <div className="ms-auto flex items-center gap-1.5 min-w-0">
+      <div className="ms-auto flex min-w-0 items-center gap-1.5">
         <button type="button" className="ci-search w-[clamp(160px,28cqw,280px)]" onClick={onSearch}>
           <Glyph name="search" size={13} />
           <span className="flex-1 truncate">{t("search.trigger")}</span>

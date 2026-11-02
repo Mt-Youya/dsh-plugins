@@ -22,51 +22,30 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { ReactElement } from "react"
+
 import type {
-  ContextSource,
   CostTurnValue,
-  CostValue,
-  SessionsValue,
+  SessionMetadataValue,
   SessionSummary,
   SourceProblem,
   SourceStatus,
   WorkdirEntry,
-  WorkdirsValue,
 } from "../../protocol.ts"
 import type { Api, ApiFailure } from "../api.ts"
 import { createApi, failureText } from "../api.ts"
 import { compactTokens } from "../format.ts"
 import { LOCALE_NS, t } from "../locale.ts"
+import { clientListCache } from "../state/list-cache.ts"
+import { applySessionMetadata, sameSession, useSessionDetail } from "../state/use-session-detail.ts"
+import type { SessionRef } from "../state/use-session-detail.ts"
 import { HandoffDialog } from "./handoff.tsx"
 import { ProjectTree } from "./project-tree.tsx"
 import { SearchPalette, type SearchTarget } from "./search-palette.tsx"
-import { SessionPane, type LoadedSession } from "./session-pane.tsx"
+import { SessionPane } from "./session-pane.tsx"
 import { EmptyBlock, ErrorBlock, Notice, SessionSkeleton, TreeSkeleton } from "./states.tsx"
 import { Toolbar } from "./toolbar.tsx"
 
-/**
- * Last successful list answers, kept at module scope.
- *
- * Remounting the panel (switching away and back) must not look like a cold
- * start: the cached rows paint on the first frame and a background refresh
- * updates them. The Host does the same thing server-side with its TTL cache, so
- * the two are stale-while-revalidate end to end.
- */
-const LIST_CACHE: {
-  workdirs?: WorkdirsValue
-  sessions: Map<string, SessionsValue>
-} = { sessions: new Map() }
-
-/** Turns fetched per request; the strip appends one page at a time. */
-export const PAGE_SIZE = 40
-
-/** A session's identity across three corpora. */
-interface SessionRef {
-  source: ContextSource
-  id: string
-  /** Needed by the tree to keep the owning project open; absent when unknown. */
-  workdir?: string
-}
+export { PAGE_SIZE } from "../state/use-session-detail.ts"
 
 type Boot =
   | { kind: "loading" }
@@ -78,12 +57,6 @@ type SessionListState =
   | { kind: "loading"; workdir: string }
   | { kind: "failed"; workdir: string; failure: ApiFailure }
   | { kind: "ready"; workdir: string; sessions: SessionSummary[]; failures: SourceProblem[] }
-
-type DetailState =
-  | { kind: "idle" }
-  | { kind: "loading"; ref: SessionRef }
-  | { kind: "failed"; ref: SessionRef; failure: ApiFailure }
-  | ({ kind: "ready"; ref: SessionRef } & LoadedSession)
 
 /**
  * The root's own box, as an inline style.
@@ -121,17 +94,36 @@ export function ContextInsightPanel({
   onOpenSession,
 }: { onOpenSession?: (id: string) => void | Promise<void> } = {}): ReactElement {
   const api: Api = useMemo(() => createApi(), [])
-  const [boot, setBoot] = useState<Boot>({ kind: "loading" })
-  const [workdir, setWorkdir] = useState<string | null>(null)
+  const cache = clientListCache()
+  const [boot, setBoot] = useState<Boot>(() =>
+    cache.sources === undefined || cache.workdirs === undefined
+      ? { kind: "loading" }
+      : {
+          kind: "ready",
+          sources: cache.sources.sources,
+          workdirs: cache.workdirs.workdirs,
+          failures: cache.workdirs.failures,
+        },
+  )
+  const [workdir, setWorkdir] = useState<string | null>(() => cache.workdirs?.workdirs[0]?.workdir ?? null)
   const [selected, setSelected] = useState<SessionRef | null>(null)
   const [pendingJump, setPendingJump] = useState<{ ref: SessionRef; turn: number } | null>(null)
   const [sessionList, setSessionList] = useState<SessionListState>({ kind: "idle" })
-  const [detail, setDetail] = useState<DetailState>({ kind: "idle" })
-  const [selectedTurn, setSelectedTurn] = useState<number | null>(null)
-  const [toolsExpanded, setToolsExpanded] = useState(false)
+  const {
+    detail,
+    cost,
+    selectedTurn,
+    setSelectedTurn,
+    toolsExpanded,
+    setToolsExpanded,
+    loadMore,
+    jumpTurn,
+    overlaySession,
+    onMetadataChanged: updateDetailMetadata,
+  } = useSessionDetail(api, selected)
   const [reloadToken, setReloadToken] = useState(0)
+  const [listRevision, setListRevision] = useState(0)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [cost, setCost] = useState<CostValue | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [handoffFor, setHandoffFor] = useState<SessionRef | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -157,11 +149,18 @@ export function ContextInsightPanel({
     setBoot((current) => (current.kind === "ready" ? current : { kind: "loading" }))
     setReading(true)
     const refresh = reloadToken > 0
-    void Promise.all([api.sources(controller.signal), api.workdirs(controller.signal, refresh)]).then(
-      ([sources, workdirs]) => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const read = (forced: boolean): void => {
+      const request = forced
+        ? api
+            .workdirs(controller.signal, true)
+            .then(async (workdirs) => [await api.sources(controller.signal), workdirs] as const)
+        : Promise.all([api.sources(controller.signal), api.workdirs(controller.signal)])
+      void request.then(([sources, workdirs]) => {
         if (controller.signal.aborted) return
         setReading(false)
         if (!sources.ok) {
+          if (sources.error === "aborted" || (cache.workdirs !== undefined && cache.sources !== undefined)) return
           setBoot({
             kind: "failed",
             error: sources.error,
@@ -170,6 +169,7 @@ export function ContextInsightPanel({
           return
         }
         if (!workdirs.ok) {
+          if (workdirs.error === "aborted" || (cache.workdirs !== undefined && cache.sources !== undefined)) return
           setBoot({
             kind: "failed",
             error: workdirs.error,
@@ -177,8 +177,9 @@ export function ContextInsightPanel({
           })
           return
         }
-        LIST_CACHE.workdirs = workdirs.value
+        if (forced) setListRevision((current) => current + 1)
         setRefreshing(workdirs.value.refreshing === true)
+        if (workdirs.value.refreshing) timer = setTimeout(() => read(false), 500)
         setBoot({
           kind: "ready",
           sources: sources.value.sources,
@@ -189,14 +190,16 @@ export function ContextInsightPanel({
           if (current !== null && workdirs.value.workdirs.some((row) => row.workdir === current)) return current
           return workdirs.value.workdirs[0]?.workdir ?? null
         })
-      }
-    )
+      })
+    }
+    read(refresh)
     return () => {
       controller.abort()
+      clearTimeout(timer)
       setRefreshing(false)
       setReading(false)
     }
-  }, [api, reloadToken])
+  }, [api, reloadToken, cache])
 
   // Sessions for the selected workdir, merged across sources.
   useEffect(() => {
@@ -205,95 +208,78 @@ export function ContextInsightPanel({
       return
     }
     const controller = new AbortController()
-    setSessionList({ kind: "loading", workdir })
-    void api.sessions(workdir, controller.signal).then((result) => {
-      if (controller.signal.aborted) return
-      if (!result.ok) {
-        setSessionList({ kind: "failed", workdir, failure: result })
-        return
-      }
-      setSessionList({ kind: "ready", workdir, sessions: result.value.sessions, failures: result.value.failures })
-      setSelected((current) => {
-        const rows = result.value.sessions
-        if (
-          pendingJump !== null &&
-          rows.some((row) => row.id === pendingJump.ref.id && row.source === pendingJump.ref.source)
-        ) {
-          return pendingJump.ref
+    const cached = cache.sessions.get(workdir)
+    setSessionList(
+      cached === undefined
+        ? { kind: "loading", workdir }
+        : { kind: "ready", workdir, sessions: cached.sessions, failures: cached.failures },
+    )
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const read = (): void => {
+      void api.sessions(workdir, controller.signal).then((result) => {
+        if (controller.signal.aborted) return
+        if (!result.ok) {
+          if (result.error === "aborted" || cached !== undefined) return
+          setSessionList({ kind: "failed", workdir, failure: result })
+          return
         }
-        if (current !== null && rows.some((row) => row.id === current.id && row.source === current.source))
-          return current
-        const first = rows[0]
-        return first === undefined ? null : { source: first.source, id: first.id }
+        setSessionList({
+          kind: "ready",
+          workdir,
+          sessions: result.value.sessions.map(overlaySession),
+          failures: result.value.failures,
+        })
+        if (result.value.refreshing) timer = setTimeout(read, 500)
+        setSelected((current) => {
+          const rows = result.value.sessions
+          if (
+            pendingJump !== null &&
+            rows.some((row) => row.id === pendingJump.ref.id && row.source === pendingJump.ref.source)
+          ) {
+            return pendingJump.ref
+          }
+          if (current !== null && rows.some((row) => row.id === current.id && row.source === current.source))
+            return current
+          const first = rows[0]
+          return first === undefined ? null : { source: first.source, id: first.id }
+        })
       })
-    })
+    }
+    read()
     return () => {
       controller.abort()
+      clearTimeout(timer)
     }
-  }, [api, workdir, reloadToken, pendingJump])
+  }, [api, workdir, listRevision, pendingJump, cache, overlaySession])
 
-  // One session's first page.
+  // Search waits for page zero before reading the adjoining prefix to its index.
+  const readyRef = detail.kind === "ready" ? detail.ref : null
   useEffect(() => {
-    if (selected === null) {
-      setDetail({ kind: "idle" })
-      return
-    }
-    const controller = new AbortController()
-    setCost(null)
-    setDetail({ kind: "loading", ref: selected })
-    void api.cost(selected.source, selected.id, controller.signal).then((result) => {
-      if (controller.signal.aborted) return
-      setCost(result.ok ? result.value : null)
-    })
-    if (pendingJump === null) {
-      setSelectedTurn(null)
-      setToolsExpanded(false)
-    }
-    void api.session(selected.id, 0, PAGE_SIZE, selected.source, controller.signal).then((result) => {
-      if (controller.signal.aborted) return
-      if (!result.ok) {
-        setDetail({ kind: "failed", ref: selected, failure: result })
-        return
-      }
-      setDetail({
-        kind: "ready",
-        ref: selected,
-        data: result.value,
-        turns: result.value.session.turns,
-        loadingMore: false,
-      })
-      const turns = result.value.session.turns
-      if (pendingJump !== null && pendingJump.ref.id === selected.id && pendingJump.ref.source === selected.source) {
-        setSelectedTurn(pendingJump.turn)
-        setPendingJump(null)
-        return
-      }
-      // Open the first turn that has something to explain: a residual gap if
-      // there is one, otherwise the first turn.
-      const withResidual = turns.find((turn) => turn.attribution.residual !== undefined)
-      setSelectedTurn(withResidual?.index ?? turns[0]?.index ?? null)
+    if (pendingJump === null || readyRef === null || !sameSession(readyRef, pendingJump.ref)) return
+    let cancelled = false
+    void jumpTurn(pendingJump.turn).then(() => {
+      if (!cancelled) setPendingJump((current) => (current === pendingJump ? null : current))
     })
     return () => {
-      controller.abort()
+      cancelled = true
     }
-  }, [api, selected, pendingJump])
+  }, [pendingJump, readyRef, jumpTurn])
 
-  const loadMore = useCallback(() => {
-    if (detail.kind !== "ready" || detail.loadingMore) return
-    const offset = detail.turns.length
-    if (offset >= detail.data.turnCount) return
-    const ref = detail.ref
-    setDetail({ ...detail, loadingMore: true })
-    void api.session(ref.id, offset, PAGE_SIZE, ref.source).then((result) => {
-      setDetail((current) => {
-        if (current.kind !== "ready" || current.ref.id !== ref.id || current.ref.source !== ref.source) return current
-        if (!result.ok) return { ...current, loadingMore: false, moreFailure: result }
-        const seen = new Set(current.turns.map((turn) => turn.index))
-        const appended = [...current.turns, ...result.value.session.turns.filter((turn) => !seen.has(turn.index))]
-        return { ...current, turns: appended, loadingMore: false }
-      })
-    })
-  }, [api, detail])
+  const onMetadataChanged = useCallback(
+    (value: SessionMetadataValue): void => {
+      updateDetailMetadata(value)
+      setSessionList((current) =>
+        current.kind !== "ready"
+          ? current
+          : {
+              ...current,
+              sessions: current.sessions.map((session) => applySessionMetadata(session, value)),
+            },
+      )
+      cache.rename(value)
+    },
+    [cache, updateDetailMetadata],
+  )
 
   const jumpTo = useCallback((target: SearchTarget) => {
     setSearchOpen(false)
@@ -311,7 +297,10 @@ export function ContextInsightPanel({
       ?.scrollIntoView({ block: "nearest" })
   }, [selectedTurn, detail.kind])
 
-  const retry = useCallback(() => setReloadToken((token) => token + 1), [])
+  const retry = useCallback(() => {
+    clientListCache().invalidateRequests()
+    setReloadToken((token) => token + 1)
+  }, [])
 
   const costs = useMemo(() => {
     if (cost === null) return undefined
@@ -329,7 +318,8 @@ export function ContextInsightPanel({
   const tree =
     boot.kind === "ready" ? (
       <ProjectTree
-        revision={reloadToken}
+        onMetadataChanged={onMetadataChanged}
+        revision={listRevision}
         api={api}
         workdirs={boot.workdirs}
         selected={selected}
@@ -341,11 +331,26 @@ export function ContextInsightPanel({
         onDeleted={(deleted) => {
           setSelected((current) => (current?.source === deleted.source && current.id === deleted.id ? null : current))
           setPendingJump((current) =>
-            current?.ref.source === deleted.source && current.ref.id === deleted.id ? null : current
+            current?.ref.source === deleted.source && current.ref.id === deleted.id ? null : current,
           )
-          LIST_CACHE.sessions.clear()
-          delete LIST_CACHE.workdirs
-          retry()
+          cache.remove(deleted)
+          setBoot((current) =>
+            current.kind !== "ready"
+              ? current
+              : {
+                  ...current,
+                  sources: cache.sources?.sources ?? current.sources,
+                  workdirs: cache.workdirs?.workdirs ?? current.workdirs,
+                },
+          )
+          setSessionList((current) =>
+            current.kind !== "ready"
+              ? current
+              : {
+                  ...current,
+                  sessions: current.sessions.filter((row) => row.source !== deleted.source || row.id !== deleted.id),
+                },
+          )
         }}
         loading={false}
       />
@@ -380,12 +385,17 @@ export function ContextInsightPanel({
   else
     pane = (
       <SessionPane
+        key={`${detail.ref.source}:${detail.ref.id}`}
         session={detail}
+        revealTurns={pendingJump !== null}
         title={detail.data.session.title ?? detail.ref.id}
         cost={cost}
         costs={costs}
         selectedTurn={selectedTurn}
         onSelectTurn={setSelectedTurn}
+        onJumpTurn={(index) => {
+          void jumpTurn(index)
+        }}
         toolsExpanded={toolsExpanded}
         onToggleTools={setToolsExpanded}
         onLoadMore={loadMore}

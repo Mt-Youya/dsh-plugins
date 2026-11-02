@@ -13,8 +13,9 @@
  * @module @cyrusdoyle/dsh-sessions-insight/client/waterfall
  */
 
-import type { ReactElement } from "react"
 import type { Turn } from "@cyrusdoyle/dsh-session-contract"
+import type { ReactElement } from "react"
+
 import { compactTokens } from "../format.ts"
 import { t } from "../locale.ts"
 
@@ -49,7 +50,7 @@ export function Waterfall({
   const line = values
     .map(
       (value, index) =>
-        `${index === 0 ? "M" : "L"}${(xOf(index) * WIDTH).toFixed(1)},${(yOf(value) * HEIGHT).toFixed(1)}`
+        `${index === 0 ? "M" : "L"}${(xOf(index) * WIDTH).toFixed(1)},${(yOf(value) * HEIGHT).toFixed(1)}`,
     )
     .join(" ")
   const area = `${line} L${(xOf(turns.length - 1) * WIDTH).toFixed(1)},${HEIGHT} L${(xOf(0) * WIDTH).toFixed(1)},${HEIGHT} Z`
@@ -92,7 +93,7 @@ export function Waterfall({
           {compactions.map(({ index, point }, order) => (
             <line
               key={`${String(index)}-${String(order)}`}
-              className="stroke-warn stroke-1 [stroke-dasharray:3_3] opacity-80 [vector-effect:non-scaling-stroke]"
+              className="stroke-warn stroke-1 opacity-80 [stroke-dasharray:3_3] [vector-effect:non-scaling-stroke]"
               x1={xOf(index) * WIDTH}
               x2={xOf(index) * WIDTH}
               y1={0}

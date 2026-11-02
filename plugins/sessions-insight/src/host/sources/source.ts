@@ -10,9 +10,10 @@
  * @module @cyrusdoyle/dsh-sessions-insight/host/source
  */
 
+import type { Session } from "@cyrusdoyle/dsh-session-contract"
+
 import type { ContextSource, SegmentInfo, SessionSummary, SourceStatus, WorkdirEntry } from "../../protocol.ts"
 import { isIdShaped } from "../../protocol.ts"
-import type { Session } from "@cyrusdoyle/dsh-session-contract"
 
 /** A failure any reader route may answer with. */
 export interface SourceFailure {
@@ -40,6 +41,8 @@ export interface SearchCandidate {
   updatedAt: number
   title?: string
   firstInput?: string
+  /** Response-time search overlay, never persisted in adapter candidates. */
+  manualTitle?: string
 }
 
 /** Options every list-shaped read accepts. */

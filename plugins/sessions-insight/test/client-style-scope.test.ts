@@ -1,4 +1,5 @@
 import { expect, it } from "vitest"
+
 import { TAILWIND_CSS } from "../src/client/theme/generated.css.ts"
 
 it("keeps Tailwind tokens local and handoff spacing scoped with priority", () => {

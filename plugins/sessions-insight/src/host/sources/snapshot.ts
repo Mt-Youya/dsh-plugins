@@ -15,10 +15,10 @@
  * @module @cyrusdoyle/dsh-sessions-insight/host/snapshot
  */
 
+import { createHash } from "node:crypto"
 import { mkdir, readdir, readFile, rename, stat, writeFile } from "node:fs/promises"
 import { homedir } from "node:os"
 import { join } from "node:path"
-import { createHash } from "node:crypto"
 
 /** One file as the fingerprint sees it. */
 export interface FingerprintFile {
@@ -70,7 +70,7 @@ async function readFileSnapshot(path: string): Promise<SnapshotFile> {
 export async function walkFingerprint(
   root: string,
   match: (name: string) => boolean,
-  depth = 3
+  depth = 3,
 ): Promise<FingerprintFile[]> {
   const out: FingerprintFile[] = []
   let entries
@@ -110,7 +110,7 @@ export function fingerprintOf(files: FingerprintFile[]): string {
     hash.update(String(file.size))
     hash.update("\n")
   }
-  hash.update("count:" + String(files.length))
+  hash.update(`count:${String(files.length)}`)
   return hash.digest("hex")
 }
 
@@ -140,7 +140,7 @@ export async function writeSnapshot<T>(path: string, source: string, fingerprint
     const file = await readFileSnapshot(path)
     file.sources[source] = { fingerprint, savedAt: Date.now(), entries }
     await mkdir(join(path, ".."), { recursive: true })
-    const temp = path + ".tmp-" + String(process.pid)
+    const temp = `${path}.tmp-${String(process.pid)}`
     await writeFile(temp, JSON.stringify(file))
     await rename(temp, path)
   } catch {

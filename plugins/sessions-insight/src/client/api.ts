@@ -13,51 +13,65 @@
  * @module @cyrusdoyle/dsh-sessions-insight/client/api
  */
 
-import { HANDOFF_REVEAL_URL, isHandoffRevealValue, type HandoffRevealValue } from "../protocol.ts"
-import { t } from "./locale.ts"
-import { requestJson, type ApiFailure, type ApiResult } from "@cyrusdoyle/dsh-plugin-kit-client"
-import type {
-  BriefValue,
-  DeleteSessionValue,
-  CostValue,
-  HandoffApplyValue,
-  HandoffStatusValue,
-  SearchTier,
-  SearchValue,
-  SessionDetail,
-  SessionsValue,
-  SourcesValue,
-  WorkdirsValue,
-} from "../protocol.ts"
+import { type ApiFailure, type ApiResult, requestJson } from "@cyrusdoyle/dsh-plugin-kit-client"
+
 import {
+  type AiTitleValue,
   API_ERROR_CODES,
-  SESSION_DELETE_URL,
-  isDeleteSessionValue,
+  type BriefValue,
   COST_URL,
+  type CostValue,
+  type DeleteSessionValue,
   HANDOFF_APPLY_URL,
   HANDOFF_PREPARE_URL,
+  HANDOFF_REVEAL_URL,
   HANDOFF_STATUS_URL,
-  SEARCH_URL,
-  SESSIONS_URL,
-  SESSION_URL,
-  SOURCES_URL,
-  WORKDIRS_URL,
+  type HandoffApplyValue,
+  type HandoffRevealValue,
+  type HandoffStatusValue,
+  type InsightSessionDetail,
+  isAiTitleValue,
   isBriefValue,
   isCostValue,
+  isDeleteSessionValue,
   isHandoffApplyValue,
+  isHandoffRevealValue,
   isHandoffStatusValue,
+  isInsightSessionDetail,
+  isMetadataValue,
   isSearchValue,
-  isSessionDetail,
+  isSessionMetadataValue,
   isSessionsValue,
   isSourcesValue,
   isWorkdirsValue,
+  type MetadataPatch,
+  type MetadataValue,
+  SEARCH_URL,
+  type SearchTier,
+  type SearchValue,
+  SESSION_AI_TITLE_URL,
+  SESSION_DELETE_URL,
+  SESSION_METADATA_URL,
+  SESSION_URL,
+  type SessionMetadataValue,
+  SESSIONS_URL,
+  type SessionsValue,
+  SOURCES_URL,
+  type SourcesValue,
+  WORKDIRS_URL,
+  type WorkdirsValue,
 } from "../protocol.ts"
+import { t } from "./locale.ts"
+import { clientListCache } from "./state/list-cache.ts"
 
 export type { ApiFailure, ApiResult } from "@cyrusdoyle/dsh-plugin-kit-client"
 
 /** The reads the panel performs. */
 export interface Api {
   deleteSession(source: string, id: string): Promise<ApiResult<DeleteSessionValue>>
+  metadata(signal?: AbortSignal): Promise<ApiResult<MetadataValue>>
+  updateMetadata(patch: MetadataPatch): Promise<ApiResult<SessionMetadataValue>>
+  suggestTitle(source: string, id: string, signal?: AbortSignal): Promise<ApiResult<AiTitleValue>>
   sources(signal?: AbortSignal): Promise<ApiResult<SourcesValue>>
   workdirs(signal?: AbortSignal, refresh?: boolean): Promise<ApiResult<WorkdirsValue>>
   sessions(workdir: string, signal?: AbortSignal): Promise<ApiResult<SessionsValue>>
@@ -66,20 +80,20 @@ export interface Api {
     offset: number,
     limit: number,
     source: string,
-    signal?: AbortSignal
-  ): Promise<ApiResult<SessionDetail>>
+    signal?: AbortSignal,
+  ): Promise<ApiResult<InsightSessionDetail>>
   search(
     query: string,
     limit: number,
     tier: SearchTier,
     cursor: number,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<ApiResult<SearchValue>>
   cost(source: string, id: string, signal?: AbortSignal): Promise<ApiResult<CostValue>>
   handoffPrepare(source: string, id: string, signal?: AbortSignal): Promise<ApiResult<BriefValue>>
   handoffApply(
     body: { source: string; id: string; cwd: string; brief: string },
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<ApiResult<HandoffApplyValue>>
   handoffReveal(sessionId: string): Promise<ApiResult<HandoffRevealValue>>
   handoffStatus(sessionId: string, signal?: AbortSignal): Promise<ApiResult<HandoffStatusValue>>
@@ -116,24 +130,53 @@ function post<T>(url: string, body: unknown, guard: Guard<T>, signal?: AbortSign
  * @returns the four reads.
  */
 export function createApi(base = ""): Api {
+  const cache = clientListCache(base)
   return {
     deleteSession: (source, id) => post(base + SESSION_DELETE_URL, { source, id }, isDeleteSessionValue),
-    sources: (signal) => get(base + SOURCES_URL, isSourcesValue, signal),
+    metadata: (signal) => get(base + SESSION_METADATA_URL, isMetadataValue, signal),
+    updateMetadata: (patch) => post(base + SESSION_METADATA_URL, patch, isSessionMetadataValue),
+    suggestTitle: (source, id, signal) => post(base + SESSION_AI_TITLE_URL, { source, id }, isAiTitleValue, signal),
+    sources: (signal) =>
+      cache.read(
+        "sources",
+        (sharedSignal) => get(base + SOURCES_URL, isSourcesValue, sharedSignal),
+        (value) => {
+          cache.sources = value
+        },
+        signal,
+      ),
     workdirs: (signal, refresh = false) =>
-      get(base + WORKDIRS_URL + (refresh ? "?refresh=1" : ""), isWorkdirsValue, signal),
+      cache.read(
+        `workdirs:${String(refresh)}`,
+        (sharedSignal) => get(base + WORKDIRS_URL + (refresh ? "?refresh=1" : ""), isWorkdirsValue, sharedSignal),
+        (value) => {
+          cache.workdirs = value
+        },
+        signal,
+      ),
     sessions: (workdir, signal) =>
-      get(`${base}${SESSIONS_URL}?workdir=${encodeURIComponent(workdir)}`, isSessionsValue, signal),
+      cache.read(
+        `sessions:${workdir}`,
+        (sharedSignal) =>
+          get(`${base}${SESSIONS_URL}?workdir=${encodeURIComponent(workdir)}`, isSessionsValue, sharedSignal).then(
+            (result) => (result.ok ? { ok: true as const, value: cache.projectSessions(result.value) } : result),
+          ),
+        (value) => {
+          cache.sessions.set(workdir, value)
+        },
+        signal,
+      ),
     session: (id, offset, limit, source, signal) =>
       get(
         `${base}${SESSION_URL}?source=${encodeURIComponent(source)}&id=${encodeURIComponent(id)}&turnOffset=${String(offset)}&turnLimit=${String(limit)}`,
-        isSessionDetail,
-        signal
+        isInsightSessionDetail,
+        signal,
       ),
     search: (query, limit, tier, cursor, signal) =>
       get(
         `${base}${SEARCH_URL}?q=${encodeURIComponent(query)}&limit=${String(limit)}&tier=${tier}&cursor=${String(cursor)}`,
         isSearchValue,
-        signal
+        signal,
       ),
     cost: (source, id, signal) =>
       get(`${base}${COST_URL}?source=${encodeURIComponent(source)}&id=${encodeURIComponent(id)}`, isCostValue, signal),
@@ -145,6 +188,14 @@ export function createApi(base = ""): Api {
     handoffStatus: (sessionId, signal) =>
       get(`${base}${HANDOFF_STATUS_URL}?sessionId=${encodeURIComponent(sessionId)}`, isHandoffStatusValue, signal),
   }
+}
+
+/** Preload only navigation metadata; session bodies remain on demand. */
+export async function preloadSessionLists(api: Api = createApi(), signal?: AbortSignal): Promise<void> {
+  const [, workdirs] = await Promise.all([api.sources(signal), api.workdirs(signal)])
+  if (signal?.aborted || !workdirs.ok) return
+  const first = workdirs.value.workdirs[0]
+  if (first !== undefined) await api.sessions(first.workdir, signal)
 }
 
 /**

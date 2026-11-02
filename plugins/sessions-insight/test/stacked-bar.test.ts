@@ -1,7 +1,8 @@
+import type { Attribution } from "@cyrusdoyle/dsh-session-contract"
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
-import type { Attribution } from "@cyrusdoyle/dsh-session-contract"
+
 import { t } from "../src/client/locale.ts"
 import { PartLegend, StackedBar } from "../src/client/ui/stacked-bar.tsx"
 
@@ -18,8 +19,8 @@ describe("composition display", () => {
     const html = renderToStaticMarkup(createElement(StackedBar, { attribution, label: "context" }))
     expect(html).toContain('role="group"')
     expect(html.match(/tabindex="0"/g)).toHaveLength(2)
-    expect(html).toContain('data-tip="' + t("part.history") + " · 80.0%")
-    expect(html).toContain('data-tip="' + t("turns.unknown") + " · 20.0%")
+    expect(html).toContain(`data-tip="${t("part.history")} · 80.0%`)
+    expect(html).toContain(`data-tip="${t("turns.unknown")} · 20.0%`)
     expect(html).toContain("800 tokens")
     expect(html).toContain("200 tokens")
     expect(html).toContain(t("basis.chars-per-token"))
@@ -39,6 +40,6 @@ describe("composition display", () => {
     expect(html).toContain(t("part.history"))
     expect(html).toContain(t("turns.unknownNote"))
     expect(html).not.toContain(t("part.images"))
-    expect(html).not.toContain('data-precision="estimate">' + t("precision.estimate") + "</span>")
+    expect(html).not.toContain(`data-precision="estimate">${t("precision.estimate")}</span>`)
   })
 })

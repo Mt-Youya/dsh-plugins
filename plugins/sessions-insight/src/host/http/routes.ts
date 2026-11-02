@@ -28,35 +28,52 @@ import {
   CONTEXT_SOURCES,
   COST_PATH,
   HANDOFF_APPLY_PATH,
-  HANDOFF_REVEAL_PATH,
   HANDOFF_PREPARE_PATH,
+  HANDOFF_REVEAL_PATH,
   HANDOFF_STATUS_PATH,
+  isContextSource,
+  parseSearchQuery,
+  parseTurnWindow,
   SEARCH_PATH,
+  SESSION_DELETE_PATH,
   SESSION_PATH,
   SESSIONS_PATH,
   SOURCES_PATH,
   WORKDIRS_PATH,
-  isContextSource,
-  parseSearchQuery,
-  parseTurnWindow,
 } from "../../protocol.ts"
-import { costOfSession } from "../views/cost.ts"
+import { SESSION_AI_TITLE_PATH } from "../../protocol/ai-title.ts"
+import type { InsightSessionDetail } from "../../protocol/insights.ts"
+import { SESSION_METADATA_PATH } from "../../protocol/management.ts"
 import type { HandoffRunner } from "../handoff/handoff.ts"
+import { type AiTitleGenerator } from "../management/ai-title.ts"
+import { metadataTitle, projectSessions } from "../management/projection.ts"
+import type { MetadataStore } from "../management/store.ts"
+import type { SessionSource, WorkdirOptions } from "../sources/source.ts"
+import { costOfSession } from "../views/cost.ts"
+import { insightsOfSession } from "../views/insights.ts"
 import type { PricingTable } from "../views/pricing.ts"
 import { searchSessions } from "../views/search.ts"
-import type { SessionSource } from "../sources/source.ts"
+import { handleAiTitleSuggest } from "./ai-title-route.ts"
+import { handleDeleteSession } from "./delete-route.ts"
+import { handleHandoffApply, handleHandoffPrepare, handleHandoffReveal, handleHandoffStatus } from "./handoff-routes.ts"
+import {
+  clearListCache,
+  clearSessionListCache,
+  listOptions,
+  serveList,
+  sessionsListKey,
+  workdirsListKey,
+} from "./list-cache.ts"
+import { handleSessionMetadata } from "./management-route.ts"
+import { ask, route } from "./route-utils.ts"
 import type { RouteHandler, WebRoute } from "./server.ts"
 import { guardRequest, writeFail, writeOk } from "./server.ts"
-import { ask, route } from "./route-utils.ts"
-import { clearListCache, listOptions, serveList } from "./list-cache.ts"
-import { handleHandoffReveal, handleHandoffApply, handleHandoffPrepare, handleHandoffStatus } from "./handoff-routes.ts"
-import { handleDeleteSession } from "./delete-route.ts"
-import { SESSION_DELETE_PATH } from "../../protocol.ts"
 export { clearListCache, listOptions, LIST_TTL_MS } from "./list-cache.ts"
 export { handleHandoffApply, handleHandoffPrepare, handleHandoffStatus } from "./handoff-routes.ts"
 
 /** Everything the routes need. */
 export interface RouteDeps {
+  aiTitles?: AiTitleGenerator
   /** One reader per source; order determines nothing, CONTEXT_SOURCES does. */
   sources: readonly SessionSource[]
   /** Version string reported by `/health`. */
@@ -69,6 +86,8 @@ export interface RouteDeps {
   pricing?: PricingTable
   /** How long a list answer stays fresh before it is served stale (ms). */
   cacheTtlMs?: number
+  /** Plugin-owned manual titles and logical groups; never reader cache data. */
+  metadata?: MetadataStore
 }
 
 /**
@@ -82,7 +101,7 @@ export function handleSources(deps: RouteDeps): RouteHandler {
     if (!guardRequest(req, res, ["GET", "HEAD"])) return
     const bySource = new Map<ContextSource, SourceStatus>()
     const answers = await Promise.all(
-      deps.sources.map(async (source) => ({ source, result: await ask(source, () => source.status()) }))
+      deps.sources.map(async (source) => ({ source, result: await ask(source, () => source.status()) })),
     )
     for (const { source, result } of answers) {
       if (result.ok) {
@@ -154,7 +173,19 @@ export function mergeWorkdirs(lists: readonly WorkdirEntry[][]): WorkdirEntry[] 
  */
 function maybeRefresh(deps: RouteDeps, url: URL): void {
   if (url.searchParams.get("refresh") !== "1") return
+  clearListCache(deps)
   for (const source of deps.sources) source.invalidate()
+}
+
+export async function computeWorkdirs(deps: RouteDeps, options: WorkdirOptions): Promise<WorkdirsValue> {
+  const answers = await Promise.all(deps.sources.map(async (source) => ask(source, () => source.workdirs(options))))
+  const lists: WorkdirEntry[][] = []
+  const failures: SourceProblem[] = []
+  for (const result of answers) {
+    if (result.ok) lists.push(result.value)
+    else failures.push(result.problem)
+  }
+  return { workdirs: mergeWorkdirs(lists), scannedAt: Date.now(), failures }
 }
 
 export function handleWorkdirs(deps: RouteDeps): RouteHandler {
@@ -163,22 +194,7 @@ export function handleWorkdirs(deps: RouteDeps): RouteHandler {
     maybeRefresh(deps, url)
     const forced = url.searchParams.get("refresh") === "1"
     const options = listOptions(url)
-    const key = "workdirs:" + String(options.includeSubagents === true)
-    await serveList(deps, key, forced, res, async () => {
-      const answers = await Promise.all(
-        deps.sources.map(async (source) => ({ source, result: await ask(source, () => source.workdirs(options)) }))
-      )
-      const lists: WorkdirEntry[][] = []
-      const failures: SourceProblem[] = []
-      let scannedAt = Date.now()
-      for (const { result } of answers) {
-        if (result.ok) lists.push(result.value)
-        else failures.push(result.problem)
-      }
-      const value: WorkdirsValue = { workdirs: mergeWorkdirs(lists), scannedAt, failures }
-      void scannedAt
-      return value
-    })
+    await serveList(deps, workdirsListKey(options), forced, res, () => computeWorkdirs(deps, options))
   })
 }
 
@@ -190,6 +206,24 @@ export function handleWorkdirs(deps: RouteDeps): RouteHandler {
  * @param deps - route dependencies.
  * @returns the handler.
  */
+export async function computeSessions(
+  deps: RouteDeps,
+  workdir: string,
+  requested: ContextSource | null,
+  options: WorkdirOptions,
+): Promise<SessionsValue> {
+  const inScope = requested === null ? deps.sources : deps.sources.filter((source) => source.id === requested)
+  const answers = await Promise.all(inScope.map(async (source) => ask(source, () => source.list(workdir, options))))
+  const sessions: SessionSummary[] = []
+  const failures: SourceProblem[] = []
+  for (const result of answers) {
+    if (result.ok) sessions.push(...result.value)
+    else failures.push(result.problem)
+  }
+  sessions.sort((a, b) => b.updatedAt - a.updatedAt)
+  return { workdir, sessions, failures }
+}
+
 export function handleSessions(deps: RouteDeps): RouteHandler {
   return route(async (req, res, url) => {
     if (!guardRequest(req, res, ["GET", "HEAD"])) return
@@ -206,22 +240,15 @@ export function handleSessions(deps: RouteDeps): RouteHandler {
       return
     }
     const options = listOptions(url)
-    const key = "sessions:" + workdir + ":" + (requested ?? "*") + ":" + String(options.includeSubagents === true)
-    await serveList(deps, key, forced, res, async () => {
-      const inScope = requested === null ? deps.sources : deps.sources.filter((source) => source.id === requested)
-      const answers = await Promise.all(
-        inScope.map(async (source) => ({ source, result: await ask(source, () => source.list(workdir, options)) }))
-      )
-      const sessions: SessionSummary[] = []
-      const failures: SourceProblem[] = []
-      for (const { result } of answers) {
-        if (result.ok) sessions.push(...result.value)
-        else failures.push(result.problem)
-      }
-      sessions.sort((a, b) => b.updatedAt - a.updatedAt)
-      const value: SessionsValue = { workdir, sessions, failures }
-      return value
-    })
+    const key = sessionsListKey(workdir, requested, options)
+    await serveList(
+      deps,
+      key,
+      forced,
+      res,
+      () => computeSessions(deps, workdir, requested, options),
+      (value) => projectSessions(value, deps.metadata),
+    )
   })
 }
 
@@ -282,7 +309,8 @@ export function handleSession(deps: RouteDeps): RouteHandler {
       if (turn.attribution.reconciled !== undefined) reconciledTurns += 1
     }
 
-    const value: SessionDetail = {
+    const value: InsightSessionDetail = {
+      insights: insightsOfSession(session),
       session: {
         id: session.id,
         source: source.id,
@@ -304,11 +332,15 @@ export function handleSession(deps: RouteDeps): RouteHandler {
         reconciledTurns,
       },
     }
-    if (session.title !== undefined) value.session.title = session.title
+    const title =
+      deps.metadata === undefined
+        ? session.title
+        : (metadataTitle(await deps.metadata.read(), source.id, session.id) ?? session.title)
+    if (title !== undefined) value.session.title = title
     const firstInput = session.turns[0]?.userInput[0]
     if (firstInput !== undefined && firstInput.trim() !== "") value.session.firstInput = firstInput.trim().slice(0, 200)
     // The parse may add a title/first input the list should show next time.
-    clearListCache(deps)
+    clearSessionListCache(deps, session.workdir)
     writeOk(res, value)
   })
 }
@@ -329,9 +361,10 @@ export function handleSearch(deps: RouteDeps): RouteHandler {
     const value = await searchSessions(
       {
         sources: deps.sources,
+        ...(deps.metadata === undefined ? {} : { metadata: deps.metadata }),
         ...(deps.searchDeadlineMs === undefined ? {} : { deadlineMs: deps.searchDeadlineMs }),
       },
-      query
+      query,
     )
     writeOk(res, value)
   })
@@ -346,7 +379,7 @@ export function handleSearch(deps: RouteDeps): RouteHandler {
 async function readSession(
   deps: RouteDeps,
   source: ContextSource,
-  id: string
+  id: string,
 ): Promise<
   | { ok: true; session: SessionDetail["session"] }
   | {
@@ -427,6 +460,8 @@ export function createRoutes(deps: RouteDeps): WebRoute[] {
     { kind: "exact", path: SESSIONS_PATH, handler: handleSessions(deps) },
     { kind: "exact", path: SESSION_PATH, handler: handleSession(deps) },
     { kind: "exact", path: SESSION_DELETE_PATH, handler: handleDeleteSession(deps) },
+    { kind: "exact", path: SESSION_METADATA_PATH, handler: handleSessionMetadata(deps) },
+    { kind: "exact", path: SESSION_AI_TITLE_PATH, handler: handleAiTitleSuggest(deps) },
     { kind: "exact", path: SEARCH_PATH, handler: handleSearch(deps) },
     { kind: "exact", path: COST_PATH, handler: handleCost(deps) },
     { kind: "exact", path: HANDOFF_PREPARE_PATH, handler: handleHandoffPrepare(deps) },

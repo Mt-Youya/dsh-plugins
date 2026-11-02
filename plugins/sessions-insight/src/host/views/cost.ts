@@ -25,9 +25,10 @@
  */
 
 import type { Session, Usage } from "@cyrusdoyle/dsh-session-contract"
+
 import type { ContextSource } from "../../protocol.ts"
 import type { Currency, PricingTable, TableId } from "./pricing.ts"
-import { PRIMARY_ORDER, TABLES, TABLE_IDS, displayKey, lookupPrice, primaryTableFor } from "./pricing.ts"
+import { displayKey, lookupPrice, PRIMARY_ORDER, primaryTableFor, TABLE_IDS, TABLES } from "./pricing.ts"
 
 /** One `(table, currency)` subtotal. Never merged with its neighbours. */
 export interface CostGroup {
@@ -160,7 +161,7 @@ function round(amount: number): number {
 function amountOf(
   usage: Usage,
   price: { input: number; output: number; cacheRead: number | null; cacheWrite: number | null },
-  key: string
+  key: string,
 ): { amount: number; unlisted: string[] } {
   const unlisted: string[] = []
   const bucket = (tokens: number, rate: number | null, name: string): number => {
@@ -261,7 +262,7 @@ function priceWithTable(session: Session, table: PricingTable): TableCost {
 export function costOfSession(
   session: Session,
   source: ContextSource,
-  options: CostOptions | PricingTable = {}
+  options: CostOptions | PricingTable = {},
 ): SessionCost {
   const resolved: CostOptions =
     "models" in options ? { tables: { [options.id]: options }, primaryOrder: [options.id] } : options

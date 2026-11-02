@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest"
 import type { Attribution, Measure } from "@cyrusdoyle/dsh-session-contract"
+import { describe, expect, it } from "vitest"
+
 import { barLayout } from "../src/client/state/bar-layout.ts"
 
 const exact = (tokens: number): Measure => ({ tokens, precision: "exact", basis: "usage" })
@@ -18,7 +19,7 @@ describe("composition bar arithmetic", () => {
           { part: "history", measure: estimate(600) },
           { part: "user-input", measure: estimate(400) },
         ],
-      })
+      }),
     )
     expect(layout.residual).toBe(0)
     expect(layout.overCounted).toBe(0)
@@ -33,7 +34,7 @@ describe("composition bar arithmetic", () => {
         total: exact(1000),
         parts: [{ part: "history", measure: estimate(800) }],
         residual: estimate(200),
-      })
+      }),
     )
     expect(layout.residual).toBe(200)
     const unknown = layout.segments.find((segment) => segment.kind === "unknown")
@@ -52,7 +53,7 @@ describe("composition bar arithmetic", () => {
     expect(layout.overCounted).toBe(0)
 
     const overshoot = barLayout(
-      attribution({ total: exact(100), parts: [{ part: "history", measure: estimate(400) }] })
+      attribution({ total: exact(100), parts: [{ part: "history", measure: estimate(400) }] }),
     )
     expect(overshoot.overCounted).toBe(300)
     expect(overshoot.residual).toBe(-300)
@@ -69,7 +70,7 @@ describe("composition bar arithmetic", () => {
           { part: "history", measure: estimate(10) },
           { part: "images", measure: estimate(0) },
         ],
-      })
+      }),
     )
     expect(layout.segments.map((segment) => segment.key)).toEqual(["history"])
   })

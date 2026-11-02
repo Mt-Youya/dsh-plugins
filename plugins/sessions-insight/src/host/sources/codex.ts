@@ -15,24 +15,26 @@
  * @module @cyrusdoyle/dsh-sessions-insight/host/codex
  */
 
-import { fingerprintOf, readSnapshot, snapshotPath, walkFingerprint, writeSnapshot } from "./snapshot.ts"
-import { readFile, readdir, stat } from "node:fs/promises"
+import { readdir, readFile, stat } from "node:fs/promises"
 import { basename, resolve } from "node:path"
-import { readCodexSession } from "@cyrusdoyle/dsh-session-readers"
+
+import { Lru } from "@cyrusdoyle/dsh-plugin-kit-host"
+import type { Session } from "@cyrusdoyle/dsh-session-contract"
 import {
-  defaultCodexRoot,
-  indexCodexCorpus,
   type CodexCorpusIndex,
   type CodexFile,
   type CodexSessionPlan,
+  defaultCodexRoot,
+  indexCodexCorpus,
+  readCodexSession,
 } from "@cyrusdoyle/dsh-session-readers"
-import type { Session } from "@cyrusdoyle/dsh-session-contract"
+
 import type { SegmentInfo, SessionSummary, SourceStatus, WorkdirEntry } from "../../protocol.ts"
-import { LIST_ITEM_UNPARSED, isSafeId } from "../../protocol.ts"
+import { isSafeId, LIST_ITEM_UNPARSED } from "../../protocol.ts"
+import { deleteLogs } from "./delete.ts"
+import { fingerprintOf, readSnapshot, snapshotPath, walkFingerprint, writeSnapshot } from "./snapshot.ts"
 import type { ParsedSession, SearchCandidate, SessionSource, SourceFailure } from "./source.ts"
 import { cleanTitle, firstInputOf } from "./source.ts"
-import { deleteLogs } from "./delete.ts"
-import { Lru } from "@cyrusdoyle/dsh-plugin-kit-host"
 
 /** Milliseconds the corpus index is reused before re-indexing. */
 export const DEFAULT_CODEX_SCAN_TTL_MS = 30_000
@@ -142,6 +144,7 @@ export class CodexSource implements SessionSource {
   readonly #maxSessionBytes: number
   readonly #parsed: Lru<CachedSession>
   #scan: CodexScan | undefined
+  #scanInflight: Promise<CodexScan> | undefined
   readonly #indexPath: string
 
   constructor(config: CodexSourceConfig = {}) {
@@ -160,6 +163,7 @@ export class CodexSource implements SessionSource {
   /** Drop every cache; the next call re-indexes and re-parses. */
   invalidate(): void {
     this.#scan = undefined
+    this.#scanInflight = undefined
     this.#parsed.clear()
   }
 
@@ -174,6 +178,20 @@ export class CodexSource implements SessionSource {
   async scan(): Promise<CodexScan> {
     const fresh = this.#scan
     if (fresh !== undefined && Date.now() - fresh.scannedAt < this.#scanTtlMs) return fresh
+    if (this.#scanInflight !== undefined) return this.#scanInflight
+    const pending = this.#readScan()
+      .then((scan) => {
+        if (this.#scanInflight === pending) this.#scan = scan
+        return scan
+      })
+      .finally(() => {
+        if (this.#scanInflight === pending) this.#scanInflight = undefined
+      })
+    this.#scanInflight = pending
+    return pending
+  }
+
+  async #readScan(): Promise<CodexScan> {
     const scannedAt = Date.now()
     const titles = await readTitles(this.#root)
     // Cheap file-set fingerprint first: when nothing changed, the previous scan
@@ -183,7 +201,6 @@ export class CodexSource implements SessionSource {
     const cachedEntries = await readSnapshot<CodexEntry>(this.#indexPath, "codex", fingerprint)
     if (cachedEntries !== undefined) {
       const scan: CodexScan = { root: this.#root, state: "ok", entries: cachedEntries, titles, scannedAt }
-      this.#scan = scan
       return scan
     }
     let entries
@@ -193,7 +210,6 @@ export class CodexSource implements SessionSource {
       const code = (error as NodeJS.ErrnoException).code
       const state = code === "ENOENT" ? "missing" : "unreadable"
       const scan: CodexScan = { root: this.#root, state, entries: [], titles, scannedAt }
-      this.#scan = scan
       return scan
     }
     void entries
@@ -202,7 +218,6 @@ export class CodexSource implements SessionSource {
       index = indexCodexCorpus(this.#root)
     } catch {
       const scan: CodexScan = { root: this.#root, state: "unreadable", entries: [], titles, scannedAt }
-      this.#scan = scan
       return scan
     }
     const rows: CodexEntry[] = []
@@ -235,7 +250,6 @@ export class CodexSource implements SessionSource {
     }
     rows.sort((a, b) => b.updatedAt - a.updatedAt)
     const scan: CodexScan = { root: this.#root, state: "ok", entries: rows, titles, index, scannedAt }
-    this.#scan = scan
     return scan
   }
 

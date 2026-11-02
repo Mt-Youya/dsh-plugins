@@ -16,6 +16,7 @@
  */
 
 import { injectStylesOnce } from "@cyrusdoyle/dsh-plugin-kit-client"
+
 import { TAILWIND_CSS } from "./theme/generated.css.ts"
 
 /** Id of the single style element this plugin owns. */

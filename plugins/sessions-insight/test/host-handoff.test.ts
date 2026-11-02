@@ -1,7 +1,9 @@
 import { mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+
 import { describe, expect, it } from "vitest"
+
 import { HandoffRunner } from "../src/host/handoff/handoff.ts"
 import type { HandoffDeps, SessionCommandsFace } from "../src/host/handoff/handoff.ts"
 import type { ObservedEvent } from "../src/host/sources/dsh-events.ts"
@@ -30,7 +32,7 @@ class FakeCommands implements SessionCommandsFace {
 
   async prompt(
     request: { requestId: string; sessionId: string; mode: "queue"; content: { type: "text"; text: string }[] },
-    source: { kind: "user"; rpcId: string }
+    source: { kind: "user"; rpcId: string },
   ): Promise<unknown> {
     this.calls.push({ call: "prompt", payload: { request, source } })
     if (this.#promptError !== undefined) throw new Error(this.#promptError)
@@ -191,7 +193,7 @@ describe("handoff status machine (accepted is not success)", () => {
         events([
           { type: "turn/start", seq: 3, time: 0 },
           { type: "turn/end", seq: 9, time: 0, data: { reason: { kind: "completed" } } },
-        ])
+        ]),
       ),
     })
     expect(await runner.status("s1")).toMatchObject({ ok: true, value: { state: "succeeded", seq: 9 } })
@@ -206,7 +208,7 @@ describe("handoff status machine (accepted is not success)", () => {
           { type: "turn/start", seq: 3, time: 0 },
           { type: "assistant/attempt", seq: 5, time: 0, data: { error: { code: "MISSING_CREDENTIAL" } } },
           { type: "turn/end", seq: 6, time: 0, data: { reason: { kind: "error" } } },
-        ])
+        ]),
       ),
     })
     const status = await runner.status("s1")
@@ -258,7 +260,7 @@ describe("observation window is log order, not wall clock", () => {
         events([
           { type: "turn/start", seq: 18, time: 10 },
           { type: "turn/end", seq: 20, time: 11, data: { reason: { kind: "completed" } } },
-        ])
+        ]),
       ),
     })
     await runner.apply({ source: "claude", id: "s1", cwd: dir, brief: "x" })
@@ -322,7 +324,7 @@ it("reports elapsed turn time and observed activity rather than polling duration
       events([
         { type: "turn/start", seq: 1, time: 1000 },
         { type: "tool/call", seq: 2, time: 2000, data: { callId: "a", name: "bash" } },
-      ])
+      ]),
     ),
   })
   expect(await runner.status("s1")).toMatchObject({

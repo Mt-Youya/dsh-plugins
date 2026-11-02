@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState, type ReactElement } from "react"
+import { type ReactElement, useEffect, useRef, useState } from "react"
+
 import { type Api, failureText } from "../api.ts"
 import { formatBytes, formatShortTime } from "../format.ts"
 import { t } from "../locale.ts"
 import type { TreeRow, TreeSession } from "../state/tree.ts"
-import { Glyph, SourceIcon, SOURCE_MARKS } from "./icons.tsx"
+import { Glyph, SOURCE_MARKS, SourceIcon } from "./icons.tsx"
 
 /** A session row, hung under its project by a guide line. */
 export function SessionRow({
@@ -13,6 +14,13 @@ export function SessionRow({
   onFocus,
   api,
   onDeleted,
+  editing = false,
+  checked = false,
+  busy = false,
+  onCheck,
+  onRename,
+  onAiRename,
+  onMove,
 }: {
   row: Extract<TreeRow, { kind: "session" }>
   index: number
@@ -20,6 +28,13 @@ export function SessionRow({
   onFocus: () => void
   api: Api
   onDeleted: (session: TreeSession) => void
+  editing?: boolean
+  checked?: boolean
+  busy?: boolean
+  onCheck?: (shift: boolean) => void
+  onRename?: () => void
+  onAiRename?: () => void
+  onMove?: () => void
 }): ReactElement {
   const trigger = useRef<HTMLButtonElement>(null)
   const menu = useRef<HTMLDivElement>(null)
@@ -30,16 +45,38 @@ export function SessionRow({
   // Ignore the release of the opening right-click; dismiss on the next outside press.
   useEffect(() => {
     if (!menuOpen) return
-    function dismiss(event: PointerEvent): void {
-      if (event.target instanceof Node && !menu.current?.contains(event.target)) menu.current?.hidePopover()
+    const popup = menu.current
+    if (popup === null) return
+    const doc = popup.ownerDocument
+    function dismiss(event: Event): void {
+      if (!event.composedPath().includes(popup!)) {
+        popup?.hidePopover()
+        setMenuOpen(false)
+      }
     }
-    document.addEventListener("pointerdown", dismiss, true)
-    return () => document.removeEventListener("pointerdown", dismiss, true)
+    function escape(event: KeyboardEvent): void {
+      if (event.key === "Escape") closeMenu()
+    }
+    function hide(): void {
+      popup?.hidePopover()
+      setMenuOpen(false)
+    }
+    doc.addEventListener("pointerdown", dismiss, true)
+    doc.addEventListener("keydown", escape, true)
+    doc.addEventListener("scroll", hide, true)
+    doc.defaultView?.addEventListener("blur", hide)
+    return () => {
+      doc.removeEventListener("pointerdown", dismiss, true)
+      doc.removeEventListener("keydown", escape, true)
+      doc.removeEventListener("scroll", hide, true)
+      doc.defaultView?.removeEventListener("blur", hide)
+    }
   }, [menuOpen])
 
   function closeMenu(): void {
     menu.current?.hidePopover()
-    trigger.current?.focus()
+    setMenuOpen(false)
+    trigger.current?.focus({ preventScroll: true })
   }
 
   function openMenu(x: number, y: number): void {
@@ -49,9 +86,11 @@ export function SessionRow({
       if (other !== popup) other.hidePopover()
     }
     popup.showPopover()
+    setMenuOpen(true)
     const bounds = popup.getBoundingClientRect()
-    popup.style.left = `${Math.max(8, Math.min(x, window.innerWidth - bounds.width - 8))}px`
-    popup.style.top = `${Math.max(8, Math.min(y, window.innerHeight - bounds.height - 8))}px`
+    const view = popup.ownerDocument.defaultView
+    popup.style.insetInlineStart = `${Math.max(8, Math.min(x, (view?.innerWidth ?? bounds.right) - bounds.width - 8))}px`
+    popup.style.insetBlockStart = `${Math.max(8, Math.min(y, (view?.innerHeight ?? bounds.bottom) - bounds.height - 8))}px`
     popup.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true })
   }
 
@@ -67,57 +106,76 @@ export function SessionRow({
       setError(
         result.detail === "shared-session-logs"
           ? t("sessions.deleteShared")
-          : t("sessions.deleteFailed", { detail: failureText(result) })
+          : t("sessions.deleteFailed", { detail: failureText(result) }),
       )
   }
 
   const mark = SOURCE_MARKS[row.session.source]
   return (
     <div className="ms-3.25 border-s border-line-soft ps-1.5">
-      <button
-        ref={trigger}
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded={menuOpen}
-        aria-busy={deleting}
-        disabled={deleting}
-        onContextMenu={(event) => {
-          event.preventDefault()
-          event.stopPropagation()
-          openMenu(event.clientX, event.clientY)
-        }}
-        onKeyDown={(event) => {
-          if (event.key !== "ContextMenu" && !(event.shiftKey && event.key === "F10")) return
-          event.preventDefault()
-          event.stopPropagation()
-          const bounds = event.currentTarget.getBoundingClientRect()
-          openMenu(bounds.left, bounds.bottom)
-        }}
-        className="ci-row px-2 py-1.5"
-        data-key={row.key}
-        data-selected={row.selected}
-        data-focus={index}
-        aria-current={row.selected}
-        onClick={onOpen}
-        onFocus={onFocus}
-        title={row.session.title}
-      >
-        <span className="flex min-w-0 items-center gap-1.5">
-          <span className="inline-flex w-3.5 shrink-0 justify-center">
-            <SourceIcon source={row.session.source} size={12} />
+      <div className="flex items-center gap-1">
+        {editing ? (
+          <input
+            type="checkbox"
+            aria-label={t("management.name", { title: row.session.title })}
+            checked={checked}
+            disabled={busy || deleting}
+            onChange={() => {}}
+            onClick={(event) => {
+              event.stopPropagation()
+              onCheck?.(event.shiftKey)
+            }}
+            onKeyDown={(event) => {
+              if (event.key === " ") event.stopPropagation()
+            }}
+            className="ms-1 shrink-0 accent-accent focus-visible:outline-2 focus-visible:outline-accent"
+          />
+        ) : null}
+        <button
+          ref={trigger}
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          aria-busy={deleting}
+          disabled={deleting || busy}
+          onContextMenu={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            openMenu(event.clientX, event.clientY)
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== "ContextMenu" && !(event.shiftKey && event.key === "F10")) return
+            event.preventDefault()
+            event.stopPropagation()
+            const bounds = event.currentTarget.getBoundingClientRect()
+            openMenu(bounds.left, bounds.bottom)
+          }}
+          className="ci-row min-w-0 flex-1 px-2 py-1.5 active:bg-hover"
+          data-key={row.key}
+          data-selected={row.selected}
+          data-focus={index}
+          aria-current={row.selected}
+          onClick={(event) => (editing ? onCheck?.(event.shiftKey) : onOpen())}
+          onFocus={onFocus}
+          title={row.session.title}
+        >
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="inline-flex w-3.5 shrink-0 justify-center">
+              <SourceIcon source={row.session.source} size={12} />
+            </span>
+            <span className="min-w-0 flex-1 truncate text-[12.5px]">{row.session.title}</span>
           </span>
-          <span className="min-w-0 flex-1 truncate text-[12.5px]">{row.session.title}</span>
-        </span>
-        <span className="mt-0.5 flex min-w-0 items-center gap-1.5 ps-5 text-[10.5px] text-fg-3 tabular-nums">
-          <span style={{ color: mark.text }} className="ci-src__word">
-            {mark.label.zh}
+          <span className="mt-0.5 flex min-w-0 items-center gap-1.5 ps-5 text-[10.5px] text-fg-3 tabular-nums">
+            <span style={{ color: mark.text }} className="ci-src__word">
+              {mark.label.zh}
+            </span>
+            <span aria-hidden="true">·</span>
+            <span>{formatShortTime(row.session.updatedAt)}</span>
+            <span aria-hidden="true">·</span>
+            <span>{formatBytes(row.session.bytes)}</span>
           </span>
-          <span aria-hidden="true">·</span>
-          <span>{formatShortTime(row.session.updatedAt)}</span>
-          <span aria-hidden="true">·</span>
-          <span>{formatBytes(row.session.bytes)}</span>
-        </span>
-      </button>
+        </button>
+      </div>
       {error === "" ? null : (
         <p role="alert" className="m-0 px-2 py-1 text-[11px] text-err">
           {error}
@@ -139,10 +197,58 @@ export function SessionRow({
             closeMenu()
           } else if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
             event.preventDefault()
-            event.currentTarget.querySelector<HTMLButtonElement>("button")?.focus()
+            const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>("button")]
+            const current = items.indexOf(event.currentTarget.ownerDocument.activeElement as HTMLButtonElement)
+            const next =
+              event.key === "Home"
+                ? 0
+                : event.key === "End"
+                  ? items.length - 1
+                  : (current + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length
+            items[next]?.focus()
           }
         }}
       >
+        {onRename ? (
+          <button
+            type="button"
+            role="menuitem"
+            className="ci-btn ci-btn--quiet w-full justify-start active:bg-hover"
+            onClick={() => {
+              closeMenu()
+              onRename()
+            }}
+          >
+            {t("management.rename")}
+          </button>
+        ) : null}
+        {onAiRename ? (
+          <button
+            type="button"
+            role="menuitem"
+            className="ci-btn ci-btn--quiet w-full justify-start active:bg-hover"
+            disabled={busy || deleting}
+            onClick={() => {
+              closeMenu()
+              onAiRename()
+            }}
+          >
+            {t("management.aiRename")}
+          </button>
+        ) : null}
+        {onMove ? (
+          <button
+            type="button"
+            role="menuitem"
+            className="ci-btn ci-btn--quiet w-full justify-start active:bg-hover"
+            onClick={() => {
+              closeMenu()
+              onMove()
+            }}
+          >
+            {t("management.move")}
+          </button>
+        ) : null}
         <button
           type="button"
           role="menuitem"

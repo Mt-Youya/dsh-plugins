@@ -1,10 +1,12 @@
 import { mkdir, mkdtemp, utimes, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { describe, expect, it, vi } from "vitest"
+
 import type { DshListMeta } from "@cyrusdoyle/dsh-session-readers"
-import { DshSource } from "../src/host/sources/dsh.ts"
+import { describe, expect, it, vi } from "vitest"
+
 import { listOptions } from "../src/host/http/routes.ts"
+import { DshSource } from "../src/host/sources/dsh.ts"
 
 const WORKDIR = "/Users/example/repo"
 
@@ -56,7 +58,7 @@ describe("light index", () => {
             title: "索引里的标题",
           },
         ],
-      })
+      }),
     )
     const readMeta = vi.fn(async () => meta())
     const source = new DshSource({ root, indexPath: index, readMeta, scanTtlMs: 0 })
@@ -85,7 +87,7 @@ describe("light index", () => {
             title: "旧标题",
           },
         ],
-      })
+      }),
     )
     const readMeta = vi.fn(async () => meta({ title: "新标题" }))
     const source = new DshSource({ root, indexPath: index, readMeta, scanTtlMs: 0 })
@@ -113,7 +115,7 @@ describe("subagent conversations are not siblings", () => {
         id: path.includes("session-sub") ? "session-sub" : "session-main",
         delegationDepth: path.includes("session-sub") ? 1 : 0,
         title: path.includes("session-sub") ? "你是实现者。任务：…" : "主会话标题",
-      })
+      }),
     )
     const source = new DshSource({ root, indexPath: join(root, "none.json"), readMeta, scanTtlMs: 0 })
     const visible = await source.list(WORKDIR)
@@ -133,7 +135,10 @@ describe("subagent conversations are not siblings", () => {
       await writeFile(join(dir, "session.v4.jsonl.zstd"), Buffer.alloc(64))
     }
     const readMeta = vi.fn(async (path: string) =>
-      meta({ id: path.includes("sub") ? "session-sub" : "session-main", delegationDepth: path.includes("sub") ? 1 : 0 })
+      meta({
+        id: path.includes("sub") ? "session-sub" : "session-main",
+        delegationDepth: path.includes("sub") ? 1 : 0,
+      }),
     )
     const source = new DshSource({ root, indexPath: join(root, "none.json"), readMeta, scanTtlMs: 0 })
     const rows = await source.workdirs()

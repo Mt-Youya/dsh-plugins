@@ -10,6 +10,7 @@
  */
 
 import type { ReactElement } from "react"
+
 import type { ContextSource } from "../../protocol.ts"
 
 /** One source's mark and colours. */

@@ -19,11 +19,12 @@
  * Read-only: nothing is written anywhere, and no session is ever appended to.
  */
 
-import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
+import { createHash } from "node:crypto"
 import { readdirSync, readFileSync, statSync } from "node:fs"
 import { homedir } from "node:os"
 import { join } from "node:path"
+
 import { CHAR_CALIBRATION_NOTE } from "../src/core/attribution.ts"
 import { readDshSession } from "../src/core/dsh/index.ts"
 
@@ -37,7 +38,7 @@ const DEFAULT_SAMPLES = [
       SESSIONS,
       "--Users-yonjay-codes-hubs-postgraduate--",
       "session-22cfe277-a1ba-4da3-a4b4-8cc8e25f829d",
-      "session.v4.jsonl.zstd"
+      "session.v4.jsonl.zstd",
     ),
   },
   {
@@ -46,7 +47,7 @@ const DEFAULT_SAMPLES = [
       SESSIONS,
       "--Users-yonjay-codes-hubs-postgraduate--",
       "session-32db0ba3-4c7b-4b92-86ff-8a699e7bb3c8",
-      "session.v4.jsonl.zstd"
+      "session.v4.jsonl.zstd",
     ),
   },
   {
@@ -55,7 +56,7 @@ const DEFAULT_SAMPLES = [
       SESSIONS,
       "--Users-yonjay-codes-ClaudeCode-dsh-claude-context--",
       "session-c086b68b-7c3c-4565-90fc-bc023ae81c1c",
-      "session.v4.jsonl.zstd"
+      "session.v4.jsonl.zstd",
     ),
   },
 ].map((sample) => ({ ...sample, size: statSync(sample.path).size }))
@@ -154,20 +155,20 @@ function renderSample(result) {
   lines.push(`### ${entry.label} — ${entry.path}`)
   lines.push("")
   lines.push(
-    `- size ${mb(entry.size)}, parsed in ${result.elapsedMs.toFixed(0)} ms, ${session.turns.length} turns, ${stats.requests} model requests`
+    `- size ${mb(entry.size)}, parsed in ${result.elapsedMs.toFixed(0)} ms, ${session.turns.length} turns, ${stats.requests} model requests`,
   )
   lines.push(
-    `- frames ${number(stats.frames)}, bad ${stats.badFrames}, torn tail ${stats.tornTail ? "yes" : "no"}, leading bytes ${stats.leadingBytes}`
+    `- frames ${number(stats.frames)}, bad ${stats.badFrames}, torn tail ${stats.tornTail ? "yes" : "no"}, leading bytes ${stats.leadingBytes}`,
   )
   lines.push(`- lines ${number(stats.lines)} → parsed ${number(stats.parsed)} (${number(stats.invalid)} invalid)`)
   lines.push(
-    `- projection: ${stats.projectionStatus}, checkpoint seq ${stats.projectionMaxSeq} vs log seq ${stats.lastLogSeq}, ${number(stats.projectionRequests)} request records`
+    `- projection: ${stats.projectionStatus}, checkpoint seq ${stats.projectionMaxSeq} vs log seq ${stats.lastLogSeq}, ${number(stats.projectionRequests)} request records`,
   )
   lines.push(
-    `- tool calls paired ${number(stats.pairedToolCalls)}, orphan results ${number(stats.orphanToolResults)}, compactions ${number(stats.compactions)}, subagent links ${number(stats.subagentLinks)}`
+    `- tool calls paired ${number(stats.pairedToolCalls)}, orphan results ${number(stats.orphanToolResults)}, compactions ${number(stats.compactions)}, subagent links ${number(stats.subagentLinks)}`,
   )
   lines.push(
-    `- attribution basis: projection turns ${number(stats.projectionTurns)}, log-estimate turns ${number(stats.estimateTurns)}, residual turns ${number(stats.residualTurns)}`
+    `- attribution basis: projection turns ${number(stats.projectionTurns)}, log-estimate turns ${number(stats.estimateTurns)}, residual turns ${number(stats.residualTurns)}`,
   )
   if (result.crossCheck !== undefined) {
     const check = result.crossCheck
@@ -175,20 +176,20 @@ function renderSample(result) {
       lines.push(`- zstd cross-check: unavailable (${check.reason})`)
     } else {
       lines.push(
-        `- zstd cross-check: in-process ${number(check.inProcess.bytes)} B sha256 ${check.inProcess.sha256.slice(0, 16)}… vs zstd-cli ${number(check.cli.bytes)} B sha256 ${check.cli.sha256.slice(0, 16)}… → ${check.match ? "identical" : "MISMATCH"}`
+        `- zstd cross-check: in-process ${number(check.inProcess.bytes)} B sha256 ${check.inProcess.sha256.slice(0, 16)}… vs zstd-cli ${number(check.cli.bytes)} B sha256 ${check.cli.sha256.slice(0, 16)}… → ${check.match ? "identical" : "MISMATCH"}`,
       )
     }
   }
   lines.push(`- dataQuality: ${session.dataQuality.join(", ") || "(none)"}`)
   lines.push("")
   lines.push(
-    "| turn | source | usage.totalContext | attribution.total | match | parts sum | residual | reconciled.factor | Σparts+residual | coverage |"
+    "| turn | source | usage.totalContext | attribution.total | match | parts sum | residual | reconciled.factor | Σparts+residual | coverage |",
   )
   lines.push("| ---: | :--- | ---: | ---: | :---: | ---: | ---: | ---: | :---: | ---: |")
   for (const row of rows) {
     const match = row.usageContext === row.exact ? "exact" : `DRIFT ${number(row.usageContext - row.exact)}`
     lines.push(
-      `| ${row.index} | ${row.source} | ${number(row.usageContext)} | ${number(row.exact)} | ${match} | ${number(row.summed)} | ${number(row.residual)} | ${row.factor === undefined ? "—" : row.factor.toFixed(3)} | ${row.identity ? "ok" : "BROKEN"} | ${percent(row.coverage)} |`
+      `| ${row.index} | ${row.source} | ${number(row.usageContext)} | ${number(row.exact)} | ${match} | ${number(row.summed)} | ${number(row.residual)} | ${row.factor === undefined ? "—" : row.factor.toFixed(3)} | ${row.identity ? "ok" : "BROKEN"} | ${percent(row.coverage)} |`,
     )
   }
   lines.push("")
@@ -225,10 +226,10 @@ async function runSamples(entries) {
   out.push("## totals")
   out.push("")
   out.push(
-    `- turns ${number(totals.turns)} (${number(totals.projection)} projection-based, ${number(totals.estimate)} log-estimated, ${number(totals.residual)} with a residual)`
+    `- turns ${number(totals.turns)} (${number(totals.projection)} projection-based, ${number(totals.estimate)} log-estimated, ${number(totals.residual)} with a residual)`,
   )
   out.push(
-    `- slices total ${number(totals.summed)} against exact ${number(totals.exact)} = ${percent(totals.exact === 0 ? 0 : totals.summed / totals.exact)} coverage`
+    `- slices total ${number(totals.summed)} against exact ${number(totals.exact)} = ${percent(totals.exact === 0 ? 0 : totals.summed / totals.exact)} coverage`,
   )
   out.push(`- identity Σparts+residual=total holds on ${totals.identities}/${totals.turns} turns`)
   out.push("")
@@ -305,22 +306,22 @@ async function runCorpus(entries, share) {
   out.push("")
   out.push(`- sessions ${number(entries.length)}: ${number(ok)} parsed, ${number(failed)} failed`)
   out.push(
-    `- frames ${number(totals.frames)}, bad ${number(totals.badFrames)}, sessions with a torn tail ${number(totals.torn)}`
+    `- frames ${number(totals.frames)}, bad ${number(totals.badFrames)}, sessions with a torn tail ${number(totals.torn)}`,
   )
   out.push(
-    `- model requests ${number(totals.requests)}, turns ${number(totals.turns)}, turns with a residual ${number(totals.residualTurns)}`
+    `- model requests ${number(totals.requests)}, turns ${number(totals.turns)}, turns with a residual ${number(totals.residualTurns)}`,
   )
   out.push(
-    `- projection fresh ${number(entries.length - totals.stale - totals.missing)}, stale ${number(totals.stale)}, missing ${number(totals.missing)}`
+    `- projection fresh ${number(entries.length - totals.stale - totals.missing)}, stale ${number(totals.stale)}, missing ${number(totals.missing)}`,
   )
   out.push(
-    `- tool calls paired ${number(totals.paired)}, orphan results ${number(totals.orphans)}, subagent links ${number(totals.subagents)}`
+    `- tool calls paired ${number(totals.paired)}, orphan results ${number(totals.orphans)}, subagent links ${number(totals.subagents)}`,
   )
   out.push(
-    `- slices by basis: harness-projection ${number(totals.projectionSlices)} (${percent(slices === 0 ? 0 : totals.projectionSlices / slices)}), chars-per-token ${number(totals.estimateSlices)} (${percent(slices === 0 ? 0 : totals.estimateSlices / slices)})`
+    `- slices by basis: harness-projection ${number(totals.projectionSlices)} (${percent(slices === 0 ? 0 : totals.projectionSlices / slices)}), chars-per-token ${number(totals.estimateSlices)} (${percent(slices === 0 ? 0 : totals.estimateSlices / slices)})`,
   )
   out.push(
-    `- tokens by basis: harness-projection ${number(totals.projectionTokens)}, chars-per-token ${number(totals.estimateTokens)}`
+    `- tokens by basis: harness-projection ${number(totals.projectionTokens)}, chars-per-token ${number(totals.estimateTokens)}`,
   )
   out.push(`- wall ${elapsedMs.toFixed(0)} ms, peak RSS ${mb(peakRss)}`)
   if (failures.length > 0) {

@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest"
 import type { CompactionPoint, Turn } from "@cyrusdoyle/dsh-session-contract"
-import { FIRST_INPUT_CHARS, sessionLabel } from "../src/client/labels.ts"
+import { describe, expect, it } from "vitest"
+
 import { splitPath } from "../src/client/format.ts"
+import { FIRST_INPUT_CHARS, sessionLabel } from "../src/client/labels.ts"
 import { buildTurnRows } from "../src/client/state/turn-rows.ts"
 
 function turn(index: number, compactions: CompactionPoint[]): Turn {

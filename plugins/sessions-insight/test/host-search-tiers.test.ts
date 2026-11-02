@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest"
 import type { Session, Turn } from "@cyrusdoyle/dsh-session-contract"
-import { searchSessions } from "../src/host/views/search.ts"
+import { describe, expect, it } from "vitest"
+
 import type { ParsedSession, SearchCandidate, SessionSource, SourceFailure } from "../src/host/sources/source.ts"
+import { searchSessions } from "../src/host/views/search.ts"
 import type { ContextSource, SegmentInfo, SessionSummary, SourceStatus, WorkdirEntry } from "../src/protocol.ts"
 import { isSearchHit, isSearchValue } from "../src/protocol.ts"
 
@@ -30,7 +31,7 @@ class TierSource implements SessionSource {
 
   constructor(
     id: ContextSource,
-    rows: { id: string; title?: string; firstInput?: string; workdir?: string; turns: Turn[] }[]
+    rows: { id: string; title?: string; firstInput?: string; workdir?: string; turns: Turn[] }[],
   ) {
     this.id = id
     this.#rows = rows.map((row) => {
@@ -98,7 +99,7 @@ describe("fast tier", () => {
     const source = new TierSource("claude", ROWS)
     const value = await searchSessions(
       { sources: [source] },
-      { q: "上下文", sources: ["claude"], limit: 10, tier: "fast", cursor: 0 }
+      { q: "上下文", sources: ["claude"], limit: 10, tier: "fast", cursor: 0 },
     )
     expect(value.tier).toBe("fast")
     expect(value.truncated).toBe(false)
@@ -114,7 +115,7 @@ describe("fast tier", () => {
     const source = new TierSource("claude", ROWS)
     const byInput = await searchSessions(
       { sources: [source] },
-      { q: "帮我解析", sources: ["claude"], limit: 10, tier: "fast", cursor: 0 }
+      { q: "帮我解析", sources: ["claude"], limit: 10, tier: "fast", cursor: 0 },
     )
     expect(byInput.hits.map((hit) => hit.sessionId)).toEqual(["a"])
     expect(byInput.remaining).toBe(0)
@@ -122,7 +123,7 @@ describe("fast tier", () => {
     const workdirRows = [{ id: "w", firstInput: "x", workdir: "/Users/me/codes/auto-chat", turns: [] }]
     const workdir = await searchSessions(
       { sources: [new TierSource("claude", workdirRows)] },
-      { q: "auto-chat", sources: ["claude"], limit: 10, tier: "fast", cursor: 0 }
+      { q: "auto-chat", sources: ["claude"], limit: 10, tier: "fast", cursor: 0 },
     )
     expect(workdir.hits).toHaveLength(1)
     expect(workdir.hits[0]?.field).toBe("metadata")
@@ -133,7 +134,7 @@ describe("fast tier", () => {
     const source = new TierSource("claude", ROWS)
     const value = await searchSessions(
       { sources: [source] },
-      { q: "e", sources: ["claude"], limit: 1, tier: "fast", cursor: 0 }
+      { q: "e", sources: ["claude"], limit: 1, tier: "fast", cursor: 0 },
     )
     expect(value.hits).toHaveLength(1)
     expect(value.remaining).toBe(0)
@@ -147,7 +148,7 @@ describe("deep tier", () => {
     const source = new TierSource("claude", ROWS)
     const value = await searchSessions(
       { sources: [source] },
-      { q: "zebra", sources: ["claude"], limit: 10, tier: "deep", cursor: 0 }
+      { q: "zebra", sources: ["claude"], limit: 10, tier: "deep", cursor: 0 },
     )
     expect(value.tier).toBe("deep")
     expect(value.hits.map((hit) => hit.sessionId).sort()).toEqual(["a", "b", "c"])
@@ -161,7 +162,7 @@ describe("deep tier", () => {
     const source = new TierSource("claude", ROWS)
     const first = await searchSessions(
       { sources: [source], deadlineMs: 0 },
-      { q: "zebra", sources: ["claude"], limit: 10, tier: "deep", cursor: 0 }
+      { q: "zebra", sources: ["claude"], limit: 10, tier: "deep", cursor: 0 },
     )
     expect(first.truncated).toBe(true)
     expect(first.scanned).toBe(0)
@@ -170,7 +171,7 @@ describe("deep tier", () => {
 
     const second = await searchSessions(
       { sources: [source] },
-      { q: "zebra", sources: ["claude"], limit: 10, tier: "deep", cursor: 2 }
+      { q: "zebra", sources: ["claude"], limit: 10, tier: "deep", cursor: 2 },
     )
     // Starts where the cursor pointed: only the last two sessions are scanned.
     expect(second.scanned).toBe(2)
@@ -201,7 +202,7 @@ describe("search wire guards", () => {
     const source = new TierSource("claude", ROWS)
     const value = await searchSessions(
       { sources: [source] },
-      { q: "上下文", sources: ["claude"], limit: 10, tier: "fast", cursor: 0 }
+      { q: "上下文", sources: ["claude"], limit: 10, tier: "fast", cursor: 0 },
     )
     expect(isSearchValue(value)).toBe(true)
   })
