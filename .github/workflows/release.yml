@@ -1,0 +1,57 @@
+# 一键发布到 npm。
+#
+# 认证走 npm Trusted Publishing（GitHub OIDC）：本 workflow 只在
+# npm 包的 Trusted Publisher 里绑定之后才会被 registry 接受，
+# 仓库里不存任何 npm token，也不需要 2FA 交互。
+name: release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Gates
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit -p tsconfig.client.json
+          npx vitest run
+          npx tsdown
+          node scripts/check-bundle.mjs plugins/sessions-insight
+          node scripts/check-bundle.mjs .
+
+      # 成员包：npm publish 直接读 package.json 与 lib/，OIDC 由 npm CLI 自动完成。
+      - name: Publish member
+        working-directory: plugins/sessions-insight
+        run: npm publish --registry=https://registry.npmjs.org/
+
+      # 集合包的 dependencies 写的是 workspace:^，npm 不认 workspace 协议，
+      # 先用 pnpm pack 让 pnpm 把它改写成 ^<member version>，再发 tarball。
+      - name: Pack collection
+        run: |
+          mkdir -p "$RUNNER_TEMP/npm-release"
+          pnpm pack --pack-destination "$RUNNER_TEMP/npm-release"
+
+      - name: Publish collection
+        run: npm publish "$RUNNER_TEMP"/npm-release/*.tgz --registry=https://registry.npmjs.org/
