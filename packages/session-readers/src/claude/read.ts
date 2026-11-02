@@ -11,24 +11,25 @@
 
 import { exactMeasure } from "@cyrusdoyle/dsh-session-contract"
 import type { Turn, Usage } from "@cyrusdoyle/dsh-session-contract"
+
 import { ContextWindow } from "./attribution.ts"
-import { isCompactSummary, readCompactionBoundary, toCompactionPoint, type CompactionBoundary } from "./compaction.ts"
+import { type CompactionBoundary, isCompactSummary, readCompactionBoundary, toCompactionPoint } from "./compaction.ts"
 import {
   arrayField,
   booleanField,
   epochOf,
   isObject,
+  type JsonObject,
   objectField,
   streamRecords,
+  type StreamStats,
   stringField,
   UuidDeduplicator,
-  type JsonObject,
-  type StreamStats,
 } from "./records.ts"
-import { ToolLedger, recordTime, toolInvocations, toolOutcomes } from "./tools.ts"
-import { humanText, isInjectedUserMessage } from "./turns.ts"
-import { UsageNormalizer, readUsage, type UsageReading } from "./usage.ts"
 import { agentIdOf, isSubagentPath } from "./subagents.ts"
+import { recordTime, toolInvocations, ToolLedger, toolOutcomes } from "./tools.ts"
+import { humanText, isInjectedUserMessage } from "./turns.ts"
+import { readUsage, UsageNormalizer, type UsageReading } from "./usage.ts"
 
 /** Window facts a caller needs to describe the session; all derived from the loop. */
 export interface WindowFacts {

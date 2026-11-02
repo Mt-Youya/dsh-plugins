@@ -12,16 +12,17 @@
  */
 
 import { basename } from "node:path"
+
 import {
+  type CodexCorpusIndex,
+  type CodexFile,
+  type CodexSessionPlan,
+  type CodexThread,
   defaultCodexRoot,
   fileThreadId,
   indexCodexCorpus,
   planForFile,
   readMetaOnly,
-  type CodexCorpusIndex,
-  type CodexFile,
-  type CodexSessionPlan,
-  type CodexThread,
 } from "./segments.ts"
 
 /** Options for readCodexSession. */

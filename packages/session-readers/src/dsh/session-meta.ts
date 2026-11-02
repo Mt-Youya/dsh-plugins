@@ -7,7 +7,7 @@
  * shows another.
  */
 
-import { numberField, stringField, type JsonObject, type LogEvent } from "./records.ts"
+import { type JsonObject, type LogEvent, numberField, stringField } from "./records.ts"
 
 /** The fields of a session log's first line. */
 export interface SessionHeader {

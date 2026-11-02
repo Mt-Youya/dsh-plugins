@@ -6,6 +6,7 @@
  */
 
 import { decodeEnvelope as decodeEnvelopeOf } from "@cyrusdoyle/dsh-plugin-kit"
+
 import { API_ERROR_CODES } from "../types.ts"
 import type { ApiErrorCode } from "../types.ts"
 
@@ -16,7 +17,7 @@ import type { ApiErrorCode } from "../types.ts"
  */
 export function decodeEnvelope<T>(
   value: unknown,
-  guard: (payload: unknown) => payload is T
+  guard: (payload: unknown) => payload is T,
 ): { ok: true; value: T } | { ok: false; error: ApiErrorCode; detail?: string } {
   return decodeEnvelopeOf(value, guard, API_ERROR_CODES, "parse-failed")
 }

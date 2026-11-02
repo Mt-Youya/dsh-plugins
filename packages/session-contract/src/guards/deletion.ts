@@ -1,7 +1,7 @@
 import type { ContextSource } from "../types.ts"
+import { isSafeId } from "./ids.ts"
 import { isRecord } from "./shared.ts"
 import { isContextSource } from "./sources.ts"
-import { isSafeId } from "./ids.ts"
 
 export interface DeleteSessionValue {
   source: ContextSource

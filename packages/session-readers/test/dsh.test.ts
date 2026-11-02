@@ -1,11 +1,16 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { afterEach, describe, expect, it } from "vitest"
 import { zstdCompressSync } from "node:zlib"
-import { readDshSession } from "@cyrusdoyle/dsh-session-readers"
-import { decodeSessionLog } from "@cyrusdoyle/dsh-session-readers"
-import { parseProjection, isProjectionFresh, type DshProjection } from "@cyrusdoyle/dsh-session-readers"
+
+import {
+  decodeSessionLog,
+  type DshProjection,
+  isProjectionFresh,
+  parseProjection,
+  readDshSession,
+} from "@cyrusdoyle/dsh-session-readers"
+import { afterEach, describe, expect, it } from "vitest"
 
 let scratch: string | undefined
 
@@ -56,7 +61,7 @@ function assistant(
   turn: number,
   step: number,
   counters: Record<string, number>,
-  blocks: unknown[] = [{ type: "text", text: "ok" }]
+  blocks: unknown[] = [{ type: "text", text: "ok" }],
 ): unknown {
   return event(seq, "assistant/message", {
     turn,
@@ -91,7 +96,7 @@ function fixture(name: string, lines: unknown[], frames = 1): string {
   const directory = join(scratch, name)
   const file = join(directory, "session.v4.jsonl.zstd")
   mkdirSync(directory, { recursive: true })
-  const text = lines.map((line) => JSON.stringify(line)).join("\n") + "\n"
+  const text = `${lines.map((line) => JSON.stringify(line)).join("\n")}\n`
   const size = Math.max(1, Math.ceil(text.length / frames))
   const pieces: Buffer[] = []
   for (let index = 0; index < text.length; index += size) {
@@ -378,7 +383,7 @@ describe("projection-first attribution", () => {
     ]) {
       const { session } = await readDshSession(
         file,
-        projection === undefined ? { projectionRoot: "/nonexistent" } : { projection }
+        projection === undefined ? { projectionRoot: "/nonexistent" } : { projection },
       )
       for (const turn of session.turns) {
         const summed = turn.attribution.parts.reduce((total, slice) => total + slice.measure.tokens, 0)

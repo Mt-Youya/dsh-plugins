@@ -23,22 +23,23 @@
  */
 
 import {
+  type Attribution,
+  type ContextPart,
+  exactMeasure,
+  type Measure,
+  residualMeasure,
+} from "@cyrusdoyle/dsh-session-contract"
+
+import {
   addImage,
   addSchema,
   addText,
+  type CharCounts,
   emptyCharCounts,
   isEmptyCounts,
   measureOf,
   projectedMeasure,
-  type CharCounts,
 } from "../attribution.ts"
-import {
-  exactMeasure,
-  residualMeasure,
-  type Attribution,
-  type ContextPart,
-  type Measure,
-} from "@cyrusdoyle/dsh-session-contract"
 import type { ProjectionRequest } from "./projection.ts"
 
 /**
@@ -108,7 +109,7 @@ interface ReconcileOutcome {
 function reconcile(
   parts: { part: ContextPart; measure: Measure }[],
   totalTokens: number,
-  structuralGap: boolean
+  structuralGap: boolean,
 ): ReconcileOutcome {
   let estimated = 0
   for (const slice of parts) estimated += slice.measure.tokens
@@ -305,7 +306,7 @@ export class DshAttributionWindow {
   private projectionAttribution(
     totalTokens: number,
     request: ProjectionRequest,
-    previous: ProjectionRequest | undefined
+    previous: ProjectionRequest | undefined,
   ): Attribution {
     this.projectionTurns += 1
     const parts: { part: ContextPart; measure: Measure }[] = []

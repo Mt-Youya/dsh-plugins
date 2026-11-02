@@ -2,14 +2,21 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { zstdCompressSync } from "node:zlib"
-import { afterEach, describe, expect, it } from "vitest"
-import { CodexWindow, reconcile, sumSlices } from "@cyrusdoyle/dsh-session-readers"
-import { CODEX_CHARS_PER_TOKEN_TEXT, codexMeasureOf } from "@cyrusdoyle/dsh-session-readers"
-import { readCodexSession } from "@cyrusdoyle/dsh-session-readers"
-import { indexCodexCorpus } from "@cyrusdoyle/dsh-session-readers"
-import { classifyUserMessage } from "@cyrusdoyle/dsh-session-readers"
-import { decompressFrames, frameOffsets } from "@cyrusdoyle/dsh-session-readers"
+
 import type { Attribution, ContextSlice, Turn } from "@cyrusdoyle/dsh-session-contract"
+import {
+  classifyUserMessage,
+  CODEX_CHARS_PER_TOKEN_TEXT,
+  codexMeasureOf,
+  CodexWindow,
+  decompressFrames,
+  frameOffsets,
+  indexCodexCorpus,
+  readCodexSession,
+  reconcile,
+  sumSlices,
+} from "@cyrusdoyle/dsh-session-readers"
+import { afterEach, describe, expect, it } from "vitest"
 
 let scratch: string | undefined
 
@@ -62,7 +69,7 @@ function userMessage(ordinal: number, turnId: string, text: string): Envelope {
   return envelope(ordinal, "response_item", {
     type: "message",
     role: "user",
-    id: "msg-" + ordinal,
+    id: `msg-${ordinal}`,
     content: [{ type: "input_text", text }],
     internal_chat_message_metadata_passthrough: { turn_id: turnId },
   })
@@ -72,7 +79,7 @@ function assistantMessage(ordinal: number, turnId: string, text: string): Envelo
   return envelope(ordinal, "response_item", {
     type: "message",
     role: "assistant",
-    id: "msg-" + ordinal,
+    id: `msg-${ordinal}`,
     content: [{ type: "output_text", text }],
     internal_chat_message_metadata_passthrough: { turn_id: turnId },
   })
@@ -82,7 +89,7 @@ function usage(
   ordinal: number,
   turnId: string,
   counters: { input: number; cached?: number; output?: number },
-  responseId = "resp-" + ordinal
+  responseId = `resp-${ordinal}`,
 ): Envelope {
   const cached = counters.cached ?? 0
   const output = counters.output ?? 0
@@ -121,7 +128,7 @@ function usage(
 function tokenCount(
   ordinal: number,
   last: { input: number; cached?: number; output?: number },
-  contextWindow = 258400
+  contextWindow = 258400,
 ): Envelope {
   const cached = last.cached ?? 0
   const output = last.output ?? 0
@@ -154,7 +161,7 @@ function customCall(
   turnId: string,
   callId: string,
   name = "exec",
-  input = "await tools.shell()"
+  input = "await tools.shell()",
 ): Envelope {
   return envelope(ordinal, "response_item", {
     type: "custom_tool_call",
@@ -188,11 +195,11 @@ interface Fixture {
 /** Write rollout files into a throwaway corpus root and return that root. */
 function fixture(name: string, files: Fixture[]): { root: string; path: string } {
   if (scratch !== undefined) rmSync(scratch, { recursive: true, force: true })
-  scratch = mkdtempSync(join(tmpdir(), "codex-fixture-" + name + "-"))
+  scratch = mkdtempSync(join(tmpdir(), `codex-fixture-${name}-`))
   let first = ""
   for (const file of files) {
-    const path = join(scratch, "rollout-2026-01-01T00-00-0" + (first === "" ? "0" : "1") + "-" + file.name + ".jsonl")
-    writeFileSync(path, file.lines.map((line) => JSON.stringify(line)).join("\n") + "\n")
+    const path = join(scratch, `rollout-2026-01-01T00-00-0${first === "" ? "0" : "1"}-${file.name}.jsonl`)
+    writeFileSync(path, `${file.lines.map((line) => JSON.stringify(line)).join("\n")}\n`)
     if (first === "") first = path
   }
   return { root: scratch, path: first }
@@ -449,7 +456,7 @@ describe("segment chains", () => {
         ],
       },
       {
-        name: SESSION + "_" + continuation,
+        name: `${SESSION}_${continuation}`,
         lines: [
           sessionMeta({ history_base: { thread_id: SESSION, end_ordinal_exclusive: 4, end_byte_offset: 100 } }, 4),
           turnContext(5, "turn-2"),

@@ -9,7 +9,9 @@
  */
 
 import { basename } from "node:path"
+
 import type { Session } from "@cyrusdoyle/dsh-session-contract"
+
 import { readTranscript } from "./read.ts"
 import { listSubagentFiles, resolveSubagentFile } from "./subagents.ts"
 export interface ClaudeReadStats {
@@ -140,7 +142,7 @@ export async function readClaudeSession(path: string, options: ClaudeReadOptions
   if (compactions > 0) dataQuality.add("compaction-summary-continues-history")
   if (prefixOverruns.length > 0) {
     dataQuality.add(
-      `compaction-post-tokens-exclude-prefix:count=${prefixOverruns.length}:first=${prefixOverruns[0] ?? ""}`
+      `compaction-post-tokens-exclude-prefix:count=${prefixOverruns.length}:first=${prefixOverruns[0] ?? ""}`,
     )
   }
 

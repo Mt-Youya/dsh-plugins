@@ -22,7 +22,8 @@ import { readdirSync, readFileSync, statSync } from "node:fs"
 import { homedir } from "node:os"
 import { basename, join } from "node:path"
 import { zstdDecompressSync } from "node:zlib"
-import { epochOfValue, isObject, numberField, objectField, stringField, type JsonObject } from "./records.ts"
+
+import { epochOfValue, isObject, type JsonObject, numberField, objectField, stringField } from "./records.ts"
 import { frameOffsets } from "./zstd.ts"
 
 /** Prefix every rollout file name carries. */
@@ -148,7 +149,7 @@ export function fileTimestamp(path: string): number | undefined {
   if (stem === undefined) return undefined
   const match = ROLLOUT_STEM.exec(stem)
   if (match === null) return undefined
-  return Date.parse((match[1] ?? "").replace(/-/g, ":") + "Z")
+  return Date.parse(`${(match[1] ?? "").replace(/-/g, ":")}Z`)
 }
 
 function stemOf(path: string): string | undefined {
@@ -380,7 +381,7 @@ export function indexCodexCorpus(root: string): CodexCorpusIndex {
 /** Locate the session plan and the thread that own a file. */
 export function planForFile(
   index: CodexCorpusIndex,
-  path: string
+  path: string,
 ): { plan: CodexSessionPlan; thread: CodexThread } | undefined {
   for (const plan of index.sessions.values()) {
     for (const thread of [plan.root, ...plan.children]) {

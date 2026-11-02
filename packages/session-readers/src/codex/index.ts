@@ -11,7 +11,7 @@
  * @module @cyrusdoyle/dsh-sessions-insight/core/codex
  */
 
-import { resolveRead, type CodexReadOptions } from "./assemble.ts"
+import { type CodexReadOptions, resolveRead } from "./assemble.ts"
 import { openCodexSession } from "./session.ts"
 import type { CodexReadResult } from "./stats.ts"
 

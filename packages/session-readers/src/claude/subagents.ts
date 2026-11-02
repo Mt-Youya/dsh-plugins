@@ -11,7 +11,8 @@
 
 import { existsSync, readdirSync } from "node:fs"
 import { basename, dirname, join } from "node:path"
-import { isObject, objectField, stringField, type JsonObject } from "./records.ts"
+
+import { isObject, type JsonObject, objectField, stringField } from "./records.ts"
 
 /** Prefix and suffix of a subagent transcript file name. */
 const AGENT_PREFIX = "agent-"

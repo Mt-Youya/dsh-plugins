@@ -89,9 +89,9 @@ export function registerPanel(ctx: ClientContext, registration: PanelRegistratio
           locale: registration.locale,
           label: registration.label,
         },
-        registration.icon
-      )
-    )
+        registration.icon,
+      ),
+    ),
   )
 
   disposers.push(
@@ -102,9 +102,9 @@ export function registerPanel(ctx: ClientContext, registration: PanelRegistratio
           key: registration.id,
           locale: registration.locale,
         },
-        registration.panel
-      )
-    )
+        registration.panel,
+      ),
+    ),
   )
 
   return () => {
@@ -126,7 +126,7 @@ export function registerLocale(
   ctx: ClientContext,
   namespace: string,
   dictionaries: Record<string, Record<string, string>>,
-  bind: (translate: (key: string, params?: Record<string, unknown>) => string) => void
+  bind: (translate: (key: string, params?: Record<string, unknown>) => string) => void,
 ): void {
   try {
     ctx.locale.register(namespace, dictionaries)

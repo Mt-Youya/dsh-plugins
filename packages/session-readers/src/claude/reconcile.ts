@@ -50,7 +50,7 @@ interface ReconcileOutcome {
 export function reconcile(
   parts: { part: ContextPart; measure: Measure }[],
   totalTokens: number,
-  structuralGap: boolean
+  structuralGap: boolean,
 ): ReconcileOutcome {
   let estimated = 0
   for (const slice of parts) estimated += slice.measure.tokens

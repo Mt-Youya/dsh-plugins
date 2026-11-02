@@ -18,6 +18,7 @@
 
 import { closeSync, fstatSync, openSync, readSync } from "node:fs"
 import { basename, dirname } from "node:path"
+
 import { decodeSessionLog, splitLogLines } from "./frames.ts"
 import { parseLogLine } from "./records.ts"
 import { firstUserInput, readSessionHeader, readSessionTitle } from "./session-meta.ts"

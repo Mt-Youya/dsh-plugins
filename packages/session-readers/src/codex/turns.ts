@@ -11,7 +11,7 @@
  * file listings. Those are context, and only the remainder is a person typing.
  */
 
-import { isObject, objectField, stringField, type Envelope, type JsonObject } from "./records.ts"
+import { type Envelope, isObject, type JsonObject, objectField, stringField } from "./records.ts"
 
 /** Where an injected user-message block belongs in the attribution. */
 export type InjectedKind =
@@ -70,7 +70,21 @@ const OPEN_MARKERS: Array<{ kind: InjectedKind; prefix: string }> = [
 export function classifyUserMessage(text: string): UserBlocks {
   const injected: Array<{ kind: InjectedKind; text: string }> = []
   let rest = text
-  for (const block of CLOSED_BLOCKS) {
+  // Exclude catalogs/instructions before looking for nested loaded-skill blocks.
+  const trimmedMessage = text.trim()
+  const initialMarker = OPEN_MARKERS.find(
+    (entry) => trimmedMessage.startsWith(entry.prefix) && entry.prefix !== "<environment_context>",
+  )
+  if (initialMarker !== undefined) return { injected: [{ kind: initialMarker.kind, text: trimmedMessage }] }
+  rest = rest.replace(/<(available_skills|skills_instructions)>[\s\S]*?<\/\1>/g, (match) => {
+    injected.push({ kind: "instructions", text: match })
+    return " "
+  })
+  const blocks = [
+    ...CLOSED_BLOCKS.filter((block) => block.kind !== "skills"),
+    ...CLOSED_BLOCKS.filter((block) => block.kind === "skills"),
+  ]
+  for (const block of blocks) {
     rest = rest.replace(block.pattern, (match: string) => {
       injected.push({ kind: block.kind, text: match })
       return " "

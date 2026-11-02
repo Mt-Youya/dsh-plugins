@@ -1,8 +1,9 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { afterEach, describe, expect, it } from "vitest"
+
 import { readClaudeSession } from "@cyrusdoyle/dsh-session-readers"
+import { afterEach, describe, expect, it } from "vitest"
 
 let scratch: string | undefined
 
@@ -24,14 +25,14 @@ function fixture(name: string, body: Fixture): string {
   if (scratch !== undefined) rmSync(scratch, { recursive: true, force: true })
   scratch = mkdtempSync(join(tmpdir(), "claude-fixture-"))
   const file = join(scratch, `${name}.jsonl`)
-  writeFileSync(file, body.lines.map((line) => JSON.stringify(line)).join("\n") + "\n")
+  writeFileSync(file, `${body.lines.map((line) => JSON.stringify(line)).join("\n")}\n`)
   if (body.subagents !== undefined) {
     const directory = join(scratch, name, "subagents")
     mkdirSync(directory, { recursive: true })
     for (const [agentId, lines] of Object.entries(body.subagents)) {
       writeFileSync(
         join(directory, `agent-${agentId}.jsonl`),
-        lines.map((line) => JSON.stringify(line)).join("\n") + "\n"
+        `${lines.map((line) => JSON.stringify(line)).join("\n")}\n`,
       )
     }
   }
@@ -61,7 +62,7 @@ function assistant(
   messageId: string,
   blocks: unknown[],
   usage: Record<string, number>,
-  extra: Record<string, unknown> = {}
+  extra: Record<string, unknown> = {},
 ): unknown {
   return {
     type: "assistant",

@@ -14,6 +14,7 @@
  */
 
 import type { IncomingHttpHeaders, IncomingMessage, OutgoingHttpHeaders, ServerResponse } from "node:http"
+
 import type { Envelope } from "@cyrusdoyle/dsh-plugin-kit"
 
 /** Route handler shape, as the Host web server calls it. */
@@ -122,7 +123,7 @@ export function writeFail<Code extends string>(
   table: StatusTable<Code>,
   code: Code,
   detail?: string,
-  headers: OutgoingHttpHeaders = {}
+  headers: OutgoingHttpHeaders = {},
 ): void {
   const envelope = detail === undefined ? { ok: false, error: code } : { ok: false, error: code, detail }
   writeJson(res, statusOf(table, code), envelope, headers)
@@ -202,7 +203,7 @@ export function guardRequest<Code extends string>(
   res: ServerResponse,
   allowed: readonly string[],
   table: StatusTable<Code>,
-  codes: RefusalCodes<Code>
+  codes: RefusalCodes<Code>,
 ): boolean {
   if (!isSameOrigin(req)) {
     writeFail(res, table, codes.forbidden, "origin-mismatch")

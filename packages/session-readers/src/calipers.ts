@@ -228,7 +228,7 @@ export function tokensOf(counts: CharCounts): number {
     counts.text / CHARS_PER_TOKEN_TEXT +
       counts.cjk / CHARS_PER_TOKEN_CJK +
       counts.schema / CHARS_PER_TOKEN_SCHEMA +
-      counts.projected
+      counts.projected,
   )
 }
 

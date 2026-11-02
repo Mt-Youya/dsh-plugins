@@ -14,7 +14,7 @@
  * from the same usage: the two agree exactly on every sampled session.
  */
 
-import { numberField, objectField, type JsonObject } from "./records.ts"
+import { type JsonObject, numberField, objectField } from "./records.ts"
 
 /** One request's token accounting, normalized to this adapter's definition. */
 export interface DshUsageReading {

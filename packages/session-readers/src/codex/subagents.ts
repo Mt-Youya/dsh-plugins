@@ -11,7 +11,7 @@
  * corpus: 116 files carry agent_nickname and every one of them names a thread.
  */
 
-import { isObject, stringField, type JsonObject } from "./records.ts"
+import { isObject, type JsonObject, stringField } from "./records.ts"
 
 /** One SubAgentActivity item, as the parent session saw it. */
 export interface SubagentActivity {

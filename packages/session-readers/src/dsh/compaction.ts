@@ -11,8 +11,9 @@
  * continuing from it, so `replacedHistory` is true.
  */
 
-import { exactMeasure, type CompactionPoint } from "@cyrusdoyle/dsh-session-contract"
-import { numberField, stringField, type JsonObject } from "./records.ts"
+import { type CompactionPoint, exactMeasure } from "@cyrusdoyle/dsh-session-contract"
+
+import { type JsonObject, numberField, stringField } from "./records.ts"
 
 /** Event types that mark a compaction boundary. */
 const COMPACTION_TYPES = new Set(["compaction/start", "compaction/end", "compaction/prune", "compaction/summary"])
@@ -53,7 +54,7 @@ export function readCompaction(
   type: string,
   data: JsonObject,
   at: number,
-  observedTokens: number
+  observedTokens: number,
 ): CompactionPoint | undefined {
   if (!COMPACTION_TYPES.has(type)) return undefined
   const before = firstNumber(data, ["beforeTokens", "preTokens", "before", "tokensBefore", "beforeSize"])

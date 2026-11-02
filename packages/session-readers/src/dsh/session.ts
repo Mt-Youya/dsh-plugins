@@ -18,13 +18,15 @@
  */
 
 import { readFileSync } from "node:fs"
-import { basename, dirname, join } from "node:path"
 import { homedir } from "node:os"
+import { basename, dirname, join } from "node:path"
+
 import type { Session } from "@cyrusdoyle/dsh-session-contract"
+
 import { SessionFold } from "./fold.ts"
 import { decodeSessionLog, splitLogLines } from "./frames.ts"
-import { isProjectionFresh, readProjection, type DshProjection, type ProjectionAbsence } from "./projection.ts"
-import { parseLogLine, type LogEvent } from "./records.ts"
+import { type DshProjection, isProjectionFresh, type ProjectionAbsence, readProjection } from "./projection.ts"
+import { type LogEvent, parseLogLine } from "./records.ts"
 import { readSessionHeader } from "./session-meta.ts"
 
 /** Where DSH keeps its projection checkpoints on this machine. */
@@ -144,7 +146,7 @@ function resolveProjection(
   path: string,
   sessionId: string | undefined,
   lastLogSeq: number,
-  options: DshReadOptions
+  options: DshReadOptions,
 ): { projection: DshProjection | undefined; status: ProjectionStatus } {
   const supplied = options.projection
   if (supplied !== undefined) {

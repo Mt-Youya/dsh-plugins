@@ -16,10 +16,11 @@
  */
 
 import type { Turn } from "@cyrusdoyle/dsh-session-contract"
+
 import { DshAttributionWindow } from "./attribution.ts"
 import { isCompactionConsistent, isCompactionEvent, readCompaction } from "./compaction.ts"
 import type { DshProjection, ProjectionRequest } from "./projection.ts"
-import { arrayField, numberField, objectField, stringField, type LogEvent } from "./records.ts"
+import { arrayField, type LogEvent, numberField, objectField, stringField } from "./records.ts"
 import { readSessionTitle } from "./session-meta.ts"
 import { SubagentTracker } from "./subagents.ts"
 import { DshToolLedger } from "./tools.ts"
@@ -79,7 +80,7 @@ function emptyTurn(at: number, seq: number): OpenTurn {
 /** Pick the request a turn peaked at, and the one before it. */
 function requestsForTurn(
   requests: readonly ProjectionRequest[],
-  turn: OpenTurn
+  turn: OpenTurn,
 ): { peak?: ProjectionRequest; previous?: ProjectionRequest } {
   let bestIndex = -1
   for (let index = 0; index < requests.length; index += 1) {

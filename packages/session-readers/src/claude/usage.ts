@@ -7,7 +7,7 @@
  * always normalized by message id first.
  */
 
-import { numberField, objectField, type JsonObject } from "./records.ts"
+import { type JsonObject, numberField, objectField } from "./records.ts"
 
 /** One request's token accounting, already normalized. */
 export interface UsageReading {

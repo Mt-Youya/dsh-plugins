@@ -10,7 +10,8 @@
  */
 
 import type { CompactionPoint } from "@cyrusdoyle/dsh-session-contract"
-import { numberField, objectArrayField, objectField, type JsonObject } from "./records.ts"
+
+import { type JsonObject, numberField, objectArrayField, objectField } from "./records.ts"
 import { readUsageRecord, type UsageReading } from "./usage.ts"
 
 /** What a compacted payload says. */
@@ -60,7 +61,7 @@ export function toCompactionPoint(
   at: number,
   beforeTokens: number,
   afterTokens: number,
-  trigger?: string
+  trigger?: string,
 ): CompactionPoint {
   const point: CompactionPoint = {
     at,

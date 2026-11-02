@@ -10,16 +10,17 @@
  */
 
 import type { Session, Turn } from "@cyrusdoyle/dsh-session-contract"
+
 import type { AttributionReport } from "./attribution.ts"
 import { CODEX_CALIPER_TOKEN } from "./calibration.ts"
+import type { JsonObject } from "./records.ts"
 import {
   lastUsageSignatureOf,
   readCumulativeInput,
   readTokenCountInfo,
-  usageSignatureOf,
   type UsageReading,
+  usageSignatureOf,
 } from "./usage.ts"
-import type { JsonObject } from "./records.ts"
 
 /** Everything the probe wants to print that the IR has no field for. */
 export interface CodexReadStats {
@@ -312,44 +313,44 @@ export class SessionStats {
   /** Build the session's dataQuality tokens and its stats snapshot. */
   finalize(facts: SessionFacts): { dataQuality: string[]; stats: CodexReadStats } {
     const quality = new Set<string>()
-    if (facts.chainBroken > 0) quality.add("segment-chain-broken:files=" + facts.chainBroken)
+    if (facts.chainBroken > 0) quality.add(`segment-chain-broken:files=${facts.chainBroken}`)
     if (facts.chainMissingBase > 0) quality.add("history-base-missing")
     if (facts.firstOrdinal !== undefined && facts.firstOrdinal > 0) {
-      quality.add("partial-history:first-ordinal=" + facts.firstOrdinal)
+      quality.add(`partial-history:first-ordinal=${facts.firstOrdinal}`)
     }
     quality.add(CODEX_CALIPER_TOKEN)
     if (facts.parentThreadId !== undefined) {
       quality.add("subagent-thread")
-      quality.add("parent-thread=" + facts.parentThreadId)
+      quality.add(`parent-thread=${facts.parentThreadId}`)
     }
     // The child's inherited history starts at a parent ordinal, but this adapter
     // does not trim the parent's messages out of the child's first turn. Say so
     // instead of letting the extra context pass as the child's own input.
     if (facts.subagentHistoryStartOrdinal !== undefined) {
-      quality.add("subagent-history-inherited:start=" + facts.subagentHistoryStartOrdinal)
+      quality.add(`subagent-history-inherited:start=${facts.subagentHistoryStartOrdinal}`)
     }
-    if (facts.forkedFrom !== undefined) quality.add("forked-from=" + facts.forkedFrom)
+    if (facts.forkedFrom !== undefined) quality.add(`forked-from=${facts.forkedFrom}`)
     if (facts.childThreadIds.length > 0 && facts.parentThreadId === undefined) {
       const unlinked = facts.childThreadIds.filter((id) => !facts.subagentThreads.includes(id))
-      if (unlinked.length > 0) quality.add("subagent-thread-unlinked:count=" + unlinked.length)
+      if (unlinked.length > 0) quality.add(`subagent-thread-unlinked:count=${unlinked.length}`)
     }
-    if (facts.encryptedReasoningRecords > 0) quality.add("reasoning-encrypted:count=" + facts.encryptedReasoningRecords)
+    if (facts.encryptedReasoningRecords > 0) quality.add(`reasoning-encrypted:count=${facts.encryptedReasoningRecords}`)
     if (facts.reasoningRecords > 0 && facts.encryptedReasoningRecords === 0) quality.add("reasoning-readable")
     if (facts.sawToolSchemas) quality.add("tool-definitions-partial")
     else quality.add("tool-definitions-missing")
     if (facts.sawPermissionsHash) quality.add("permissions-instructions-hash-only")
-    if (this.worldStates > 0) quality.add("world-state-not-attributed:count=" + this.worldStates)
-    if (this.compactions > 0) quality.add("compaction-replaced-history:count=" + this.compactions)
-    if (this.compactionUnresolved > 0) quality.add("compaction-sizes-unresolved:count=" + this.compactionUnresolved)
+    if (this.worldStates > 0) quality.add(`world-state-not-attributed:count=${this.worldStates}`)
+    if (this.compactions > 0) quality.add(`compaction-replaced-history:count=${this.compactions}`)
+    if (this.compactionUnresolved > 0) quality.add(`compaction-sizes-unresolved:count=${this.compactionUnresolved}`)
     if (facts.requests === 0 && facts.turns.length > 0) quality.add("usage-records-missing")
-    if (this.abortedTurns > 0) quality.add("turn-aborted:count=" + this.abortedTurns)
-    if (this.turnsWithoutUsage > 0) quality.add("turn-without-usage:count=" + this.turnsWithoutUsage)
-    if (this.residualTurns > 0) quality.add("attribution-residual:share=" + this.worstResidualShare.toFixed(2))
-    if (this.overCountedTurns > 0) quality.add("attribution-over-counted:share=" + this.worstOverCountShare.toFixed(2))
-    if (this.toolResultsAboveWindow > 0) quality.add("tool-output-above-window:count=" + this.toolResultsAboveWindow)
-    if (this.reconciledTurns > 0) quality.add("attribution-reconciled:worst-factor=" + this.worstFactor.toFixed(3))
-    if (this.unclassified > 0) quality.add("unclassified-records:count=" + this.unclassified)
-    if (this.interAgentRecords > 0) quality.add("inter-agent-messages:count=" + this.interAgentRecords)
+    if (this.abortedTurns > 0) quality.add(`turn-aborted:count=${this.abortedTurns}`)
+    if (this.turnsWithoutUsage > 0) quality.add(`turn-without-usage:count=${this.turnsWithoutUsage}`)
+    if (this.residualTurns > 0) quality.add(`attribution-residual:share=${this.worstResidualShare.toFixed(2)}`)
+    if (this.overCountedTurns > 0) quality.add(`attribution-over-counted:share=${this.worstOverCountShare.toFixed(2)}`)
+    if (this.toolResultsAboveWindow > 0) quality.add(`tool-output-above-window:count=${this.toolResultsAboveWindow}`)
+    if (this.reconciledTurns > 0) quality.add(`attribution-reconciled:worst-factor=${this.worstFactor.toFixed(3)}`)
+    if (this.unclassified > 0) quality.add(`unclassified-records:count=${this.unclassified}`)
+    if (this.interAgentRecords > 0) quality.add(`inter-agent-messages:count=${this.interAgentRecords}`)
 
     const stats: CodexReadStats = {
       path: facts.path,

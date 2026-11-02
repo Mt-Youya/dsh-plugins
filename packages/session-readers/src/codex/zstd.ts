@@ -110,7 +110,7 @@ export async function streamLines(path: string, onLine: (line: string) => void):
   if (path.endsWith(".zst")) {
     const compressed = readFileSync(path)
     const offsets = frameOffsets(compressed)
-    if (offsets.length === 0) throw new Error("no zstd frame in " + path)
+    if (offsets.length === 0) throw new Error(`no zstd frame in ${path}`)
     for (let index = 0; index < offsets.length; index += 1) {
       const start = offsets[index] ?? 0
       const end = offsets[index + 1] ?? compressed.length

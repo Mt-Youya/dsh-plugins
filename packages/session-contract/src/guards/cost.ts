@@ -126,7 +126,7 @@ export function isCostValue(value: unknown): value is CostValue {
       isRecord(turn) &&
       isNumber(turn.index) &&
       typeof turn.priced === "boolean" &&
-      (turn.usd === null || isNumber(turn.usd))
+      (turn.usd === null || isNumber(turn.usd)),
   )
   if (!turnsOk) return false
   if (value.tableId !== undefined && value.tableId !== null && typeof value.tableId !== "string") return false
@@ -138,6 +138,6 @@ export function isCostValue(value: unknown): value is CostValue {
       typeof table.id === "string" &&
       isRecord(table.byCurrency) &&
       typeof table.partial === "boolean" &&
-      Array.isArray(table.turns)
+      Array.isArray(table.turns),
   )
 }

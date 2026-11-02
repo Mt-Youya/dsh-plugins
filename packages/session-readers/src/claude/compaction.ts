@@ -9,7 +9,8 @@
  */
 
 import type { CompactionPoint, Measure } from "@cyrusdoyle/dsh-session-contract"
-import { epochOf, numberField, objectField, stringField, type JsonObject } from "./records.ts"
+
+import { epochOf, type JsonObject, numberField, objectField, stringField } from "./records.ts"
 
 /** The metadata half of a compaction event. */
 export interface CompactionBoundary {

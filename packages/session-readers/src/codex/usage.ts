@@ -16,7 +16,7 @@
  * every record, and when it is non-zero it is part of input_tokens as well.
  */
 
-import { numberField, objectField, stringField, type JsonObject } from "./records.ts"
+import { type JsonObject, numberField, objectField, stringField } from "./records.ts"
 
 /** One response's token accounting, verbatim from the record. */
 export interface UsageReading {

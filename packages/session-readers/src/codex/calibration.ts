@@ -28,25 +28,20 @@
  *   tool-heavy turn still over-counts whichever text caliper is used.
  */
 
-import { CHARS_PER_TOKEN_CJK, CHARS_PER_TOKEN_SCHEMA, type CharCounts } from "../attribution.ts"
 import type { Measure } from "@cyrusdoyle/dsh-session-contract"
+
+import { type CharCounts, CHARS_PER_TOKEN_CJK, CHARS_PER_TOKEN_SCHEMA } from "../attribution.ts"
 
 /** Fitted prose/code mix coefficient for Codex instructions (see the header). */
 export const CODEX_CHARS_PER_TOKEN_TEXT = 3.27
 
 /** Human-readable provenance, printed by the probe next to the shared note. */
 export const CODEX_CALIBRATION_NOTE =
-  "codex calipers: text " +
-  CODEX_CHARS_PER_TOKEN_TEXT +
-  " (fitted, see src/core/codex/calibration.ts), " +
-  "schema " +
-  CHARS_PER_TOKEN_SCHEMA +
-  " and cjk " +
-  CHARS_PER_TOKEN_CJK +
-  " inherited from the shared table"
+  `codex calipers: text ${CODEX_CHARS_PER_TOKEN_TEXT} (fitted, see src/core/codex/calibration.ts), ` +
+  `schema ${CHARS_PER_TOKEN_SCHEMA} and cjk ${CHARS_PER_TOKEN_CJK} inherited from the shared table`
 
 /** The dataQuality token that tells a reader which caliper produced the numbers. */
-export const CODEX_CALIPER_TOKEN = "calipers=codex-text-" + CODEX_CHARS_PER_TOKEN_TEXT
+export const CODEX_CALIPER_TOKEN = `calipers=codex-text-${CODEX_CHARS_PER_TOKEN_TEXT}`
 
 /** Convert an accumulator to tokens with the Codex text caliper. */
 export function codexTokensOf(counts: CharCounts): number {
@@ -54,7 +49,7 @@ export function codexTokensOf(counts: CharCounts): number {
     counts.text / CODEX_CHARS_PER_TOKEN_TEXT +
       counts.cjk / CHARS_PER_TOKEN_CJK +
       counts.schema / CHARS_PER_TOKEN_SCHEMA +
-      counts.projected
+      counts.projected,
   )
 }
 

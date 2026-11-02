@@ -11,10 +11,16 @@ import type { Attribution, Basis, ContextPart, Measure, Precision } from "../ir.
 import { isRecord } from "./shared.ts"
 
 const PRECISIONS: ReadonlySet<Precision> = new Set(["exact", "estimate"])
-const BASES: readonly Basis[] = ["usage", "harness-projection", "chars-per-token", "byte-length", "unattributed"]
+const BASES: ReadonlySet<Basis> = new Set([
+  "usage",
+  "harness-projection",
+  "chars-per-token",
+  "byte-length",
+  "unattributed",
+])
 
 /** Context parts, duplicated from the IR as a closed set for the guard. */
-const PARTS: readonly ContextPart[] = [
+const PARTS: ReadonlySet<ContextPart> = new Set([
   "system-prompt",
   "tool-definitions",
   "memory-instructions",
@@ -25,7 +31,7 @@ const PARTS: readonly ContextPart[] = [
   "user-input",
   "assistant-output",
   "thinking",
-]
+])
 
 /**
  * Whether a wire value is a well-formed measure.
@@ -40,7 +46,7 @@ export function isMeasure(value: unknown): value is Measure {
     typeof tokens === "number" &&
     Number.isFinite(tokens) &&
     PRECISIONS.has(precision as Precision) &&
-    BASES.includes(basis as Basis)
+    BASES.has(basis as Basis)
   )
 }
 
@@ -59,7 +65,7 @@ export function isAttribution(value: unknown): value is Attribution {
   if (!Array.isArray(parts)) return false
   for (const slice of parts) {
     if (!isRecord(slice)) return false
-    if (!PARTS.includes(slice.part as ContextPart)) return false
+    if (!PARTS.has(slice.part as ContextPart)) return false
     if (!isMeasure(slice.measure)) return false
   }
   if (value.residual !== undefined && !isMeasure(value.residual)) return false

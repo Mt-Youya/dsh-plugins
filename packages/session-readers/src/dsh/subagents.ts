@@ -10,7 +10,7 @@
  * view a teammate is a child session too, and the panel shows them in one tree.
  */
 
-import { objectField, stringField, type JsonObject } from "./records.ts"
+import { type JsonObject, objectField, stringField } from "./records.ts"
 
 /** One child session a parent knows about. */
 export interface SubagentLink {

@@ -12,7 +12,8 @@
 
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { arrayField, isObject, numberField, objectField, type JsonObject } from "./records.ts"
+
+import { arrayField, isObject, type JsonObject, numberField, objectField } from "./records.ts"
 
 /** One projection row: its schema version, the log seq it describes, and the value. */
 export interface ProjectionRow {

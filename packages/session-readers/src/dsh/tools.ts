@@ -10,7 +10,8 @@
  */
 
 import type { ToolCall } from "@cyrusdoyle/dsh-session-contract"
-import { arrayField, booleanField, isObject, objectField, stringField, type JsonObject } from "./records.ts"
+
+import { arrayField, booleanField, isObject, type JsonObject, objectField, stringField } from "./records.ts"
 
 /** One assembled call, possibly still open. */
 interface Pending {

@@ -8,15 +8,16 @@
  */
 
 import type { ToolCall } from "@cyrusdoyle/dsh-session-contract"
+
 import {
   arrayField,
   booleanField,
   epochOf,
   isObject,
+  type JsonObject,
   objectArrayField,
   objectField,
   stringField,
-  type JsonObject,
 } from "./records.ts"
 
 /** A `tool_use` content block. */

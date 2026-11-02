@@ -8,7 +8,7 @@
  * and, worse, invent turn boundaries where nobody spoke.
  */
 
-import { arrayField, isObject, objectField, stringField, type JsonObject } from "./records.ts"
+import { arrayField, isObject, type JsonObject, objectField, stringField } from "./records.ts"
 
 /** Source kinds that represent a person, not the harness. */
 const HUMAN_SOURCE_KINDS = new Set(["user"])

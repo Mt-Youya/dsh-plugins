@@ -15,7 +15,8 @@
  */
 
 import type { ToolCall } from "@cyrusdoyle/dsh-session-contract"
-import { booleanField, isObject, stringField, type JsonObject, type JsonValue } from "./records.ts"
+
+import { booleanField, isObject, type JsonObject, type JsonValue, stringField } from "./records.ts"
 
 /** A call the model made. */
 export interface ToolInvocation {
@@ -59,7 +60,7 @@ export function toolInvocationOf(payload: JsonObject, at: number): ToolInvocatio
   const name = toolName(payload)
   if (type === "web_search_call") {
     const id = stringField(payload, "id") ?? "web_search"
-    return { id: "web_search:" + id, name, input: payload["action"] ?? null, startedAt: at }
+    return { id: `web_search:${id}`, name, input: payload["action"] ?? null, startedAt: at }
   }
   if (callId === undefined) return undefined
   return { id: callId, name, input: toolInput(payload), startedAt: at }
@@ -72,7 +73,7 @@ export function toolName(payload: JsonObject): string {
   if (type === "tool_search_call") return "tool_search"
   const name = stringField(payload, "name") ?? "unknown"
   const namespace = stringField(payload, "namespace")
-  return namespace === undefined || namespace.length === 0 ? name : namespace + "." + name
+  return namespace === undefined || namespace.length === 0 ? name : `${namespace}.${name}`
 }
 
 /** The model's input: free-form JavaScript for exec, JSON text otherwise. */

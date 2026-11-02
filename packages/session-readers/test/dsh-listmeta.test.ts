@@ -1,9 +1,10 @@
 import { mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { afterEach, describe, expect, it } from "vitest"
 import { zstdCompressSync } from "node:zlib"
-import { readDshListMeta, LIST_META_BYTE_LIMIT, LIST_META_FRAME_LIMIT } from "@cyrusdoyle/dsh-session-readers"
+
+import { LIST_META_BYTE_LIMIT, LIST_META_FRAME_LIMIT, readDshListMeta } from "@cyrusdoyle/dsh-session-readers"
+import { afterEach, describe, expect, it } from "vitest"
 
 let scratch: string | undefined
 
@@ -57,7 +58,7 @@ function writeLog(name: string, chunks: unknown[][]): string {
   const path = join(directory, "session.v4.jsonl.zstd")
   const pieces: Buffer[] = []
   for (const chunk of chunks) {
-    const text = chunk.map((line) => JSON.stringify(line)).join("\n") + "\n"
+    const text = `${chunk.map((line) => JSON.stringify(line)).join("\n")}\n`
     pieces.push(zstdCompressSync(Buffer.from(text)))
   }
   writeFileSync(path, Buffer.concat(pieces))
@@ -121,8 +122,8 @@ describe("readDshListMeta", () => {
     for (let index = 0; index < 60; index += 1) {
       chunks.push(
         Array.from({ length: 60 }, (_, offset) =>
-          event(100 + index * 60 + offset, "step/start", { turn: 1, step: offset, note: noise() })
-        )
+          event(100 + index * 60 + offset, "step/start", { turn: 1, step: offset, note: noise() }),
+        ),
       )
     }
     const path = writeLog("huge", chunks)
@@ -148,7 +149,9 @@ describe("readDshListMeta", () => {
     expect(child.id).toBe("child-1")
     // A header without the field must default to 0 rather than undefined.
     const bare = await readDshListMeta(
-      writeLog("bare", [[{ type: "session", version: 4, id: "bare-1", cwd: "/tmp/work", createdAt: 1 }, user(2, "hi")]])
+      writeLog("bare", [
+        [{ type: "session", version: 4, id: "bare-1", cwd: "/tmp/work", createdAt: 1 }, user(2, "hi")],
+      ]),
     )
     expect(bare.delegationDepth).toBe(0)
   })

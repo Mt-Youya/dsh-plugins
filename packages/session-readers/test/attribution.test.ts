@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { estimateMeasure, exactMeasure, sumMeasures } from "@cyrusdoyle/dsh-session-contract"
 import {
   addSchema,
   addText,
@@ -11,7 +11,7 @@ import {
   PIXELS_PER_TOKEN,
   tokensOf,
 } from "@cyrusdoyle/dsh-session-readers"
-import { estimateMeasure, exactMeasure, sumMeasures } from "@cyrusdoyle/dsh-session-contract"
+import { describe, expect, it } from "vitest"
 
 describe("estimation calipers", () => {
   it("marks every character-derived number as an estimate", () => {
@@ -37,7 +37,7 @@ describe("estimation calipers", () => {
 
   it("mixes both scripts inside one payload without one caliper eating the other", () => {
     const counts = emptyCharCounts()
-    addText(counts, "abc" + "中".repeat(10))
+    addText(counts, `abc${"中".repeat(10)}`)
     expect(counts.text).toBe(3)
     expect(counts.cjk).toBe(10)
     expect(tokensOf(counts)).toBeGreaterThan(Math.round(13 / CHARS_PER_TOKEN_TEXT) - 1)

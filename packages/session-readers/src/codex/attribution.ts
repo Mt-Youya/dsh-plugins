@@ -28,15 +28,16 @@
  * docs/adr/0005-honest-attribution-residual.md.
  */
 
-import { addImage, addSchema, addText, emptyCharCounts, isEmptyCounts, type CharCounts } from "../attribution.ts"
 import {
-  estimateMeasure,
-  residualMeasure,
   type Attribution,
-  type ContextSlice,
   type ContextPart,
+  type ContextSlice,
+  estimateMeasure,
   type Measure,
+  residualMeasure,
 } from "@cyrusdoyle/dsh-session-contract"
+
+import { addImage, addSchema, addText, type CharCounts, emptyCharCounts, isEmptyCounts } from "../attribution.ts"
 import { codexMeasureOf, codexProjectedMeasure } from "./calibration.ts"
 import { isObject, type JsonObject } from "./records.ts"
 import { isToolCallItem, toolInput } from "./tools.ts"

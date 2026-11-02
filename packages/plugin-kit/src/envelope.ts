@@ -47,7 +47,7 @@ export function decodeEnvelope<T, Code extends string>(
   value: unknown,
   guard: (payload: unknown) => payload is T,
   codes: readonly Code[],
-  fallback: Code
+  fallback: Code,
 ): Ok<T> | Fail<Code> {
   if (!isRecord(value)) return { ok: false, error: fallback, detail: "envelope-not-an-object" }
   if (value.ok === true) {

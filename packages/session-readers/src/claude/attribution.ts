@@ -12,24 +12,25 @@
  */
 
 import {
+  type Attribution,
+  type ContextPart,
+  estimateMeasure,
+  type Measure,
+  residualMeasure,
+} from "@cyrusdoyle/dsh-session-contract"
+
+import {
   addImage,
   addSchema,
   addText,
+  type CharCounts,
   emptyCharCounts,
   isEmptyCounts,
   measureOf,
   projectedMeasure,
-  type CharCounts,
 } from "../attribution.ts"
-import {
-  estimateMeasure,
-  residualMeasure,
-  type Attribution,
-  type ContextPart,
-  type Measure,
-} from "@cyrusdoyle/dsh-session-contract"
 import { reconcile } from "./reconcile.ts"
-import { arrayField, isObject, objectField, stringField, type JsonObject } from "./records.ts"
+import { arrayField, isObject, type JsonObject, objectField, stringField } from "./records.ts"
 
 /** Attachment types that carry instructions rather than prompt scaffolding. */
 const MEMORY_TYPES = new Set(["instructions", "skill_listing", "agent_listing_delta", "mcp_instructions_delta"])

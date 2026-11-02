@@ -14,6 +14,8 @@
  */
 
 export * from "./calipers.ts"
+export { skillInjectionsOf } from "./skills.ts"
+export type { SkillInjection, SkillInjectionTurn } from "./skills.ts"
 
 export { readClaudeSession } from "./claude/index.ts"
 export type { ClaudeReadOptions, ClaudeReadResult, ClaudeReadStats } from "./claude/index.ts"

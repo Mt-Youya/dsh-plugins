@@ -50,7 +50,7 @@ export function isWorkdirsValue(value: unknown): value is WorkdirsValue {
         isRecord(group) &&
         CONTEXT_SOURCES.includes(group.source as ContextSource) &&
         isNumber(group.sessions) &&
-        isNumber(group.lastUpdatedAt)
+        isNumber(group.lastUpdatedAt),
     )
   })
 }

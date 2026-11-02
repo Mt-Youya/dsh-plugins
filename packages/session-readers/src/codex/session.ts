@@ -23,24 +23,26 @@
 
 import { exactMeasure } from "@cyrusdoyle/dsh-session-contract"
 import type { Session, Turn, Usage } from "@cyrusdoyle/dsh-session-contract"
+
+import { type SkillInjection, skillInjectionsOf, type SkillInjectionTurn } from "../skills.ts"
 import type { ResolvedRead } from "./assemble.ts"
 import { CodexWindow } from "./attribution.ts"
 import { readCompacted, toCompactionPoint } from "./compaction.ts"
 import {
+  type Envelope,
   epochOfValue,
   isObject,
+  type JsonObject,
   objectField,
   readEnvelope,
   streamRecords,
   stringField,
-  type Envelope,
-  type JsonObject,
 } from "./records.ts"
-import { SessionStats, type CodexReadResult, type SessionFacts } from "./stats.ts"
+import { type CodexReadResult, type SessionFacts, SessionStats } from "./stats.ts"
 import { subagentActivityOf } from "./subagents.ts"
-import { ToolLedger, isToolCallItem, isToolOutputItem, toolInvocationOf, toolOutcomeOf } from "./tools.ts"
+import { isToolCallItem, isToolOutputItem, toolInvocationOf, ToolLedger, toolOutcomeOf } from "./tools.ts"
 import { classifyUserMessage, messageText, turnIdOf } from "./turns.ts"
-import { UsageTally, readTokenCountInfo, readUsageRecord, type UsageReading } from "./usage.ts"
+import { readTokenCountInfo, readUsageRecord, type UsageReading, UsageTally } from "./usage.ts"
 
 /** Mutable per-turn accumulator, finalized when the next turn starts. */
 interface OpenTurn {
@@ -48,6 +50,7 @@ interface OpenTurn {
   startedAt: number
   endedAt: number
   userInput: string[]
+  skillInjections: SkillInjection[]
   assistantText: string[]
   ledger: ToolLedger
   compactions: Turn["compactions"]
@@ -88,12 +91,12 @@ function turnUsage(readings: readonly UsageReading[], peak: number): Usage | und
 export async function openCodexSession(
   path: string,
   resolved: ResolvedRead,
-  started: number
+  started: number,
 ): Promise<CodexReadResult> {
   const { planned, files, thread } = resolved
 
   /** Model provider for every turn, taken from the session metadata. */
-  let provider = planned.meta?.modelProvider ?? "openai"
+  const provider = planned.meta?.modelProvider ?? "openai"
   const window = new CodexWindow()
   const stats = new SessionStats()
   const tally = new UsageTally()
@@ -124,6 +127,7 @@ export async function openCodexSession(
     // update) are not turns: nothing was asked and nothing was answered.
     const empty =
       open.userInput.length === 0 &&
+      open.skillInjections.length === 0 &&
       open.assistantText.length === 0 &&
       calls.length === 0 &&
       usage === undefined &&
@@ -138,13 +142,14 @@ export async function openCodexSession(
     // so it is measured at its end (and marked turn-without-usage).
     const report = window.attribution(
       open.peakContext,
-      open.peakContext > 0 ? open.peakOrdinal : Number.POSITIVE_INFINITY
+      open.peakContext > 0 ? open.peakOrdinal : Number.POSITIVE_INFINITY,
     )
-    const turn: Turn = {
+    const turn: SkillInjectionTurn = {
       index: turns.length + 1,
       startedAt: open.startedAt,
       endedAt: open.endedAt,
       userInput: open.userInput,
+      ...(open.skillInjections.length === 0 ? {} : { skillInjections: open.skillInjections }),
       assistantText: open.assistantText,
       toolCalls: calls,
       attribution: report.attribution,
@@ -171,6 +176,7 @@ export async function openCodexSession(
       startedAt,
       endedAt: startedAt,
       userInput: [],
+      skillInjections: [],
       assistantText: [],
       ledger: new ToolLedger(),
       compactions: [],
@@ -186,7 +192,7 @@ export async function openCodexSession(
     if (key !== undefined) return startTurn(key, at)
     if (open !== undefined) return open
     synthetic += 1
-    return startTurn("untracked:" + synthetic, at)
+    return startTurn(`untracked:${synthetic}`, at)
   }
 
   const touch = (at: number | undefined): void => {
@@ -240,7 +246,10 @@ export async function openCodexSession(
           turn.userInput.push(blocks.human)
           window.addHumanText(blocks.human, envelope.ordinal ?? 0)
         }
-        for (const block of blocks.injected) window.addInjection(block.kind, block.text, envelope.ordinal ?? 0)
+        for (const block of blocks.injected) {
+          if (block.kind === "skills") turn.skillInjections.push(...skillInjectionsOf(block.text))
+          window.addInjection(block.kind, block.text, envelope.ordinal ?? 0)
+        }
       }
       const content = payload["content"]
       if (Array.isArray(content)) {
@@ -340,7 +349,7 @@ export async function openCodexSession(
     // The boundary's own usage snapshot is the request that triggered it, i.e.
     // the size that must fall. The post-compaction size is the next request's.
     const before = compacted.latestUsage?.input ?? lastUsageInput
-    const trigger = compacted.windowNumber === undefined ? undefined : "window=" + compacted.windowNumber
+    const trigger = compacted.windowNumber === undefined ? undefined : `window=${compacted.windowNumber}`
     const point = toCompactionPoint(at ?? lastAt, before, 0, trigger)
     const turn = ensureTurn(undefined, at)
     turn.compactions.push(point)

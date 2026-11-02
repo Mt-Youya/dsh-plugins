@@ -6,7 +6,7 @@
 
 import { CONTEXT_SOURCES } from "../types.ts"
 import type { ContextSource, SourceProblem } from "../types.ts"
-import { isRecord, isNumber } from "./shared.ts"
+import { isNumber, isRecord } from "./shared.ts"
 import { isContextSource } from "./sources.ts"
 
 /** Default number of search hits one call returns. */
@@ -155,6 +155,6 @@ export function isSearchValue(value: unknown): value is SearchValue {
   if (!Array.isArray(value.failures)) return false
   return value.failures.every(
     (entry) =>
-      isRecord(entry) && CONTEXT_SOURCES.includes(entry.source as ContextSource) && typeof entry.error === "string"
+      isRecord(entry) && CONTEXT_SOURCES.includes(entry.source as ContextSource) && typeof entry.error === "string",
   )
 }

@@ -138,7 +138,7 @@ export function isBriefValue(value: unknown): value is BriefValue {
       isRecord(section) &&
       typeof section.title === "string" &&
       isStringArray(section.lines) &&
-      typeof section.empty === "boolean"
+      typeof section.empty === "boolean",
   )
 }
 
