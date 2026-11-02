@@ -1,6 +1,6 @@
 {
   "name": "@cyrusdoyle/dsh-sessions-insight",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Sessions insight and confirmed session deletion for the DSH Web GUI: what each turn actually fed the model, across Claude Code, DSH and Codex sessions.",
   "keywords": [
     "agent",
