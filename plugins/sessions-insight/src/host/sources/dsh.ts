@@ -55,8 +55,7 @@ export interface DshSourceConfig {
   cacheEntries?: number
 }
 
-/** One discovered session log. */
-/** One row of the on-disk list index: header facts only, never a body. */
+/** One list-index row: head facts plus detail-confirmed labels, never a body. */
 export interface DshIndexEntry {
   path: string
   mtimeMs: number
@@ -127,7 +126,7 @@ export interface DshEntry {
   updatedAt: number
   /** Header delegation depth; > 0 means a subagent conversation. */
   delegationDepth: number
-  /** Title read from the log head, if the Host wrote one that early. */
+  /** Title from the head or a detail parse of the same file fingerprint. */
   title?: string
   /** First human-looking user message from the log head. */
   firstInput?: string
@@ -187,6 +186,7 @@ export class DshSource implements SessionSource {
   readonly #indexPath: string
   readonly #readMeta: (logPath: string) => Promise<DshListMeta>
   #inflight: Promise<DshScan> | undefined
+  #saving = Promise.resolve()
 
   constructor(config: DshSourceConfig = {}) {
     this.#root = config.root ?? defaultDshRoot()
@@ -323,9 +323,33 @@ export class DshSource implements SessionSource {
     entries.sort((a, b) => b.updatedAt - a.updatedAt)
     this.#index = new Map(next.map((entry) => [entry.path, entry]))
     if (changed || previous.size !== next.length) {
-      void saveDshIndex(this.#indexPath, next)
+      await this.#saveIndex()
     }
     return { root: this.#root, state: "ok", entries, scannedAt }
+  }
+
+  #saveIndex(): Promise<void> {
+    const entries = [...(this.#index?.values() ?? [])].map((entry) => Object.assign({}, entry))
+    this.#saving = this.#saving.then(() => saveDshIndex(this.#indexPath, entries))
+    return this.#saving
+  }
+
+  async #promote(entry: DshEntry, session: Session): Promise<void> {
+    const info = await stat(entry.path)
+    const indexed = this.#index?.get(entry.path)
+    if (Math.round(info.mtimeMs) !== entry.updatedAt || info.size !== entry.bytes) return
+    if (indexed?.mtimeMs !== entry.updatedAt || indexed.size !== entry.bytes) return
+    const title = cleanTitle(session.title, entry.id)
+    const firstInput = firstInputOf(session)
+    if (title === undefined && firstInput === undefined) return
+    if (title !== undefined) entry.title = indexed.title = title
+    if (firstInput !== undefined) entry.firstInput = indexed.firstInput = firstInput
+    const current = this.#scan?.entries.find((row) => row.path === entry.path)
+    if (current !== undefined && this.#key(current) === this.#key(entry)) {
+      if (title !== undefined) current.title = title
+      if (firstInput !== undefined) current.firstInput = firstInput
+    }
+    await this.#saveIndex()
   }
 
   async remove(id: string): Promise<{ ok: true } | SourceFailure> {
@@ -448,6 +472,7 @@ export class DshSource implements SessionSource {
     try {
       const result = await readDshSession(entry.path, { projectionRoot: this.#projectionRoot })
       const record: CachedSession = { session: result.session, bytes: entry.bytes, elapsedMs: Date.now() - started }
+      await this.#promote(entry, record.session)
       this.#parsed.set(key, record)
       return { ok: true, session: record.session, bytes: record.bytes, elapsedMs: record.elapsedMs, cached: false }
     } catch (error) {

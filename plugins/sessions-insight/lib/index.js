@@ -8102,6 +8102,7 @@ var DshSource = class {
 	#indexPath;
 	#readMeta;
 	#inflight;
+	#saving = Promise.resolve();
 	constructor(config = {}) {
 		this.#root = config.root ?? defaultDshRoot();
 		this.#indexPath = config.indexPath ?? dshIndexPath();
@@ -8236,13 +8237,35 @@ var DshSource = class {
 		}
 		entries.sort((a, b) => b.updatedAt - a.updatedAt);
 		this.#index = new Map(next.map((entry) => [entry.path, entry]));
-		if (changed || previous.size !== next.length) saveDshIndex(this.#indexPath, next);
+		if (changed || previous.size !== next.length) await this.#saveIndex();
 		return {
 			root: this.#root,
 			state: "ok",
 			entries,
 			scannedAt
 		};
+	}
+	#saveIndex() {
+		const entries = [...this.#index?.values() ?? []].map((entry) => Object.assign({}, entry));
+		this.#saving = this.#saving.then(() => saveDshIndex(this.#indexPath, entries));
+		return this.#saving;
+	}
+	async #promote(entry, session) {
+		const info = await stat(entry.path);
+		const indexed = this.#index?.get(entry.path);
+		if (Math.round(info.mtimeMs) !== entry.updatedAt || info.size !== entry.bytes) return;
+		if (indexed?.mtimeMs !== entry.updatedAt || indexed.size !== entry.bytes) return;
+		const title = cleanTitle(session.title, entry.id);
+		const firstInput = firstInputOf(session);
+		if (title === void 0 && firstInput === void 0) return;
+		if (title !== void 0) entry.title = indexed.title = title;
+		if (firstInput !== void 0) entry.firstInput = indexed.firstInput = firstInput;
+		const current = this.#scan?.entries.find((row) => row.path === entry.path);
+		if (current !== void 0 && this.#key(current) === this.#key(entry)) {
+			if (title !== void 0) current.title = title;
+			if (firstInput !== void 0) current.firstInput = firstInput;
+		}
+		await this.#saveIndex();
 	}
 	async remove(id) {
 		if (!isSafeId(id)) return {
@@ -8379,6 +8402,7 @@ var DshSource = class {
 				bytes: entry.bytes,
 				elapsedMs: Date.now() - started
 			};
+			await this.#promote(entry, record.session);
 			this.#parsed.set(key, record);
 			return {
 				ok: true,

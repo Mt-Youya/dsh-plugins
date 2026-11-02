@@ -171,7 +171,11 @@ export function createApi(base = ""): Api {
         `${base}${SESSION_URL}?source=${encodeURIComponent(source)}&id=${encodeURIComponent(id)}&turnOffset=${String(offset)}&turnLimit=${String(limit)}`,
         isInsightSessionDetail,
         signal,
-      ),
+      ).then((result) => {
+        if (result.ok && !signal?.aborted)
+          cache.learnSessionLabel({ ...result.value.session, id, bytes: result.value.meta.bytes })
+        return result
+      }),
     search: (query, limit, tier, cursor, signal) =>
       get(
         `${base}${SEARCH_URL}?q=${encodeURIComponent(query)}&limit=${String(limit)}&tier=${tier}&cursor=${String(cursor)}`,

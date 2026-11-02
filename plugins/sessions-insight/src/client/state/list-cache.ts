@@ -1,4 +1,4 @@
-import type { ContextSource, SessionsValue, SourcesValue, WorkdirsValue } from "../../protocol.ts"
+import type { ContextSource, SessionSummary, SessionsValue, SourcesValue, WorkdirsValue } from "../../protocol.ts"
 import type { SessionMetadataValue } from "../../protocol/management.ts"
 import type { ApiResult } from "../api.ts"
 
@@ -14,17 +14,28 @@ export class ClientListCache {
   workdirs?: WorkdirsValue
   readonly sessions = new Map<string, SessionsValue>()
   readonly #metadata = new Map<string, SessionMetadataValue>()
+  readonly #labels = new Map<string, Pick<SessionSummary, "title" | "firstInput" | "bytes" | "updatedAt">>()
 
   projectSessions(value: SessionsValue): SessionsValue {
     return {
       ...value,
       sessions: value.sessions.map((row) => {
-        const update = this.#metadata.get(`${row.source}:${row.id}`)
-        if (update === undefined) return row
-        const next = { ...row }
-        if (update.displayTitle === undefined) delete next.title
-        else next.title = update.displayTitle
-        return next
+        const key = `${row.source}:${row.id}`
+        const label = this.#labels.get(key)
+        const next =
+          label !== undefined && label.bytes === row.bytes && label.updatedAt === row.updatedAt
+            ? {
+                ...row,
+                ...(label.title === undefined ? {} : { title: label.title }),
+                ...(label.firstInput === undefined ? {} : { firstInput: label.firstInput }),
+              }
+            : row
+        const update = this.#metadata.get(key)
+        if (update === undefined) return next
+        const projected = { ...next }
+        if (update.displayTitle === undefined) delete projected.title
+        else projected.title = update.displayTitle
+        return projected
       }),
     }
   }
@@ -96,6 +107,32 @@ export class ClientListCache {
     })
   }
 
+  /** Share labels learned by opening a log without reloading directory lists. */
+  learnSessionLabel(
+    session: Pick<SessionSummary, "source" | "id" | "workdir" | "bytes" | "updatedAt" | "title" | "firstInput">,
+  ): void {
+    const key = `${session.source}:${session.id}`
+    const list = this.sessions.get(session.workdir)
+    const row = list?.sessions.find((item) => item.source === session.source && item.id === session.id)
+    const prior = this.#labels.get(key)
+    const updatedAt = row?.updatedAt ?? session.updatedAt
+    const unchanged = prior?.bytes === session.bytes && prior.updatedAt === updatedAt
+    const title = session.title?.trim() || (unchanged ? prior.title : undefined)
+    const firstInput = session.firstInput?.trim() || (unchanged ? prior.firstInput : undefined)
+    if (unchanged && prior.title === title && prior.firstInput === firstInput) return
+    if (title === undefined && firstInput === undefined) return
+    this.#labels.set(key, {
+      bytes: session.bytes,
+      updatedAt,
+      ...(title === undefined ? {} : { title }),
+      ...(firstInput === undefined ? {} : { firstInput }),
+    })
+    if (list === undefined) return
+    this.sessions.set(session.workdir, this.projectSessions(list))
+    this.#deletion += 1
+    for (const listener of this.#listeners) listener()
+  }
+
   rename(value: SessionMetadataValue): void {
     const { source, id } = value.metadata
     this.#metadata.set(`${source}:${id}`, value)
@@ -118,6 +155,7 @@ export class ClientListCache {
   }
 
   remove(deleted: { source: ContextSource; id: string; workdir: string }): void {
+    this.#labels.delete(`${deleted.source}:${deleted.id}`)
     this.invalidateRequests(["sources", "workdirs:false", "workdirs:true", `sessions:${deleted.workdir}`])
     for (const [workdir, value] of this.sessions) {
       this.sessions.set(workdir, {

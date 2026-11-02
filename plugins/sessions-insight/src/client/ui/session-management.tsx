@@ -225,7 +225,7 @@ function MetadataDialog({ state }: { state: SessionManagementState }): ReactElem
               const key = sessionKey(session.source, session.id)
               return (
                 <div key={key} className="mbs-2 flex flex-col gap-1 text-[12px]">
-                  <span className="break-words">{session.title}</span>
+                  <span className="wrap-break-word">{session.title}</span>
                   <span className="text-[10px] break-all text-fg-dim">
                     {session.source} · {session.workdir} · {session.id}
                   </span>
@@ -309,7 +309,7 @@ function MetadataDialog({ state }: { state: SessionManagementState }): ReactElem
                 {t("management.ungroup")}
               </label>
               {target.sessions.map((session) => (
-                <p key={sessionKey(session.source, session.id)} className="m-0 break-words text-fg-dim">
+                <p key={sessionKey(session.source, session.id)} className="m-0 wrap-break-word text-fg-dim">
                   {session.title} · {session.workdir}
                 </p>
               ))}

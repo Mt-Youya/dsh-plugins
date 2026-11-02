@@ -1433,16 +1433,24 @@ var ClientListCache = class {
 	workdirs;
 	sessions = /* @__PURE__ */ new Map();
 	#metadata = /* @__PURE__ */ new Map();
+	#labels = /* @__PURE__ */ new Map();
 	projectSessions(value) {
 		return {
 			...value,
 			sessions: value.sessions.map((row) => {
-				const update = this.#metadata.get(`${row.source}:${row.id}`);
-				if (update === void 0) return row;
-				const next = { ...row };
-				if (update.displayTitle === void 0) delete next.title;
-				else next.title = update.displayTitle;
-				return next;
+				const key = `${row.source}:${row.id}`;
+				const label = this.#labels.get(key);
+				const next = label !== void 0 && label.bytes === row.bytes && label.updatedAt === row.updatedAt ? {
+					...row,
+					...label.title === void 0 ? {} : { title: label.title },
+					...label.firstInput === void 0 ? {} : { firstInput: label.firstInput }
+				} : row;
+				const update = this.#metadata.get(key);
+				if (update === void 0) return next;
+				const projected = { ...next };
+				if (update.displayTitle === void 0) delete projected.title;
+				else projected.title = update.displayTitle;
+				return projected;
 			})
 		};
 	}
@@ -1513,6 +1521,29 @@ var ClientListCache = class {
 			if (signal?.aborted) abort();
 		});
 	}
+	/** Share labels learned by opening a log without reloading directory lists. */
+	learnSessionLabel(session) {
+		const key = `${session.source}:${session.id}`;
+		const list = this.sessions.get(session.workdir);
+		const row = list?.sessions.find((item) => item.source === session.source && item.id === session.id);
+		const prior = this.#labels.get(key);
+		const updatedAt = row?.updatedAt ?? session.updatedAt;
+		const unchanged = prior?.bytes === session.bytes && prior.updatedAt === updatedAt;
+		const title = session.title?.trim() || (unchanged ? prior.title : void 0);
+		const firstInput = session.firstInput?.trim() || (unchanged ? prior.firstInput : void 0);
+		if (unchanged && prior.title === title && prior.firstInput === firstInput) return;
+		if (title === void 0 && firstInput === void 0) return;
+		this.#labels.set(key, {
+			bytes: session.bytes,
+			updatedAt,
+			...title === void 0 ? {} : { title },
+			...firstInput === void 0 ? {} : { firstInput }
+		});
+		if (list === void 0) return;
+		this.sessions.set(session.workdir, this.projectSessions(list));
+		this.#deletion += 1;
+		for (const listener of this.#listeners) listener();
+	}
 	rename(value) {
 		const { source, id } = value.metadata;
 		this.#metadata.set(`${source}:${id}`, value);
@@ -1534,6 +1565,7 @@ var ClientListCache = class {
 		for (const listener of this.#listeners) listener();
 	}
 	remove(deleted) {
+		this.#labels.delete(`${deleted.source}:${deleted.id}`);
 		this.invalidateRequests([
 			"sources",
 			"workdirs:false",
@@ -1662,7 +1694,14 @@ function createApi(base = "") {
 		} : result), (value) => {
 			cache.sessions.set(workdir, value);
 		}, signal),
-		session: (id, offset, limit, source, signal) => get(`${base}${SESSION_URL}?source=${encodeURIComponent(source)}&id=${encodeURIComponent(id)}&turnOffset=${String(offset)}&turnLimit=${String(limit)}`, isInsightSessionDetail, signal),
+		session: (id, offset, limit, source, signal) => get(`${base}${SESSION_URL}?source=${encodeURIComponent(source)}&id=${encodeURIComponent(id)}&turnOffset=${String(offset)}&turnLimit=${String(limit)}`, isInsightSessionDetail, signal).then((result) => {
+			if (result.ok && !signal?.aborted) cache.learnSessionLabel({
+				...result.value.session,
+				id,
+				bytes: result.value.meta.bytes
+			});
+			return result;
+		}),
 		search: (query, limit, tier, cursor, signal) => get(`${base}${SEARCH_URL}?q=${encodeURIComponent(query)}&limit=${String(limit)}&tier=${tier}&cursor=${String(cursor)}`, isSearchValue, signal),
 		cost: (source, id, signal) => get(`${base}${COST_URL}?source=${encodeURIComponent(source)}&id=${encodeURIComponent(id)}`, isCostValue, signal),
 		handoffPrepare: (source, id, signal) => post(base + HANDOFF_PREPARE_URL, {
@@ -3489,7 +3528,7 @@ function MetadataDialog({ state }) {
 								className: "mbs-2 flex flex-col gap-1 text-[12px]",
 								children: [
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-										className: "break-words",
+										className: "wrap-break-word",
 										children: session.title
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
@@ -3585,7 +3624,7 @@ function MetadataDialog({ state }) {
 									}), t("management.ungroup")]
 								}),
 								target.sessions.map((session) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
-									className: "m-0 break-words text-fg-dim",
+									className: "m-0 wrap-break-word text-fg-dim",
 									children: [
 										session.title,
 										" · ",

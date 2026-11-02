@@ -142,6 +142,101 @@ describe("client metadata cache", () => {
     expect(cache.sessions.get(row.workdir)?.sessions[0]?.title).toBeUndefined()
   })
 
+  it("publishes a detail title to the visible list and keeps it over a stale list response", () => {
+    const cache = new ClientListCache()
+    cache.sessions.set(row.workdir, value)
+    const listener = vi.fn()
+    cache.subscribe(listener)
+    cache.learnSessionLabel({ ...row, title: "Actual session title", firstInput: "Question" })
+    expect(cache.sessions.get(row.workdir)?.sessions[0]?.title).toBe("Actual session title")
+    expect(cache.sessions.get(row.workdir)?.sessions[1]?.title).toBeUndefined()
+    expect(cache.projectSessions(value).sessions[0]?.title).toBe("Actual session title")
+    expect(listener).toHaveBeenCalledOnce()
+    cache.learnSessionLabel({ ...row, title: "Actual session title", firstInput: "Question" })
+    expect(listener).toHaveBeenCalledOnce()
+    expect(cache.projectSessions({ ...value, sessions: [{ ...row, bytes: 20 }] }).sessions[0]?.title).toBeUndefined()
+  })
+
+  it("keeps explicit rename and restore decisions above learned detail labels", () => {
+    const cache = new ClientListCache()
+    cache.sessions.set(row.workdir, value)
+    cache.learnSessionLabel({ ...row, title: "Original" })
+    cache.rename({ metadata: { source: "claude", id: row.id, title: "Alias" }, displayTitle: "Alias" })
+    cache.learnSessionLabel({ ...row, title: "Delayed original" })
+    expect(cache.projectSessions(value).sessions[0]?.title).toBe("Alias")
+    cache.rename({ metadata: { source: "claude", id: row.id } })
+    expect(cache.projectSessions(value).sessions[0]?.title).toBeUndefined()
+  })
+
+  it("learns a title before its list arrives, but never turns first input into a name", () => {
+    const cache = new ClientListCache()
+    cache.learnSessionLabel({ ...row, title: "", firstInput: "Prompt excerpt" })
+    expect(cache.projectSessions(value).sessions[0]).toMatchObject({ firstInput: "Prompt excerpt" })
+    expect(cache.projectSessions(value).sessions[0]?.title).toBeUndefined()
+    cache.learnSessionLabel({ ...row, title: "Title" })
+    expect(cache.projectSessions(value).sessions[0]?.title).toBe("Title")
+    cache.remove(row)
+    expect(cache.projectSessions(value).sessions[0]?.title).toBeUndefined()
+  })
+
+  it("learns decoded detail labels without requesting the directory again", async () => {
+    const base = "/detail-label-test/"
+    const cache = clientListCache(base)
+    cache.sessions.set(row.workdir, value)
+    const fetcher = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ok: true,
+          value: {
+            session: { ...row, title: "Full log title", createdAt: 1, turns: [], segments: [], firstInput: "Question" },
+            turnCount: 0,
+            offset: 0,
+            limit: 40,
+            meta: { cached: false, elapsedMs: 1, bytes: row.bytes, residualTurns: 0, reconciledTurns: 0 },
+          },
+        }),
+      ),
+    )
+    const learn = vi.spyOn(cache, "learnSessionLabel")
+    const result = await createApi(base).session(row.id, 0, 40, row.source)
+    expect(result.ok).toBe(true)
+    expect(learn).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Full log title", bytes: row.bytes, workdir: row.workdir }),
+    )
+    expect(cache.sessions.get(row.workdir)?.sessions[0]?.title).toBe("Full log title")
+    expect(fetcher).toHaveBeenCalledOnce()
+  })
+
+  it("uses the requested DSH list identity when the log header retains a session- prefix", async () => {
+    const base = "/dsh-title-identity/"
+    const cache = clientListCache(base)
+    const dsh = { ...row, source: "dsh" as const }
+    cache.sessions.set(row.workdir, { ...value, sessions: [dsh] })
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ok: true,
+          value: {
+            session: {
+              ...dsh,
+              id: `session-${row.id}`,
+              title: "Late DSH title",
+              createdAt: 1,
+              turns: [],
+              segments: [],
+            },
+            turnCount: 0,
+            offset: 0,
+            limit: 40,
+            meta: { cached: false, elapsedMs: 1, bytes: row.bytes, residualTurns: 0, reconciledTurns: 0 },
+          },
+        }),
+      ),
+    )
+    expect((await createApi(base).session(row.id, 0, 40, "dsh")).ok).toBe(true)
+    expect(cache.sessions.get(row.workdir)?.sessions[0]?.title).toBe("Late DSH title")
+  })
+
   it("preloads navigation before mounting and never requests session bodies", async () => {
     const base = "/preload-test/"
     const workdirs = {

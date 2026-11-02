@@ -5,9 +5,7 @@ import { access, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
-
 import { CHROME, ORIGIN } from "./preview-server.mjs"
-
 const root = fileURLToPath(new URL("..", import.meta.url))
 const scratch = await mkdtemp(join(tmpdir(), "ci-menu-check-"))
 const corpus = join(scratch, "claude", "-tmp-menu")
@@ -42,7 +40,6 @@ for (const id of ["s1", "s2"]) {
   ]
   await writeFile(join(corpus, `${id}.jsonl`), `${records.map((record) => JSON.stringify(record)).join("\n")}\n`)
 }
-
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 async function until(read, label) {
   for (let attempt = 0; attempt < 80; attempt += 1) {
@@ -51,7 +48,6 @@ async function until(read, label) {
   }
   throw new Error(`Timed out: ${label}`)
 }
-
 let server, chrome, socket
 const pending = new Map()
 const browserErrors = []
@@ -139,10 +135,7 @@ async function checkOverview(label) {
 async function checkSkills(label) {
   await click('[role="tablist"] button:nth-child(3)')
   await until(
-    () =>
-      evaluate(
-        '[...document.querySelectorAll("[role=tabpanel] h3")].some((heading) => heading.textContent === "implement")',
-      ),
+    () => evaluate('[...document.querySelectorAll("[role=tabpanel] h3")].some((heading) => heading.textContent === "implement")'),
     `${label} implement heading`,
   ).catch(async (error) => {
     error.message += `: ${await evaluate('document.querySelector("[role=tabpanel]")?.textContent')} ${JSON.stringify(browserErrors)}`
@@ -192,10 +185,7 @@ async function checkSkillDropdown(theme) {
   await checkDropdown(true, "reopen before Escape")
   await press("Escape")
   await checkDropdown(false, "Escape closes dropdown")
-  await until(
-    () => evaluate(`document.activeElement === document.querySelector(${JSON.stringify(trigger)})`),
-    "Escape restores trigger focus",
-  )
+  await until(() => evaluate(`document.activeElement === document.querySelector(${JSON.stringify(trigger)})`), "Escape restores trigger focus")
   await click(trigger)
   await checkDropdown(true, "outside dismissal setup")
   await delay(100) // Allow the opening gesture and outside pointer listener to settle.
@@ -211,12 +201,8 @@ async function checkSkillDropdown(theme) {
   await press("a", "KeyA", 4, ["selectAll"])
   await press("Backspace", "Backspace", 0, ["deleteBackward"])
   assert.equal(await evaluate(`document.querySelector(${JSON.stringify(skillSearch)}).value`), "", "search is cleared")
-  await until(
-    () => evaluate(`!!document.querySelector('[role=meter][aria-label="implement: 1"]')`),
-    "clear recovers implement",
-  )
+  await until(() => evaluate(`!!document.querySelector('[role=meter][aria-label="implement: 1"]')`), "clear recovers implement")
 }
-
 try {
   let occupied = false
   try {
@@ -283,7 +269,6 @@ try {
       return false
     }
   }, "preview start")
-
   await send("Page.navigate", { url: `${ORIGIN}/?theme=light` })
   await until(() => evaluate('!!document.querySelector("[role=tablist]")'), "initial client before old Host reload")
   // Reload clears only client module caches; the same isolated Host and corpus stay alive.
@@ -294,11 +279,23 @@ try {
       window.fetch = async (...args) => {
         const response = await originalFetch(...args)
         const url = new URL(args[0] instanceof Request ? args[0].url : String(args[0]), location.href)
-        if (url.pathname !== '/api/dsh-sessions-insight/session' || url.searchParams.get('id') !== 's2' || window.oldHostResponses !== 0) return response
+        const list = url.pathname === '/api/dsh-sessions-insight/sessions'
+        if (!list && (url.pathname !== '/api/dsh-sessions-insight/session' || url.searchParams.get('id') !== 's2')) return response
         const body = await response.clone().json()
-        if (body.value?.insights === undefined) throw new Error('Expected real Host insights before stripping')
-        delete body.value.insights
-        window.oldHostResponses += 1
+        if (list) {
+          const row = body.value.sessions.find((row) => row.id === 's2')
+          if (!row.title && !row.firstInput) throw new Error('Expected real named list fixture before stripping')
+          delete row.title; delete row.firstInput
+          body.value.sessions.sort((a, b) => Number(b.id === 's1') - Number(a.id === 's1'))
+          window.untitledLists = (window.untitledLists ?? 0) + 1
+        } else {
+          if (!body.value.session.firstInput) throw new Error('Expected real first input in detail')
+          body.value.session.title = 'Full log title'
+          if (window.oldHostResponses === 0) {
+            if (body.value?.insights === undefined) throw new Error('Expected real Host insights before stripping')
+            delete body.value.insights; window.oldHostResponses += 1
+          }
+        }
         const headers = new Headers(response.headers)
         headers.delete('content-length')
         return new Response(JSON.stringify(body), { status: response.status, statusText: response.statusText, headers })
@@ -306,23 +303,30 @@ try {
     })()`,
   })
   await send("Page.reload", { ignoreCache: true })
-  await until(
-    () =>
-      evaluate(
-        `window.oldHostResponses !== undefined && !!document.querySelector('[data-key="claude:s2"]') && !!document.querySelector('[role=tablist]')`,
-      ),
-    "old Host reload",
-  )
+  await until(() => evaluate(`window.oldHostResponses !== undefined && !!document.querySelector('[data-key="claude:s2"]') && !!document.querySelector('[role=tablist]')`), "old Host reload")
+  assert.equal(await evaluate(`document.querySelector('[data-key="claude:s2"]').title`), "未命名会话", "s2 is untitled before click")
+  assert.equal(await evaluate("window.oldHostResponses"), 0, "s2 detail has not been opened automatically")
+  await screenshot("light-untitled-before-detail")
   await click('[data-key="claude:s2"]')
   await until(() => evaluate("window.oldHostResponses === 1"), "one real session response stripped")
+  await until(() => evaluate(`document.querySelector('[data-key="claude:s2"]').title === 'Full log title' && document.querySelector('header h2')?.textContent === 'Full log title'`), "detail promotes visible row and header")
+  assert.equal(await evaluate(`document.querySelector('[data-key="claude:s2"] > span > span:last-child').textContent`), "Full log title", "actual row DOM label changes")
+  await screenshot("light-learned-title")
+  const priorLists = await evaluate("window.untitledLists")
+  await click("header button[aria-pressed]")
+  await until(() => evaluate('!document.querySelector("aside")'), "title check sidebar unmounted")
+  await click("header button[aria-pressed]")
+  await until(() => evaluate(`window.untitledLists > ${priorLists} && document.querySelector('[data-key="claude:s2"]')?.title === 'Full log title'`), "stale untitled list preserves learned row")
+  await delay(200)
+  assert.deepEqual(await evaluate(`[document.querySelector('[data-key="claude:s2"] > span > span:last-child').textContent, document.querySelector('header h2').textContent]`), ["Full log title", "Full log title"], "stale list cannot overwrite learned DOM title")
+  await screenshot("light-learned-title-stale-list")
   const fallback = await checkOverview("old Host")
   assert.ok(fallback.includes("宿主未返回 insights"), "old Host renders client fallback notice")
   await screenshot("light-old-host-overview")
   await checkSkills("old Host")
   assert.equal(await evaluate("window.oldHostResponses"), 1, "fallback reuses the single stripped response")
   await send("Page.removeScriptToEvaluateOnNewDocument", { identifier })
-  console.log("old Host: one real response without insights; default overview charts and implement skill recovered")
-
+  console.log("old Host: untitled s2 learns Full log title and survives stale lists; one stripped response, overview charts and implement recovered")
   const dropdownFailures = []
   for (const theme of ["dark", "light"]) {
     browserErrors.length = 0
