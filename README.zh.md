@@ -19,13 +19,15 @@
 **装组合包（推荐）**：一次装上全部插件，以后合集里加了新插件，升级组合包就能拿到。
 
 ```bash
-dsh plugin --profile desktop add @cyrusdoyle/dsh-plugins
+dsh plugin --profile desktop add @cyrusdoyle/dsh-plugins   # 桌面端
+dsh plugin --profile web     add @cyrusdoyle/dsh-plugins   # dsh web
 ```
 
 **只装某一个插件**：
 
 ```bash
-dsh plugin --profile desktop add @cyrusdoyle/dsh-sessions-insight
+dsh plugin --profile desktop add @cyrusdoyle/dsh-sessions-insight   # 桌面端
+dsh plugin --profile web     add @cyrusdoyle/dsh-sessions-insight   # dsh web
 ```
 
 装完**完全退出再重新打开** DSH；插件管理器里出现「Cyrus 插件集」或「会话洞察」即成功。

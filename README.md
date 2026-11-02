@@ -19,13 +19,15 @@ Requires DSH 0.2.1-rc.2 or newer (see `docs/adr/0002-asar-021-is-the-contract.md
 **Install the collection (recommended)** to get every plugin at once; when a plugin is added to the collection later, upgrading the collection brings it in.
 
 ```bash
-dsh plugin --profile desktop add @cyrusdoyle/dsh-plugins
+dsh plugin --profile desktop add @cyrusdoyle/dsh-plugins   # desktop app
+dsh plugin --profile web     add @cyrusdoyle/dsh-plugins   # dsh web
 ```
 
 **Install a single plugin**:
 
 ```bash
-dsh plugin --profile desktop add @cyrusdoyle/dsh-sessions-insight
+dsh plugin --profile desktop add @cyrusdoyle/dsh-sessions-insight   # desktop app
+dsh plugin --profile web     add @cyrusdoyle/dsh-sessions-insight   # dsh web
 ```
 
 Then **fully quit and reopen** DSH. "Cyrus Plugins" or "Sessions Insight" in the plugin manager means it worked.
