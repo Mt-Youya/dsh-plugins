@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs"
+
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { createPluginConfig } from "../../../tooling/tsdown/plugin-config.ts"
@@ -39,12 +41,16 @@ describe("SemVer precedence", () => {
 
 describe("version cache", () => {
   it("inlines the owning manifest name alongside its version for both build halves", () => {
-    for (const [manifestPath, name, version] of [
-      ["../../../package.json", "@cyrusdoyle/dsh-plugins", "0.0.5"],
-      ["../package.json", "@cyrusdoyle/dsh-sessions-insight", "0.0.6"],
-    ]) {
+    // Read the expected version from the manifest instead of hardcoding it:
+    // every release bump would otherwise break this test.
+    for (const [manifestPath, name] of [
+      ["../../../package.json", "@cyrusdoyle/dsh-plugins"],
+      ["../package.json", "@cyrusdoyle/dsh-sessions-insight"],
+    ] as const) {
+      const manifestUrl = new URL(manifestPath, import.meta.url)
+      const { version } = JSON.parse(readFileSync(manifestUrl, "utf8")) as { version: string }
       const configs = createPluginConfig({
-        manifestPath: new URL(manifestPath!, import.meta.url).pathname,
+        manifestPath: manifestUrl.pathname,
         srcDir: "src/",
         outDir: "lib/",
         alias: {},

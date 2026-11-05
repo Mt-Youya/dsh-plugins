@@ -29,6 +29,13 @@ Single-context: `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain.md`.
 - 样式改动在本地预览页验证：`pnpm dev` → http://localhost:5178（`?theme=light|dark`），不要靠打包安装重启。
 - 打包契约由 `node scripts/check-bundle.mjs .` 守护，`pnpm pack` 会自动跑。
 
+### 发布到 npm（2026-11 教训，必读）
+
+- 发布前必须**按 `.github/workflows/ci.yml` 的完整顺序**在本地跑一遍：`pnpm lint:check`、`pnpm fmt:check`、两轮 typecheck、`npx vitest run`、`pnpm --filter @cyrusdoyle/dsh-sessions-insight build`、`node scripts/build-css.mjs plugins/sessions-insight && npx tsdown --minify`、两个 `check-bundle`。
+- **禁止用管道掩盖退出码**：`pnpm vitest run 2>&1 | tail -5` 的退出码来自 `tail`，测试失败也会被 `&&` 链当成通过。不接管道，或先 `set -o pipefail`。
+- bump 版本后，断言 manifest 真实版本的测试会失败；`host-version.test.ts` 已改为从 manifest 动态读取，新测试不要再硬编码版本号。
+- 发布由 `.github/workflows/release.yml` 完成（npm Trusted Publishing / OIDC，仓库不存 npm token）；两个包必须同版本成对发布（ADR 0010）。CI 失败先 `gh run view <run-id> --log-failed` 定位根因，修好再重触发，不要盲目重跑。
+
 # [CLAUDE.md](https://github.com/forrestchang/andrej-karpathy-skills/blob/main/CLAUDE.md)
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
