@@ -35,7 +35,9 @@ describe("apply", () => {
     let activate: ((child: AiTitleHost & { effect: (setup: () => () => void) => unknown }) => void) | undefined
     let releaseChild: (() => void) | undefined
     ctx.inject = vi.fn((services, callback) => {
-      expect([["llm", "agentDefaultModel"], ["credentials"], ["deepseekAccount"]]).toContainEqual(services)
+      expect([["llm", "agentDefaultModel"], ["credentials"], ["deepseekAccount"], ["settings"]]).toContainEqual(
+        services,
+      )
       if (services[0] === "llm") activate = callback
     })
     const dispose = apply(ctx)
@@ -90,6 +92,76 @@ describe("apply", () => {
     await vi.runAllTimersAsync()
     expect(preload).not.toHaveBeenCalled()
     expect(clear).toHaveBeenCalledTimes(2)
+  })
+
+  it("follows the Host settings service's DeepSeek credential reference on every balance read", async () => {
+    vi.useFakeTimers()
+    vi.spyOn(lists, "preloadLists").mockResolvedValue()
+    const mounted = vi.spyOn(routes, "createRoutes")
+    const { table, ctx } = webServer()
+    let descriptorValue: unknown = { apiKeyEnv: "SYNTHETIC_DEEPSEEK_REF" }
+    let describeThrows = false
+    const describe = vi.fn(() => {
+      if (describeThrows) throw new Error("synthetic-host-failure")
+      return [{ ns: "llm-deepseek", value: descriptorValue }]
+    })
+    const resolve = vi.fn(() => undefined)
+    let releaseSettings: (() => void) | undefined
+    ctx.inject = vi.fn((services, callback) => {
+      if (services[0] === "credentials")
+        callback({ credentials: { resolve }, effect: (setup: () => () => void) => setup() } as never)
+      if (services[0] === "settings")
+        callback({
+          settings: { describe },
+          effect: (setup: () => () => void) => {
+            releaseSettings = setup()
+            return releaseSettings
+          },
+        } as never)
+    })
+    const dispose = apply(ctx)
+    const balance = (mounted.mock.calls[0]![0] as routes.RouteDeps).utilities!.balance
+    const read = (force = false) => balance.read({ locale: "en-US", timezoneOffsetSeconds: 0 }, force)
+    expect((await read()).status).toBe("missing-credentials")
+    expect(resolve).toHaveBeenLastCalledWith("SYNTHETIC_DEEPSEEK_REF")
+    descriptorValue = { apiKeyEnv: "SYNTHETIC_ROTATED_REF" }
+    await read(true)
+    expect(resolve).toHaveBeenLastCalledWith("SYNTHETIC_ROTATED_REF")
+    // A missing entry, an empty or non-string field or a throwing settings
+    // service silently falls back to the default reference.
+    for (const invalid of [{ apiKeyEnv: "" }, { apiKeyEnv: 42 }, null, {}, "synthetic"]) {
+      descriptorValue = invalid
+      await read(true)
+      expect(resolve).toHaveBeenLastCalledWith("DEEPSEEK_API_KEY")
+    }
+    describeThrows = true
+    expect((await read(true)).status).toBe("missing-credentials")
+    expect(resolve).toHaveBeenLastCalledWith("DEEPSEEK_API_KEY")
+    // Releasing the settings fiber drops the override with it.
+    describeThrows = false
+    releaseSettings?.()
+    descriptorValue = { apiKeyEnv: "SYNTHETIC_AFTER_RELEASE" }
+    await read(true)
+    expect(resolve).toHaveBeenLastCalledWith("DEEPSEEK_API_KEY")
+    dispose()
+    expect(table.size).toBe(0)
+  })
+
+  it("uses the default credential reference when the Host settings service is absent", async () => {
+    vi.useFakeTimers()
+    vi.spyOn(lists, "preloadLists").mockResolvedValue()
+    const mounted = vi.spyOn(routes, "createRoutes")
+    const { ctx } = webServer()
+    const resolve = vi.fn(() => undefined)
+    ctx.inject = vi.fn((services, callback) => {
+      if (services[0] === "credentials")
+        callback({ credentials: { resolve }, effect: (setup: () => () => void) => setup() } as never)
+    })
+    const dispose = apply(ctx)
+    const balance = (mounted.mock.calls[0]![0] as routes.RouteDeps).utilities!.balance
+    expect((await balance.read({ locale: "en-US", timezoneOffsetSeconds: 0 })).status).toBe("missing-credentials")
+    expect(resolve).toHaveBeenLastCalledWith("DEEPSEEK_API_KEY")
+    dispose()
   })
 
   it("preloads without timer or AbortController globals in the Host VM", async () => {

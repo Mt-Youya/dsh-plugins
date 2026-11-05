@@ -21,15 +21,10 @@
     "url": "git+https://github.com/Mt-Youya/dsh-plugins.git"
   },
   "files": [
-    "cordis.patch.yml",
+    "/cordis.patch.yml",
     "locale",
     "lib/**/*.js",
     "lib/**/*.js.map",
-    "plugins/sessions-insight/README.md",
-    "plugins/sessions-insight/README.zh.md",
-    "plugins/sessions-insight/LICENSE",
-    "plugins/sessions-insight/icon.svg",
-    "plugins/sessions-insight/docs/images/**/*.png",
     "README.md",
     "README.zh.md",
     "LICENSE"
@@ -53,7 +48,7 @@
     "dev": "vite --config apps/preview/vite.config.ts",
     "screenshots": "node scripts/screenshots.mjs",
     "css": "node scripts/build-css.mjs plugins/sessions-insight",
-    "build": "pnpm css && pnpm typecheck && pnpm typecheck:client && tsdown && pnpm build:libs",
+    "build": "pnpm css && pnpm typecheck && pnpm typecheck:client && tsdown --minify && pnpm build:libs",
     "build:libs": "pnpm --filter './packages/*' -r run build",
     "pack:insight": "pnpm --filter @cyrusdoyle/dsh-sessions-insight release:patch",
     "pack:collection": "pnpm pack",

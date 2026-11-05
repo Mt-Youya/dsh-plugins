@@ -20,6 +20,7 @@ import { readSettings, type SettingsConfig } from "./config.ts"
 import { HandoffRunner } from "./host/handoff/handoff.ts"
 import type { SessionCommandsFace } from "./host/handoff/handoff.ts"
 import { clearListCache, preloadLists } from "./host/http/list-cache.ts"
+import { createBalanceRateLimiter } from "./host/http/rate-limit.ts"
 import { createRoutes, type RouteDeps } from "./host/http/routes.ts"
 import type { WebRoute } from "./host/http/server.ts"
 import { guardRequest, writeOk } from "./host/http/server.ts"
@@ -32,6 +33,7 @@ import { DshSource } from "./host/sources/dsh.ts"
 import { claudeRootFrom, codexRootFrom, dshRootFrom, hostSessionsRoot } from "./host/sources/paths.ts"
 import type { SessionSource } from "./host/sources/source.ts"
 import { BalanceReader, type UtilityServices } from "./host/utilities/balance.ts"
+import { credentialRefFrom } from "./host/utilities/credential-ref.ts"
 import { VersionChecker } from "./host/utilities/version.ts"
 import { CONTEXT_SOURCES, HEALTH_PATH, type HealthOk } from "./protocol.ts"
 import { SETTINGS_PATH } from "./protocol/settings.ts"
@@ -245,8 +247,11 @@ export function apply(ctx: HostContext, config: SettingsConfig = {}): () => void
   })
   let credentials: UtilityServices["credentials"]
   let account: UtilityServices["deepseekAccount"]
+  let settings: UtilityServices["settings"]
   const balance = new BalanceReader({
     credentialsSupported: typeof ctx.inject === "function",
+    // Re-resolved per read so a renamed `apiKeyEnv` takes effect immediately.
+    credentialRef: () => credentialRefFrom(settings),
     credentials: () => credentials,
     account: () => account,
     version: PLUGIN_VERSION,
@@ -273,10 +278,29 @@ export function apply(ctx: HostContext, config: SettingsConfig = {}): () => void
       "sessions-insight: account capability",
     )
   })
+  // The settings service is how the balance read follows the DeepSeek official
+  // adapter's credential reference (`apiKeyEnv`) instead of a hard-coded one.
+  // Missing service or entry stays a silent fallback inside `credentialRefFrom`.
+  ctx.inject?.(["settings"], (child) => {
+    settings = child.settings
+    child.effect(
+      () => () => {
+        settings = undefined
+      },
+      "sessions-insight: settings capability",
+    )
+  })
   // The Host fires this after every committed credential write; the listener is
   // released by the same fiber-owned disposer as the routes below.
   const offCredentialUpdates = watchCredentialUpdates(ctx, balance)
-  const utilities = { balance, versions: new VersionChecker(PLUGIN_VERSION), settings: () => readSettings(config) }
+  const utilities = {
+    balance,
+    versions: new VersionChecker(PLUGIN_VERSION),
+    settings: () => readSettings(config),
+    // One window per mounted plugin fiber: the limit is process-local and does
+    // not survive a reload, which is deliberate (no user setting for it).
+    balanceLimiter: createBalanceRateLimiter(),
+  }
   const deps: RouteDeps & { aiTitles: AiTitleGenerator } = {
     sources,
     version: PLUGIN_VERSION,

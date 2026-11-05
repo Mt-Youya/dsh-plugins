@@ -39,7 +39,7 @@ Then **fully quit and reopen** DSH. "Cyrus Plugins" or "Sessions Insight" in the
 **Installing from this working tree (developing the collection)**: the desktop plugin manager's "Add plugin" also accepts a local directory — point it at this checkout's absolute path. DSH records it as `"@cyrusdoyle/dsh-plugins": "link:<that path>"`: a symlink into your working tree, not a copy, and nothing is built for you. The host resolves `lib/index.js` through that link, and `lib/` is gitignored, so build it first (the collection embeds the compiled stylesheet, so the CSS step comes first):
 
 ```bash
-node scripts/build-css.mjs plugins/sessions-insight && npx tsdown
+node scripts/build-css.mjs plugins/sessions-insight && npx tsdown --minify
 ```
 
 Then fully quit and reopen DSH. Later edits only need a rebuild and a restart — there is no need to reinstall.
@@ -52,7 +52,7 @@ The collection embeds the same plugin source as the standalone member (ADR 0009)
 
 - **Settings are saved by the Host.** `/api/dsh-sessions-insight/settings` is read-only; the six switches (session overview, Skills tab, cumulative level chart, expand tools by default, balance display, automatic version checks) are written through the Host's configuration form and stored by the Host. The plugin writes no config file.
 - **Balance and version checks are off by default.** Turning one on — or pressing its button — is the only thing that makes the plugin call out. Outbound traffic is limited to two fixed HTTPS endpoints, `https://api.deepseek.com/user/balance` and `https://registry.npmjs.org/@cyrusdoyle%2F.../latest`, with no redirects, no cookies and no caller-controlled URL.
-- **Credentials**: the balance check prefers the Host credential `DEEPSEEK_API_KEY` and falls back to the signed-in DeepSeek account. This release supports only that default credential ref; the plugin never stores or logs the key.
+- **Credentials**: the balance check resolves the credential reference configured for the DeepSeek official adapter (`apiKeyEnv`, default `DEEPSEEK_API_KEY`), then falls back to the signed-in DeepSeek account. Custom provider references are not followed; the plugin never stores or logs the key.
 - **The read surface never rewrites source logs.** The only writes are the handoff routes — `handoff/apply` delivers a brief through the official `session.create` + `session.prompt`, `handoff/reveal` creates or reuses a workspace so an existing DSH session is visible there — and confirmed session deletion. `/balance` additionally accepts loopback callers only, because the Host webserver has no site-wide auth.
 - **Requires DSH 0.2.1-rc.5+**: the settings page needs the `configForms` client service and the `plugins.bundle.config` slot introduced in that version.
 
@@ -92,7 +92,7 @@ The preview runs at <http://localhost:5178> and reads your real local sessions; 
 Run the gates before you commit:
 
 ```bash
-npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && node scripts/build-css.mjs plugins/sessions-insight && npx tsdown && node scripts/check-bundle.mjs plugins/sessions-insight && node scripts/check-bundle.mjs .
+npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && node scripts/build-css.mjs plugins/sessions-insight && npx tsdown --minify && node scripts/check-bundle.mjs plugins/sessions-insight && node scripts/check-bundle.mjs .
 ```
 
 CI runs the same gates and additionally fails when the committed `plugins/sessions-insight/lib/` differs from a rebuild — see [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).

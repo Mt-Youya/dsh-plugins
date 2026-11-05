@@ -55,7 +55,7 @@ pnpm install
 ```
 
 ```bash
-npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && node scripts/build-css.mjs plugins/sessions-insight && npx tsdown && node scripts/check-bundle.mjs plugins/sessions-insight && node scripts/check-bundle.mjs .
+npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && node scripts/build-css.mjs plugins/sessions-insight && npx tsdown --minify && node scripts/check-bundle.mjs plugins/sessions-insight && node scripts/check-bundle.mjs .
 ```
 
 The CSS build must come before `tsdown`: the collection embeds the compiled stylesheet into its own `lib/`, so building in the other order ships a stale one.
@@ -98,7 +98,7 @@ The collection must be built before it is packed (`lib/` is gitignored):
 
 ```bash
 node scripts/build-css.mjs plugins/sessions-insight
-npx tsdown
+npx tsdown --minify
 mkdir -p /tmp/dsh-release/collection
 pnpm pack --pack-destination /tmp/dsh-release/collection
 tar -tzf /tmp/dsh-release/collection/*.tgz | head -40
@@ -121,7 +121,7 @@ npm publish /tmp/dsh-release/member/*.tgz --registry=https://registry.npmjs.org/
 Build the collection first, then pack and publish that tarball:
 
 ```bash
-node scripts/build-css.mjs plugins/sessions-insight && npx tsdown && pnpm pack --pack-destination /tmp/dsh-release/collection
+node scripts/build-css.mjs plugins/sessions-insight && npx tsdown --minify && pnpm pack --pack-destination /tmp/dsh-release/collection
 ```
 
 ```bash

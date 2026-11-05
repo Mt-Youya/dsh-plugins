@@ -53,9 +53,9 @@ DSH Web GUI 的「会话洞察」面板：解析 **Claude Code / DSH / Codex** �
 
 **两个辅助功能默认都关闭。** 只有主动打开开关、或按下对应按钮，插件才会发起外部请求。出站只有两个固定地址：`https://api.deepseek.com/user/balance` 和 `https://registry.npmjs.org/@cyrusdoyle%2F<包名>/latest`，无重定向、无 cookie、URL 不可由调用方指定。
 
-- **余额**（缓存 30s，失败不缓存）：优先使用宿主凭据 `DEEPSEEK_API_KEY`，没有配置时查询已登录的 DeepSeek 账号。本轮只支持这一个默认 credential ref，插件不保存、不记录密钥。宿主凭据更新会使缓存失效，换 key 后下一次请求就生效。失败会显示成人话（`credential-error` / `unauthorized` / `rate-limited` / `timeout` / `network` / `http-error` / `invalid-response` / `account-error`，路由不可达时客户端再合成一个 `host-unavailable`）。
+- **余额**（缓存 30s，失败不缓存，空钱包列表显示「余额为空」）：跟随 **DeepSeek 官方适配器**配置的凭据引用——每次请求都从宿主设置服务读取它的 `apiKeyEnv`（默认 `DEEPSEEK_API_KEY`），所以改完 Models 页上的引用名无需重启即可生效。宿主设置服务或该条目缺失、字段非法时静默回退默认引用，再回退已登录的 DeepSeek 账号。**只跟随这个官方适配器的引用**，pi-ai 等自定义 provider 的引用不参与；插件不保存、不记录密钥。宿主凭据更新会使缓存失效，换 key 后下一次请求就生效。该路由每 60 秒最多发起 6 次会真正触发 provider 的读取，超出返回 `429`（`rate-limited`）；缓存命中不计数。失败会显示成人话（`credential-error` / `unauthorized` / `rate-limited` / `timeout` / `network` / `http-error` / `invalid-response` / `account-error`，路由不可达时客户端再合成一个 `host-unavailable`）。
 - **版本检查**：比较的是**生效包**——装组合包时是 `@cyrusdoyle/dsh-plugins`，单装本成员包时是 `@cyrusdoyle/dsh-sessions-insight`——与 npm 上同一个包的最新版。成功结果缓存 1h，失败缓存 5min。`HEAD` 探测只读缓存、绝不联网；手动按钮一定会强制检查。
-- 涉及账户数据的路由都加了围栏：`/balance` 只接受 loopback 来源且 `HEAD` 返回 405，`/settings` 只读（写入走宿主表单）。完整契约见 `docs/API.md`。
+- 涉及账户数据的路由都加了围栏：`/balance` 只接受 loopback 来源、`HEAD` 返回 405，并把会真正触发 provider 的读取限到每分钟 6 次（超出 429）；`/settings` 只读（写入走宿主表单）。完整契约见 `docs/API.md`。
 
 设置表单需要 **DSH 0.2.1-rc.5+**（`configForms` 与 `plugins.bundle.config` 槽位）；旧宿主上会显示原因和「重试」按钮，而不是永久只读页。
 
@@ -139,7 +139,7 @@ curl -sS http://127.0.0.1:<port>/api/dsh-sessions-insight/health
 - **同源校验**：每条路由都是 `kind:'exact'`，先过 Origin/Host 门：`Sec-Fetch-Site: cross-site` 直接 403，`Origin` 与 `Host` 不一致 403；不带 `Origin` 的同源 GET 放行。`/settings` 只读；`/balance` 额外只接受 loopback 来源，且 `HEAD` 返回 405。
 - **写路径**：设置修改走宿主的配置表单；插件自己的写路由只有交接（`handoff/apply` 通过官方 `session.create` + `session.prompt` 投递；`handoff/reveal` 为已有会话创建/复用工作区）和确认后的删除会话。辅助功能路由只读。
 - **出站网络**：只有上面列出的两个固定 HTTPS 地址，且只在辅助功能开启或按下按钮后发起——无重定向、无 cookie、URL 不可由调用方指定；请求有 8s（registry）/ 30s（余额）绝对上限和 128KiB 响应上限。
-- **凭据**：余额检查通过宿主凭据服务解析 `DEEPSEEK_API_KEY`，未配置时使用已登录账号；本轮只支持默认 credential ref。密钥不落盘、不写日志。
+- **凭据**：余额检查每次读取都通过宿主凭据服务解析 **DeepSeek 官方适配器**配置的凭据引用（`apiKeyEnv`，默认 `DEEPSEEK_API_KEY`），解析不到时使用已登录账号；设置服务或条目缺失/非法时静默回退默认引用。只跟随官方适配器，其他 provider 的引用不参与。密钥不落盘、不写日志。
 - **读取上限**：单文件解码有字节上限，超限返回 `read-limit`，不会把宿主拖死。
 
 ## 已知限制

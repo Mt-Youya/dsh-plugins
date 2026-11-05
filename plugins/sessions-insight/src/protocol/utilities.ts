@@ -90,8 +90,9 @@ export function isBalanceValue(value: unknown): value is BalanceValue {
     value.status === "ready" &&
     (value.source === "api-key" || value.source === "account") &&
     (value.available === null || typeof value.available === "boolean") &&
+    // An empty wallet list is a real state (no balance / no wallets yet), not a
+    // malformed payload; the panel renders it as "no balance available".
     isWallets(value.value) &&
-    (value.source === "account" || value.value.length > 0) &&
     isWallets(value.bonusWallets)
   )
 }

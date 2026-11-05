@@ -3,33 +3,63 @@ import type { AddressInfo } from "node:net"
 
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { createUtilityRoutes } from "../src/host/http/utility-routes.ts"
+import { createBalanceRateLimiter, type RateLimiter } from "../src/host/http/rate-limit.ts"
+import { createUtilityRoutes, type UtilityRouteDeps } from "../src/host/http/utility-routes.ts"
 import { BalanceReader } from "../src/host/utilities/balance.ts"
 import { VersionChecker } from "../src/host/utilities/version.ts"
 import { SETTINGS_DEFAULTS } from "../src/protocol/settings.ts"
 import { BALANCE_PATH, VERSION_PATH } from "../src/protocol/utilities.ts"
 
+const official = {
+  is_available: true,
+  balance_infos: [{ currency: "CNY", total_balance: "12.34", granted_balance: "2.34", topped_up_balance: "10.00" }],
+}
 const cleanup: (() => Promise<void>)[] = []
 afterEach(async () => {
   for (const off of cleanup.splice(0)) await off()
 })
-async function fixture(remoteAddress?: string) {
+interface FixtureOptions {
+  /** Overrides the peer address the balance route sees; a test socket is loopback. */
+  remoteAddress?: string
+  /** A resolvable key makes every uncached read reach the mocked provider. */
+  credentialKey?: string
+  /** Payload the mocked provider answers for the fixed balance endpoint. */
+  balanceResponse?: unknown
+  /** Injectable clock, so the rate-limit window is deterministic. */
+  balanceLimiter?: RateLimiter
+}
+async function fixture(options: FixtureOptions = {}) {
   const settings = { ...SETTINGS_DEFAULTS, autoCheckVersion: false, deepseekBalance: false }
-  const request = vi.fn(async () => ({ version: "1.0.0" }))
-  const credentials = vi.fn(() => undefined)
-  const utilities = {
+  const request = vi.fn(async (endpoint: string) =>
+    endpoint === "balance" ? (options.balanceResponse ?? official) : { version: "1.0.0" },
+  )
+  const credentials = vi.fn(() =>
+    options.credentialKey === undefined
+      ? undefined
+      : { resolve: () => ({ value: options.credentialKey!, source: "test" }) },
+  )
+  const utilities: UtilityRouteDeps = {
     balance: new BalanceReader(
-      { credentialsSupported: true, credentials, account: () => undefined, envKey: () => undefined, version: "0.0.5" },
-      vi.fn(),
+      {
+        credentialsSupported: true,
+        credentialRef: () => "DEEPSEEK_API_KEY",
+        credentials,
+        account: () => undefined,
+        envKey: () => undefined,
+        version: "0.0.5",
+      },
+      request,
     ),
     versions: new VersionChecker("0.0.5", request),
     settings: () => settings,
+    ...(options.balanceLimiter === undefined ? {} : { balanceLimiter: options.balanceLimiter }),
   }
   const routes = createUtilityRoutes(utilities)
   const server = createServer((req, res) => {
     // The balance route reads the peer address; a test connection is always
     // loopback, so a non-loopback source is injected instead.
-    if (remoteAddress !== undefined) Object.defineProperty(req, "socket", { value: { remoteAddress } })
+    if (options.remoteAddress !== undefined)
+      Object.defineProperty(req, "socket", { value: { remoteAddress: options.remoteAddress } })
     const route = routes.find((r) => r.path === new URL(req.url!, "http://localhost").pathname)
     if (route === undefined) {
       res.statusCode = 404
@@ -88,7 +118,7 @@ describe("utility routes", () => {
   })
   it("rejects a non-loopback balance source with 403 before the provider", async () => {
     for (const remoteAddress of ["192.0.2.10", "10.0.0.1", "::ffff:192.0.2.10"]) {
-      const { base, settings, request, credentials } = await fixture(remoteAddress)
+      const { base, settings, request, credentials } = await fixture({ remoteAddress })
       settings.deepseekBalance = true
       const response = await fetch(base + BALANCE_PATH)
       expect(response.status).toBe(403)
@@ -99,7 +129,7 @@ describe("utility routes", () => {
   })
   it("accepts the whole 127/8 range, ::1 and IPv4-mapped loopback", async () => {
     for (const remoteAddress of ["127.0.0.1", "127.0.0.2", "::1", "::ffff:127.0.0.1"]) {
-      const { base, settings } = await fixture(remoteAddress)
+      const { base, settings } = await fixture({ remoteAddress })
       settings.deepseekBalance = true
       expect((await fetch(base + BALANCE_PATH)).status).toBe(200)
     }
@@ -128,5 +158,58 @@ describe("utility routes", () => {
       expect((await fetch(base + BALANCE_PATH + "?" + query)).status).toBe(400)
     expect(request).not.toHaveBeenCalled()
     expect(credentials).not.toHaveBeenCalled()
+  })
+  it("passes an empty official wallet list through as a ready empty balance", async () => {
+    const { base, settings } = await fixture({
+      credentialKey: "synthetic-test-key",
+      balanceResponse: { is_available: false, balance_infos: [] },
+    })
+    settings.deepseekBalance = true
+    const response = await fetch(base + BALANCE_PATH + "?refresh=1")
+    expect(response.status).toBe(200)
+    expect((await response.json()).value).toMatchObject({
+      status: "ready",
+      source: "api-key",
+      available: false,
+      value: [],
+      bonusWallets: [],
+    })
+  })
+  it("allows six provider-triggering refreshes per minute, then answers 429 without a provider call", async () => {
+    const clock = { now: 1_000_000 }
+    const limiter = createBalanceRateLimiter({ now: () => clock.now })
+    const { base, settings, request } = await fixture({ credentialKey: "synthetic-test-key", balanceLimiter: limiter })
+    settings.deepseekBalance = true
+    for (let i = 0; i < 6; i++) expect((await fetch(base + BALANCE_PATH + "?refresh=1")).status).toBe(200)
+    expect(request).toHaveBeenCalledTimes(6)
+    const limited = await fetch(base + BALANCE_PATH + "?refresh=1")
+    expect(limited.status).toBe(429)
+    expect(await limited.json()).toEqual({ ok: false, error: "rate-limited", detail: "balance-refresh-limited" })
+    expect(request).toHaveBeenCalledTimes(6)
+    // A cache hit never reaches the provider, so a full window still answers it.
+    expect((await fetch(base + BALANCE_PATH)).status).toBe(200)
+    expect(request).toHaveBeenCalledTimes(6)
+    // The window slides: nothing is freed at 59.999 s; every slot expires at 60 s.
+    clock.now += 59_999
+    expect((await fetch(base + BALANCE_PATH + "?refresh=1")).status).toBe(429)
+    clock.now += 1
+    expect((await fetch(base + BALANCE_PATH + "?refresh=1")).status).toBe(200)
+    expect(request).toHaveBeenCalledTimes(7)
+  })
+  it("does not spend the window on disabled settings, invalid queries or cached reads", async () => {
+    const clock = { now: 2_000_000 }
+    const limiter = createBalanceRateLimiter({ now: () => clock.now })
+    const { base, settings, request } = await fixture({ credentialKey: "synthetic-test-key", balanceLimiter: limiter })
+    for (let i = 0; i < 8; i++) expect((await fetch(base + BALANCE_PATH)).status).toBe(200)
+    expect((await (await fetch(base + BALANCE_PATH)).json()).value.status).toBe("disabled")
+    for (let i = 0; i < 8; i++) expect((await fetch(base + BALANCE_PATH + "?locale=invalid/locale")).status).toBe(400)
+    expect(request).not.toHaveBeenCalled()
+    settings.deepseekBalance = true
+    for (let i = 0; i < 6; i++) expect((await fetch(base + BALANCE_PATH + "?refresh=1")).status).toBe(200)
+    expect(request).toHaveBeenCalledTimes(6)
+    expect((await fetch(base + BALANCE_PATH)).status).toBe(200)
+    expect(request).toHaveBeenCalledTimes(6)
+    expect((await fetch(base + BALANCE_PATH + "?refresh=1")).status).toBe(429)
+    expect(request).toHaveBeenCalledTimes(6)
   })
 })

@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done — tickets 01–05 implemented, reviewed and verified
 
 # Sessions Insight 第二轮加固：辅助功能凭据跟随、刷新语义、设置页状态保留与发布包收敛
 

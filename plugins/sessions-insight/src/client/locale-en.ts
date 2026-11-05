@@ -238,7 +238,7 @@ export const en: Record<ContextInsightKey, string> = {
   "utility.balance.refresh": "Refresh balance",
   "utility.balance.recharge": "Top up on DeepSeek",
   "utility.balance.hint":
-    "When enabled, queries api.deepseek.com for the balance, reading DEEPSEEK_API_KEY first and falling back to the signed-in account. The plugin stores no key; currencies are shown separately.",
+    "When enabled, queries api.deepseek.com for the balance, using the credential reference configured for the DeepSeek official adapter (default DEEPSEEK_API_KEY) and falling back to the signed-in account. The plugin stores no key; currencies are shown separately.",
   "utility.version.title": "Plugin version",
   "utility.version.unchecked": "Not checked yet",
   "utility.version.disabled": "Automatic checks are off; you can still check manually",

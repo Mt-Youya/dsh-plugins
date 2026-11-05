@@ -46,7 +46,7 @@ jobs:
       - name: Build collection artifacts
         run: |
           node scripts/build-css.mjs plugins/sessions-insight
-          npx tsdown
+          npx tsdown --minify
 
       # 成员 lib/ 与生成的 theme/generated.css.ts 都随源码入库：源码改了没重建，
       # 这里就会报差。根 lib/ 被 gitignore，只在发布时构建。

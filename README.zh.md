@@ -39,7 +39,7 @@ dsh plugin --profile web     add @cyrusdoyle/dsh-sessions-insight   # dsh web
 **从当前工作区安装（开发这个合集时）**：桌面端插件管理器的「添加插件」也接受本地目录，填本仓库的绝对路径即可。DSH 会把它记成 `"@cyrusdoyle/dsh-plugins": "link:<那个路径>"` —— 一条指向你工作区的软链，不是拷贝，也不会替你做任何构建。宿主就是通过这条软链读 `lib/index.js`，而 `lib/` 在 .gitignore 里，所以先构建（组合包会内联编译后的样式，CSS 必须先生成）：
 
 ```bash
-node scripts/build-css.mjs plugins/sessions-insight && npx tsdown
+node scripts/build-css.mjs plugins/sessions-insight && npx tsdown --minify
 ```
 
 然后完全退出再重新打开 DSH。之后改代码只需要重建 + 重启，不用重新安装。
@@ -52,7 +52,7 @@ node scripts/build-css.mjs plugins/sessions-insight && npx tsdown
 
 - **设置由宿主保存。** `/api/dsh-sessions-insight/settings` 只读；六个开关（会话概览、Skills 标签、累计水位图、默认展开工具列表、余额显示、自动检查版本）通过宿主的配置表单写入并保存在宿主，插件不写任何配置文件。
 - **余额与版本检查默认关闭。** 主动打开开关、或按下对应按钮，才会让插件发起外部请求。出站只有两个固定 HTTPS 地址：`https://api.deepseek.com/user/balance` 和 `https://registry.npmjs.org/@cyrusdoyle%2F.../latest`，无重定向、无 cookie、URL 不可由调用方指定。
-- **凭据**：余额检查优先使用宿主凭据 `DEEPSEEK_API_KEY`，没有配置时使用已登录的 DeepSeek 账号。本轮只支持这一个默认 credential ref；插件不保存、不记录密钥。
+- **凭据**：余额检查使用 DeepSeek 官方适配器配置的凭据引用（`apiKeyEnv`，默认 `DEEPSEEK_API_KEY`），没有配置时使用已登录的 DeepSeek 账号；不跟随自定义 provider 的引用。插件不保存、不记录密钥。
 - **读取面不改写源日志。** 写操作只有交接相关路由——`handoff/apply` 通过官方 `session.create` + `session.prompt` 投递简报，`handoff/reveal` 创建/复用工作区让已有 DSH 会话可见——以及确认后的删除会话。`/balance` 额外只接受 loopback 来源——宿主的 webserver 没有全站鉴权。
 - **需要 DSH 0.2.1-rc.5+**：设置页依赖该版本才有的 `configForms` 客户端服务与 `plugins.bundle.config` 槽位。
 
@@ -92,7 +92,7 @@ pnpm dev
 提交前跑一遍门禁：
 
 ```bash
-npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && node scripts/build-css.mjs plugins/sessions-insight && npx tsdown && node scripts/check-bundle.mjs plugins/sessions-insight && node scripts/check-bundle.mjs .
+npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && node scripts/build-css.mjs plugins/sessions-insight && npx tsdown --minify && node scripts/check-bundle.mjs plugins/sessions-insight && node scripts/check-bundle.mjs .
 ```
 
 CI 跑同一套门禁，另外会在「重建后的 `plugins/sessions-insight/lib/` 与提交内容不一致」时失败——见 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)。

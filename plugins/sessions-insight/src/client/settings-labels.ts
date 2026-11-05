@@ -14,7 +14,7 @@ export const SETTINGS_ZH = {
   "settings.defaultToolsExpanded.hint": "打开会话时显示全部工具调用，仍可手动收起。",
   "settings.deepseekBalance": "DeepSeek 余额显示",
   "settings.deepseekBalance.hint":
-    "在主面板显示 DeepSeek 余额；开启后会访问 api.deepseek.com，并优先读取 DEEPSEEK_API_KEY，未配置时使用已登录账号。",
+    "在主面板显示 DeepSeek 余额；开启后会访问 api.deepseek.com，并使用 DeepSeek 官方适配器配置的凭据引用（默认 DEEPSEEK_API_KEY）读取，未配置时使用已登录账号。",
   "settings.autoCheckVersion": "自动检查版本",
   "settings.autoCheckVersion.hint": "自动访问 registry.npmjs.org 检查当前安装包的新版本；关闭后仍可在下方手动检查。",
   "settings.summary": "会话洞察：会话模块与辅助功能的开关，均由宿主保存。",
@@ -46,7 +46,7 @@ export const SETTINGS_EN: Record<keyof typeof SETTINGS_ZH, string> = {
     "Show all tool calls when opening a session; they can still be collapsed manually.",
   "settings.deepseekBalance": "DeepSeek balance display",
   "settings.deepseekBalance.hint":
-    "Show DeepSeek balance in the main panel; enabling it calls api.deepseek.com and reads DEEPSEEK_API_KEY first, falling back to the signed-in account.",
+    "Show DeepSeek balance in the main panel; enabling it calls api.deepseek.com and reads the credential reference configured for the DeepSeek official adapter (default DEEPSEEK_API_KEY), falling back to the signed-in account.",
   "settings.autoCheckVersion": "Automatically check versions",
   "settings.autoCheckVersion.hint":
     "Automatically check registry.npmjs.org for a newer installed package; you can still check manually below when this is off.",

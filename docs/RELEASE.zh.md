@@ -55,7 +55,7 @@ pnpm install
 ```
 
 ```bash
-npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && node scripts/build-css.mjs plugins/sessions-insight && npx tsdown && node scripts/check-bundle.mjs plugins/sessions-insight && node scripts/check-bundle.mjs .
+npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && node scripts/build-css.mjs plugins/sessions-insight && npx tsdown --minify && node scripts/check-bundle.mjs plugins/sessions-insight && node scripts/check-bundle.mjs .
 ```
 
 CSS 构建必须排在 `tsdown` 之前：组合包把编译好的样式内联进自己的 `lib/`，顺序反过来会发出旧样式。
@@ -98,7 +98,7 @@ tar -tzf /tmp/dsh-release/member/*.tgz | head -40
 
 ```bash
 node scripts/build-css.mjs plugins/sessions-insight
-npx tsdown
+npx tsdown --minify
 mkdir -p /tmp/dsh-release/collection
 pnpm pack --pack-destination /tmp/dsh-release/collection
 tar -tzf /tmp/dsh-release/collection/*.tgz | head -40
@@ -121,7 +121,7 @@ npm publish /tmp/dsh-release/member/*.tgz --registry=https://registry.npmjs.org/
 先构建组合包，再打包并发布这份 tarball：
 
 ```bash
-node scripts/build-css.mjs plugins/sessions-insight && npx tsdown && pnpm pack --pack-destination /tmp/dsh-release/collection
+node scripts/build-css.mjs plugins/sessions-insight && npx tsdown --minify && pnpm pack --pack-destination /tmp/dsh-release/collection
 ```
 
 ```bash

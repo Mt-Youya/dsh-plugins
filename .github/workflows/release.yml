@@ -50,7 +50,7 @@ jobs:
           npx vitest run
           # 集合包把插件源码内联进自己的 lib/，CSS 必须先于 tsdown 生成，否则产物带着旧样式。
           node scripts/build-css.mjs plugins/sessions-insight
-          npx tsdown
+          npx tsdown --minify
           node scripts/check-bundle.mjs plugins/sessions-insight
           node scripts/check-bundle.mjs .
 

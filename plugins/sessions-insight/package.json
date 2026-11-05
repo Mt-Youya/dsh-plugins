@@ -27,7 +27,6 @@
   "files": [
     "lib/**/*.js",
     "lib/**/*.js.map",
-    "src",
     "docs/images/**/*.png",
     "cordis.patch.yml",
     "icon.svg",
@@ -62,18 +61,18 @@
     "prepublishOnly": "pnpm typecheck && pnpm test && pnpm build"
   },
   "dependencies": {
-    "@base-ui/react": "^1.9.0",
-    "@deepseek-ai/schemastery": "3.18.5",
-    "@hugeicons/core-free-icons": "^4.4.0",
-    "@hugeicons/react": "^1.1.10",
-    "cn": "^0.5.1"
+    "@deepseek-ai/schemastery": "3.18.5"
   },
   "devDependencies": {
+    "@base-ui/react": "^1.9.0",
     "@cyrusdoyle/dsh-plugin-kit": "workspace:*",
     "@cyrusdoyle/dsh-plugin-kit-client": "workspace:*",
     "@cyrusdoyle/dsh-plugin-kit-host": "workspace:*",
     "@cyrusdoyle/dsh-session-contract": "workspace:*",
-    "@cyrusdoyle/dsh-session-readers": "workspace:*"
+    "@cyrusdoyle/dsh-session-readers": "workspace:*",
+    "@hugeicons/core-free-icons": "^4.4.0",
+    "@hugeicons/react": "^1.1.10",
+    "cn": "^0.5.1"
   },
   "peerDependencies": {
     "react": "^19.3.1"

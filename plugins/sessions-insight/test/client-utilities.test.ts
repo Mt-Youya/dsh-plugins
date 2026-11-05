@@ -26,6 +26,8 @@ afterEach(() => {
   setRuntimeTranslate(() => "")
 })
 const ok = <T>(value: T) => ({ ok: true as const, value })
+/** Let the store's settle handlers (and the queued forced request) run. */
+const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0))
 const version = {
   packageName: "@cyrusdoyle/dsh-sessions-insight" as const,
   status: "update" as const,
@@ -74,7 +76,6 @@ describe("utility wire guards", () => {
       {},
       { status: "failed" },
       { status: "failed", checkedAt: NaN },
-      { status: "ready", checkedAt: 1, source: "api-key", available: true, value: [], bonusWallets: [] },
       {
         status: "ready",
         checkedAt: 1,
@@ -191,12 +192,14 @@ describe("client utility API/store", () => {
     const store = new UtilityStore(api)
     const balance = store.refreshBalance(false),
       check = store.checkVersion(false)
-    expect(store.refreshBalance(true)).toBe(balance)
-    expect(store.checkVersion(true)).toBe(check)
+    expect(store.refreshBalance(false)).toBe(balance)
+    expect(store.checkVersion(false)).toBe(check)
     await Promise.all([balance, check])
+    // Automatic checks inside the 30s / 1h windows are served from the throttle.
     await Promise.all([store.refreshBalance(false), store.checkVersion(false)])
     expect(api.balance).toHaveBeenCalledTimes(1)
     expect(api.version).toHaveBeenCalledTimes(1)
+    // Manual checks bypass the throttle.
     await Promise.all([store.refreshBalance(), store.checkVersion()])
     expect(api.balance).toHaveBeenCalledTimes(2)
     expect(api.version).toHaveBeenCalledTimes(2)
@@ -237,12 +240,18 @@ describe("client utility API/store", () => {
     expect(strip).toContain('<span class="inline-flex flex-wrap items-center gap-3"><strong>')
     store.dispose()
   })
-  it("never prints raw transport failure details and cancels on dispose", async () => {
+  it("never prints raw transport failure details and cancels the in-flight request on dispose", async () => {
     let signal: AbortSignal | undefined
+    let release!: (value: unknown) => void
+    let calls = 0
     const api = {
-      balance: vi.fn(async (_force?: boolean, abort?: AbortSignal) => {
+      balance: vi.fn((_force?: boolean, abort?: AbortSignal) => {
         signal = abort
-        return { ok: false as const, error: "network", detail: "synthetic-secret" }
+        calls += 1
+        if (calls === 1) return Promise.resolve({ ok: false as const, error: "network", detail: "synthetic-secret" })
+        return new Promise((done) => {
+          release = done
+        })
       }),
       version: vi.fn(async () => ok(version)),
     }
@@ -250,8 +259,13 @@ describe("client utility API/store", () => {
     await store.refreshBalance()
     expect(store.getSnapshot().balance?.status).toBe("failed")
     expect(JSON.stringify(store.getSnapshot())).not.toContain("synthetic-secret")
+    const pending = store.refreshBalance()
     store.dispose()
     expect(signal?.aborted).toBe(true)
+    release({ ok: false, error: "network", detail: "synthetic-secret" })
+    await pending
+    expect(store.getSnapshot().balance).toMatchObject({ status: "failed" })
+    expect(JSON.stringify(store.getSnapshot())).not.toContain("synthetic-secret")
   })
 })
 describe("utility surfaces", () => {

@@ -15,6 +15,8 @@
  * Layout: the panel fills the Host's main slot and never sets a pixel height of
  * its own. The tree and the two session columns each scroll on their own; below
  * the container breakpoint the session pane collapses to one scrolling column.
+ * Settings opens as an overlay above that layout, so the session tree and its
+ * scroll state stay mounted while the overlay is open.
  * This module only orchestrates — every view lives in its own file.
  *
  * @module @cyrusdoyle/dsh-sessions-insight/client/panel
@@ -44,7 +46,9 @@ import { HandoffDialog } from "./handoff.tsx"
 import { ProjectTree } from "./project-tree.tsx"
 import { SearchPalette, type SearchTarget } from "./search-palette.tsx"
 import { SessionPane } from "./session-pane.tsx"
-import { SettingsPage, type SettingsSections } from "./settings.tsx"
+import { PANEL_ROOT_STYLE } from "./panel-style.ts"
+import type { SettingsSections } from "./settings.tsx"
+import { SettingsOverlay } from "./settings-overlay.tsx"
 import { EmptyBlock, ErrorBlock, Notice, SessionSkeleton, TreeSkeleton } from "./states.tsx"
 import { Toolbar } from "./toolbar.tsx"
 import { makeUtilitySections, UtilityStrip } from "./utilities.tsx"
@@ -62,36 +66,19 @@ type SessionListState =
   | { kind: "failed"; workdir: string; failure: ApiFailure }
   | { kind: "ready"; workdir: string; sessions: SessionSummary[]; failures: SourceProblem[] }
 
-/**
- * The root's own box, as an inline style.
- *
- * The stylesheet is compiled inside `@scope (.ci-panel)`, and a scoped selector
- * only matches the root's descendants — so no class on the root element itself
- * ever applies (which is why an earlier `h-full` there seemed to do nothing).
- * The root fills the Host's main slot, a flex column with a definite height, the
- * same contract the task board and dsh-context panels rely on; it never sets a
- * pixel height of its own, and the inner columns scroll instead of the page.
- */
-const ROOT_STYLE = {
-  boxSizing: "border-box",
-  display: "flex",
-  flexDirection: "column",
-  flex: "1 1 auto",
-  inlineSize: "100%",
-  blockSize: "100%",
-  minBlockSize: 0,
-  minInlineSize: 0,
-  overflow: "hidden",
-  containerType: "inline-size",
-  background: "var(--color-bg)",
-  color: "var(--color-fg)",
-  fontSize: "12.5px",
-  lineHeight: 1.55,
-} as const
+/** Panel props; every dependency can be injected so tests and the shell share one surface. */
+export interface ContextInsightPanelProps {
+  onOpenSession?: (id: string) => void | Promise<void>
+  settingsStore?: SettingsStore
+  settingsSections?: SettingsSections
+  utilityStore?: UtilityStore
+  initialPage?: "sessions" | "settings"
+}
 
 /**
  * The panel. Fetches on mount, then follows the workdir → session → turn
- * selection; ⌘K opens the search palette over it.
+ * selection; ⌘K opens the search palette over it and settings opens as an
+ * overlay above it.
  * @returns the panel page.
  */
 export function ContextInsightPanel({
@@ -100,13 +87,7 @@ export function ContextInsightPanel({
   settingsSections,
   utilityStore,
   initialPage = "sessions",
-}: {
-  onOpenSession?: (id: string) => void | Promise<void>
-  settingsStore?: SettingsStore
-  settingsSections?: SettingsSections
-  utilityStore?: UtilityStore
-  initialPage?: "sessions" | "settings"
-} = {}): ReactElement {
+}: ContextInsightPanelProps): ReactElement {
   const api: Api = useMemo(() => createApi(), [])
   const store = useMemo(() => settingsStore ?? new SettingsStore(), [settingsStore])
   const utilities = useMemo(() => utilityStore ?? new UtilityStore(api), [utilityStore, api])
@@ -116,6 +97,9 @@ export function ContextInsightPanel({
   )
   const settings = useSettings(store, api).value
   const [page, setPage] = useState(initialPage)
+  // Settings opens above the live panel; only the overlay unmounts on close, so
+  // the session tree keeps its scroll positions, selected tab and dialogs.
+  const closeSettings = useCallback(() => setPage("sessions"), [])
   const cache = clientListCache()
   const [boot, setBoot] = useState<Boot>(() =>
     cache.sources === undefined || cache.workdirs === undefined
@@ -427,40 +411,46 @@ export function ContextInsightPanel({
       />
     )
 
-  if (page === "settings")
-    return <SettingsPage store={store} api={api} sections={sections} onBack={() => setPage("sessions")} />
-
   return (
-    <div className="ci-panel" style={ROOT_STYLE} data-dsh-sessions-insight-view="">
-      <Toolbar
-        sources={sourceEntries}
-        busy={reading || refreshing}
-        sidebarOpen={sidebarOpen}
-        onToggleSidebar={() => setSidebarOpen((open) => !open)}
-        onSearch={() => setSearchOpen(true)}
-        onRefresh={retry}
-        onSettings={() => setPage("settings")}
-      />
-      <UtilityStrip store={utilities} settingsStore={store} />
-      {failures.length === 0 ? null : (
-        <div className="flex shrink-0 flex-col gap-1.5 border-b border-line-soft px-3 py-2">
-          {failures.map((problem) => (
-            <Notice key={`${problem.source}-${problem.error}`}>
-              {problem.source}: {problem.error}
-            </Notice>
-          ))}
-        </div>
-      )}
+    <div className="ci-panel" style={PANEL_ROOT_STYLE} data-dsh-sessions-insight-view="">
       <div
-        className={
-          sidebarOpen
-            ? "grid min-h-0 flex-1 grid-cols-[clamp(220px,30cqw,300px)_minmax(0,1fr)]"
-            : "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)]"
-        }
+        className="flex min-h-0 min-w-0 flex-1 flex-col"
+        data-dsh-sessions-insight-layer="sessions"
+        aria-hidden={page === "settings" ? true : undefined}
+        inert={page === "settings" ? true : undefined}
       >
-        {sidebarOpen ? <aside className="min-h-0 min-w-0 border-e border-line-soft bg-sidebar">{tree}</aside> : null}
-        <main className="@container min-h-0 min-w-0">{pane}</main>
+        <Toolbar
+          sources={sourceEntries}
+          busy={reading || refreshing}
+          sidebarOpen={sidebarOpen}
+          onToggleSidebar={() => setSidebarOpen((open) => !open)}
+          onSearch={() => setSearchOpen(true)}
+          onRefresh={retry}
+          onSettings={() => setPage("settings")}
+        />
+        <UtilityStrip store={utilities} settingsStore={store} />
+        {failures.length === 0 ? null : (
+          <div className="flex shrink-0 flex-col gap-1.5 border-b border-line-soft px-3 py-2">
+            {failures.map((problem) => (
+              <Notice key={`${problem.source}-${problem.error}`}>
+                {problem.source}: {problem.error}
+              </Notice>
+            ))}
+          </div>
+        )}
+        <div
+          className={
+            sidebarOpen
+              ? "grid min-h-0 flex-1 grid-cols-[clamp(220px,30cqw,300px)_minmax(0,1fr)]"
+              : "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)]"
+          }
+        >
+          {sidebarOpen ? <aside className="min-h-0 min-w-0 border-e border-line-soft bg-sidebar">{tree}</aside> : null}
+          <main className="@container min-h-0 min-w-0">{pane}</main>
+        </div>
       </div>
+
+      <SettingsOverlay open={page === "settings"} store={store} api={api} sections={sections} onClose={closeSettings} />
 
       {searchOpen ? <SearchPalette api={api} onClose={() => setSearchOpen(false)} onOpenTurn={jumpTo} /> : null}
       {handoffFor === null ? null : (

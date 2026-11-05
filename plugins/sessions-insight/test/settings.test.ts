@@ -9,6 +9,7 @@ import { createApi } from "../src/client/api.ts"
 import { en, zh } from "../src/client/locale.ts"
 import { registerSettings, type SettingsClientContext } from "../src/client/settings-registration.tsx"
 import { type ConfigForm, type ConfigFormSnapshot, SettingsStore } from "../src/client/state/settings.ts"
+import { ContextInsightPanel } from "../src/client/ui/panel.tsx"
 import { SessionPane } from "../src/client/ui/session-pane.tsx"
 import { SettingsPage } from "../src/client/ui/settings.tsx"
 import { Config, readSettings } from "../src/config.ts"
@@ -306,6 +307,46 @@ describe("settings details and rendering", () => {
     }
     expect(() => registerSettings(failing, new SettingsStore())).not.toThrow()
     expect(warn).toHaveBeenCalledTimes(2)
+  })
+  it("renders the settings overlay above a session panel that stays mounted", () => {
+    const { store } = createPreviewSettings()
+    const html = renderToStaticMarkup(
+      createElement(ContextInsightPanel, { settingsStore: store, initialPage: "settings" }),
+    )
+    const sessions = html.match(/<div[^>]*data-dsh-sessions-insight-layer="sessions"[^>]*>/)?.[0]
+    const overlay = html.match(/<div[^>]*data-dsh-sessions-insight-layer="settings"[^>]*>/)?.[0]
+    expect(sessions).toBeDefined()
+    expect(sessions).toContain('aria-hidden="true"')
+    expect(sessions).toContain('inert=""')
+    expect(overlay).toBeDefined()
+    expect(overlay).toContain('tabindex="-1"')
+    expect(overlay).toContain('role="region"')
+    expect(html.match(/role="switch"/g)).toHaveLength(6)
+    expect(html).toContain(en["settings.intro"])
+    expect(html).toContain(en["settings.back"])
+    // The session tree renders beneath the overlay, inside its own layer: the
+    // overlay never replaces it, so closing the overlay cannot remount it.
+    const underneath = html.slice(
+      html.indexOf('data-dsh-sessions-insight-layer="sessions"'),
+      html.indexOf('data-dsh-sessions-insight-layer="settings"'),
+    )
+    expect(underneath).toContain(en["toolbar.sidebar"])
+    expect(underneath).toContain(en["search.trigger"])
+    expect(underneath).toContain(en["tree.loadingIndex"])
+    expect(underneath).toContain(en["panel.loading"])
+  })
+  it("renders only the session panel when the initial page is sessions", () => {
+    const { store } = createPreviewSettings()
+    const html = renderToStaticMarkup(createElement(ContextInsightPanel, { settingsStore: store }))
+    const sessions = html.match(/<div[^>]*data-dsh-sessions-insight-layer="sessions"[^>]*>/)?.[0]
+    expect(sessions).toBeDefined()
+    expect(sessions).not.toContain("aria-hidden")
+    expect(sessions).not.toContain("inert")
+    expect(html).not.toContain('data-dsh-sessions-insight-layer="settings"')
+    expect(html).not.toContain(en["settings.intro"])
+    expect(html).not.toContain('role="switch"')
+    expect(html).toContain(en["search.trigger"])
+    expect(html).toContain(en["tree.loadingIndex"])
   })
   it("renders six labelled switches and extension sections in the scoped surface", () => {
     const { store } = createPreviewSettings()

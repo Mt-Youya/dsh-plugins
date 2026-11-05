@@ -230,7 +230,7 @@ export const zh = {
   "utility.balance.refresh": "刷新余额",
   "utility.balance.recharge": "前往 DeepSeek 充值",
   "utility.balance.hint":
-    "开启后会访问 api.deepseek.com 查询余额：优先读取 DEEPSEEK_API_KEY，未配置时使用已登录账号。插件不保存密钥；各币种独立展示，不折算合计。",
+    "开启后会访问 api.deepseek.com 查询余额：使用 DeepSeek 官方适配器配置的凭据引用（默认 DEEPSEEK_API_KEY），未配置时使用已登录账号。插件不保存密钥；各币种独立展示，不折算合计。",
   "utility.version.title": "插件版本",
   "utility.version.unchecked": "尚未检查",
   "utility.version.disabled": "自动检查已关闭，仍可手动检查",

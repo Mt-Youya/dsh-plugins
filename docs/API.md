@@ -8,7 +8,7 @@
 type Envelope<T> = { ok: true; value: T } | { ok: false; error: string; detail?: string }
 ```
 
-- 错误码稳定字符串，不抛裸异常：`bad-request` / `method-not-allowed` / `forbidden` / `not-found` / `read-limit` / `parse-failed` / `source-unavailable` / `handoff-unavailable`。
+- 错误码稳定字符串，不抛裸异常：`bad-request` / `method-not-allowed` / `forbidden` / `not-found` / `read-limit` / `parse-failed` / `source-unavailable` / `handoff-unavailable`。`/balance` 触发限速时是唯一例外：它返回 HTTP 429 与路由专用 `error: "rate-limited"`（见「余额」），不扩展共享的 `ApiErrorCode` 枚举。
 - 每个 GET 必须过 Origin/Host 同源校验（失败 403），非 GET 必须校验 `content-type: application/json` 与请求体 schema。
 - 路径参数只接受**白名单根目录下的已存在路径**；任何解析后的绝对路径必须仍在白名单内（防 `..` 与符号链接逃逸）。
 
@@ -18,7 +18,7 @@ type Envelope<T> = { ok: true; value: T } | { ok: false; error: string; detail?:
 | -------- | ---------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------- |
 | GET      | `/api/dsh-sessions-insight/health`             | 存活与版本                               | 已实现（M1）；`version` 是**生效包**的版本（ADR 0010）                            |
 | GET/HEAD | `/api/dsh-sessions-insight/settings`           | 读取生效中的 6 个设置开关                | 只读；设置写入由宿主 `configForms` 负责；每次请求重读，不是挂载快照               |
-| GET      | `/api/dsh-sessions-insight/balance`            | DeepSeek 余额（默认关闭）                | **HEAD 返回 405**；仅 loopback；query 白名单；缓存 30s，失败不缓存                 |
+| GET      | `/api/dsh-sessions-insight/balance`            | DeepSeek 余额（默认关闭）                | **HEAD 返回 405**；仅 loopback；query 白名单；缓存 30s，失败不缓存；每 60s 最多 6 次触发 provider/账号请求，超出 429 |
 | GET/HEAD | `/api/dsh-sessions-insight/version`            | 生效包版本 vs registry 最新版（默认关闭） | **HEAD 只回 passive peek，不发网络请求**；成功 TTL 1h、failed TTL 5min             |
 | GET  | `/api/dsh-sessions-insight/sources`                  | 三源可用性、根路径、会话数、最后扫描时间 | 单源缺失不报错，返回 `available:false` 与原因                     |
 | GET  | `/api/dsh-sessions-insight/workdirs`                 | 工作目录聚合（导航主轴）                 | 每项含 `workdir`、按来源分组的会话数与最近时间                    |
@@ -106,14 +106,16 @@ type Envelope<T> = { ok: true; value: T } | { ok: false; error: string; detail?:
 只有 `GET`；`HEAD` 返回 **405 `method-not-allowed`**（允许的方法只列 `GET`），避免 HEAD 探测触发一次 provider 请求。
 
 - **来源限制**：只接受 loopback 来源（`127.0.0.0/8`、`::1`、`::ffff:127.*`），其他来源返回 `403 forbidden`。DSH 的 webserver 没有全站鉴权，绑到非 loopback 地址时这条路由会直接暴露财务数据。
-- **处理顺序**：同源门与 loopback 来源校验 → query 校验 → 设置短路。因此开关关闭时非法 query 仍是 400；开关关闭且 query 合法时返回 `{status:"disabled"}`，不读凭据、不发任何出站请求。
+- **处理顺序**：同源门与 loopback 来源校验 → query 校验 → 设置短路 → 限速 → 读取。因此开关关闭时非法 query 仍是 400；开关关闭且 query 合法时返回 `{status:"disabled"}`，不读凭据、不发任何出站请求、也不消耗限速额度。
 - **query 白名单**：
-  - `refresh=1`：绕过 30s 缓存强制刷新，其他值 400。
+  - `refresh=1`：绕过 30s 缓存强制刷新，其他值 400。已有读取在飞行中时，宿主会等它结束后再发一次强制读取（并发强制调用合并为一次），而不是把在飞结果当成本次刷新答案。
   - `locale`：默认 `en-US`，形如 `zh` / `zh-CN`（2–3 位语言 + 可选 2–8 位地区）。
   - `timezoneOffsetSeconds`：整数，默认 `0`，绝对值上限 86400。
   - 未知键或取值非法 → `400 bad-request`，`detail: invalid-utility-query`。
+- **限速**：进程内滑动窗口，每 60 秒最多 **6 次真正进入余额读取**的调用。缓存命中、in-flight 复用、开关关闭与非法 query 都不计数；注意：即使本次因未配置凭据或未登录而没有发出网络请求，只要进入了读取仍会占用一次额度；超限返回 HTTP **429**，响应体 `{"ok":false,"error":"rate-limited","detail":"balance-refresh-limited"}`。该 `error` 值是这条路由专用的，不扩展共享信封的 `ApiErrorCode`；浏览器侧按 HTTP 429 归类为 `rate-limited` 展示。限速器接受注入时钟（测试用），没有对应的用户设置项，窗口随插件 fiber 生命周期存在，重载后重新开始。
 - **缓存**：成功结果 TTL 30s；`failed` / `missing-credentials` 不缓存（一次失败不会粘住 30s）；同一时刻只有一个 inflight 请求。宿主凭据变更事件（`credentials/reference-updated`）会清掉余额缓存，改完 API Key 下一次请求就重读。
-- **凭据**：优先宿主凭据服务 `credentials.resolve("DEEPSEEK_API_KEY")`，没有该 key 时走已登录账号的 `deepseekAccount.getBalance`；响应里的 `source` 标明本次来源。插件不保存密钥。
+- **空钱包**：官方接口返回空 `balance_infos` 数组时按 `ready` + 空钱包列表返回（`value: []`，`available` 取接口原值），面板显示「余额为空」（`utility.balance.empty`）；空数组不再被当成 `invalid-response`。
+- **凭据**：每次余额读取都重新解析宿主配置——取 DeepSeek 官方适配器条目（profile entry id `llm-deepseek`，包 `@deepseek-ai/dsh-llm-deepseek-api-key`）的 `apiKeyEnv`（`role:"credential-ref"` 的 volatile 字符串，默认 `DEEPSEEK_API_KEY`）；该值非空就用它调用宿主凭据服务 `credentials.resolve(ref)`，为空或宿主 `settings` 服务/条目缺失、字段非法时静默回退默认引用 `DEEPSEEK_API_KEY`，余额路由不因此报错；解析不到 key 时走已登录账号的 `deepseekAccount.getBalance`。响应里的 `source` 标明本次来源。**只跟随这个官方适配器的引用**，pi-ai 等自定义 provider 的 `apiKeyEnv` 不参与。插件不保存密钥。
 - **出站**：只有固定地址 `https://api.deepseek.com/user/balance`，无重定向、无 cookie、URL 不可由调用方指定；余额请求 30s 绝对超时（含 DNS/TLS/慢速响应），宿主账号调用同样按 30s 计时。
 - **响应**：
 
@@ -130,7 +132,7 @@ type BalanceValue =
 ```
 
 - `reason` 的宿主回传值就是 `UtilityFailureReason` 的 8 个：`credential-error`（凭据读取失败）/ `unauthorized`（余额 API 401/403；账号来源时客户端显示为 `account-unauthorized`）/ `rate-limited`（429）/ `timeout` / `network` / `http-error` / `invalid-response` / `account-error`。`host-unavailable` 只由浏览器侧合成：路由不可达（404/401/403）、传输失败或响应无法解码时使用。
-- `ready` 只透出已知金额字段：最多 32 个钱包，金额是十进制字符串；`available: false` 表示余额不足以调用；奖励钱包单列 `bonusWallets`。各币种独立展示，**不折算、不合并**。
+- `ready` 只透出已知金额字段：最多 32 个钱包（**可以为空**，空表示没有钱包或没有余额），金额是十进制字符串；`available: false` 表示余额不足以调用；奖励钱包单列 `bonusWallets`。各币种独立展示，**不折算、不合并**。
 
 ### 版本（`/version`）
 

@@ -2,15 +2,22 @@ import type { IncomingMessage } from "node:http"
 
 import type { Settings } from "../../protocol/settings.ts"
 import { BALANCE_PATH, VERSION_PATH } from "../../protocol/utilities.ts"
-import type { BalanceReader } from "../utilities/balance.ts"
+import type { BalanceReadSource } from "../utilities/balance.ts"
 import type { VersionChecker } from "../utilities/version.ts"
+import { createBalanceRateLimiter, type RateLimiter } from "./rate-limit.ts"
 import { route } from "./route-utils.ts"
-import { guardRequest, writeFail, writeOk, type WebRoute } from "./server.ts"
+import { guardRequest, type WebRoute, writeFail, writeJson, writeOk } from "./server.ts"
 
 export interface UtilityRouteDeps {
-  balance: BalanceReader
+  balance: BalanceReadSource
   versions: VersionChecker
   settings: () => Settings
+  /**
+   * Sliding-window limiter for calls that would really reach the provider or
+   * the signed-in account. Tests inject one with a fixed clock; production gets
+   * one per route table, so the window is process-local and resets on reload.
+   */
+  balanceLimiter?: RateLimiter
 }
 
 /**
@@ -32,6 +39,7 @@ function isLoopback(req: IncomingMessage): boolean {
 }
 
 export function createUtilityRoutes(deps: UtilityRouteDeps): WebRoute[] {
+  const limiter = deps.balanceLimiter ?? createBalanceRateLimiter()
   return [
     {
       kind: "exact",
@@ -64,10 +72,17 @@ export function createUtilityRoutes(deps: UtilityRouteDeps): WebRoute[] {
           writeOk(res, { status: "disabled", checkedAt: Date.now() })
           return
         }
-        writeOk(
-          res,
-          await deps.balance.read({ locale, timezoneOffsetSeconds }, url.searchParams.get("refresh") === "1"),
-        )
+        const refresh = url.searchParams.get("refresh") === "1"
+        // Cache hits and in-flight reuse reach neither the provider nor the
+        // account, so they never spend a slot. A full window answers 429 with
+        // `rate-limited` so the caller can retry rather than hammer the provider;
+        // the code is route-specific because the shared envelope vocabulary has
+        // no generic throttling entry.
+        if (!deps.balance.wouldReuse(refresh) && !limiter.take()) {
+          writeJson(res, 429, { ok: false, error: "rate-limited", detail: "balance-refresh-limited" })
+          return
+        }
+        writeOk(res, await deps.balance.read({ locale, timezoneOffsetSeconds }, refresh))
       }),
     },
     {
