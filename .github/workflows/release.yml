@@ -63,6 +63,21 @@ jobs:
           echo "node: $(node --version)"
           if [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then echo "OIDC env: present"; else echo "OIDC env: MISSING"; fi
 
+      # 幂等：重跑时若某个版本已经在 registry 上，就跳过它的发布步骤，
+      # 避免「成员包发成功、集合包的 trusted publisher 还没配好」这种半途失败
+      # 卡住整个流程。
+      - name: Check published versions
+        id: published
+        run: |
+          member="$(node -p "require('./plugins/sessions-insight/package.json').version")"
+          collection="$(node -p "require('./package.json').version")"
+          member_hit="$(npm view "@cyrusdoyle/dsh-sessions-insight@$member" version --registry=https://registry.npmjs.org/ 2>/dev/null || true)"
+          collection_hit="$(npm view "@cyrusdoyle/dsh-plugins@$collection" version --registry=https://registry.npmjs.org/ 2>/dev/null || true)"
+          echo "member_hit=$member_hit" >> "$GITHUB_OUTPUT"
+          echo "collection_hit=$collection_hit" >> "$GITHUB_OUTPUT"
+          echo "member $member already published: ${member_hit:-no}"
+          echo "collection $collection already published: ${collection_hit:-no}"
+
       # 成员包先 pnpm pack 出 tarball 再发 tarball：pnpm 会改写 workspace 协议，
       # npm 直接读目录发布时不会。prepack 还会重新构建并校验加载契约。
       - name: Pack member
@@ -72,6 +87,7 @@ jobs:
           pnpm pack --pack-destination "$RUNNER_TEMP/npm-release/member"
 
       - name: Publish member
+        if: steps.published.outputs.member_hit == ''
         run: npm publish "$RUNNER_TEMP"/npm-release/member/*.tgz --registry=https://registry.npmjs.org/ --loglevel=verbose
 
       # 集合包的 dependencies 写的是 workspace:^，npm 不认 workspace 协议，
@@ -82,4 +98,5 @@ jobs:
           pnpm pack --pack-destination "$RUNNER_TEMP/npm-release/collection"
 
       - name: Publish collection
+        if: steps.published.outputs.collection_hit == ''
         run: npm publish "$RUNNER_TEMP"/npm-release/collection/*.tgz --registry=https://registry.npmjs.org/ --loglevel=verbose
