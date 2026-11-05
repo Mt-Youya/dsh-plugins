@@ -79,11 +79,11 @@ describe("utility routes", () => {
     expect((await (await fetch(base + BALANCE_PATH)).json()).value.status).toBe("disabled")
     expect(request).not.toHaveBeenCalled()
     expect(credentials).not.toHaveBeenCalled()
-    expect((await (await fetch(base + VERSION_PATH + "?check=1")).json()).value.status).toBe("update")
+    expect((await (await fetch(`${base + VERSION_PATH}?check=1`)).json()).value.status).toBe("update")
     expect(request).toHaveBeenCalledTimes(1)
     settings.deepseekBalance = true
     expect(
-      (await (await fetch(base + BALANCE_PATH + "?refresh=1&locale=zh-CN&timezoneOffsetSeconds=28800")).json()).value
+      (await (await fetch(`${base + BALANCE_PATH}?refresh=1&locale=zh-CN&timezoneOffsetSeconds=28800`)).json()).value
         .status,
     ).toBe("missing-credentials")
   })
@@ -93,7 +93,7 @@ describe("utility routes", () => {
     for (const path of [BALANCE_PATH, VERSION_PATH]) {
       expect((await fetch(base + path, { method: "POST" })).status).toBe(405)
       expect((await fetch(base + path, { headers: { origin: "https://evil.example" } })).status).toBe(403)
-      expect((await fetch(base + path + "?url=https://evil.example")).status).toBe(400)
+      expect((await fetch(`${base + path}?url=https://evil.example`)).status).toBe(400)
     }
     for (const query of [
       "locale=invalid/locale",
@@ -101,7 +101,7 @@ describe("utility routes", () => {
       "timezoneOffsetSeconds=999999",
       "refresh=false",
     ])
-      expect((await fetch(base + BALANCE_PATH + "?" + query)).status).toBe(400)
+      expect((await fetch(`${base + BALANCE_PATH}?${query}`)).status).toBe(400)
     expect(request).not.toHaveBeenCalled()
     expect(credentials).not.toHaveBeenCalled()
   })
@@ -113,7 +113,7 @@ describe("utility routes", () => {
     await fetch(base + VERSION_PATH)
     expect(request).toHaveBeenCalledTimes(1)
     settings.autoCheckVersion = false
-    await fetch(base + VERSION_PATH + "?refresh=1")
+    await fetch(`${base + VERSION_PATH}?refresh=1`)
     expect(request).toHaveBeenCalledTimes(1)
   })
   it("rejects a non-loopback balance source with 403 before the provider", async () => {
@@ -148,14 +148,14 @@ describe("utility routes", () => {
     expect(settings.deepseekBalance).toBe(false)
     expect(settings.autoCheckVersion).toBe(false)
     for (const path of [BALANCE_PATH, VERSION_PATH])
-      expect((await fetch(base + path + "?url=https://evil.example")).status).toBe(400)
+      expect((await fetch(`${base + path}?url=https://evil.example`)).status).toBe(400)
     for (const query of [
       "locale=invalid/locale",
       "timezoneOffsetSeconds=NaN",
       "timezoneOffsetSeconds=999999",
       "refresh=false",
     ])
-      expect((await fetch(base + BALANCE_PATH + "?" + query)).status).toBe(400)
+      expect((await fetch(`${base + BALANCE_PATH}?${query}`)).status).toBe(400)
     expect(request).not.toHaveBeenCalled()
     expect(credentials).not.toHaveBeenCalled()
   })
@@ -165,7 +165,7 @@ describe("utility routes", () => {
       balanceResponse: { is_available: false, balance_infos: [] },
     })
     settings.deepseekBalance = true
-    const response = await fetch(base + BALANCE_PATH + "?refresh=1")
+    const response = await fetch(`${base + BALANCE_PATH}?refresh=1`)
     expect(response.status).toBe(200)
     expect((await response.json()).value).toMatchObject({
       status: "ready",
@@ -180,9 +180,9 @@ describe("utility routes", () => {
     const limiter = createBalanceRateLimiter({ now: () => clock.now })
     const { base, settings, request } = await fixture({ credentialKey: "synthetic-test-key", balanceLimiter: limiter })
     settings.deepseekBalance = true
-    for (let i = 0; i < 6; i++) expect((await fetch(base + BALANCE_PATH + "?refresh=1")).status).toBe(200)
+    for (let i = 0; i < 6; i++) expect((await fetch(`${base + BALANCE_PATH}?refresh=1`)).status).toBe(200)
     expect(request).toHaveBeenCalledTimes(6)
-    const limited = await fetch(base + BALANCE_PATH + "?refresh=1")
+    const limited = await fetch(`${base + BALANCE_PATH}?refresh=1`)
     expect(limited.status).toBe(429)
     expect(await limited.json()).toEqual({ ok: false, error: "rate-limited", detail: "balance-refresh-limited" })
     expect(request).toHaveBeenCalledTimes(6)
@@ -191,9 +191,9 @@ describe("utility routes", () => {
     expect(request).toHaveBeenCalledTimes(6)
     // The window slides: nothing is freed at 59.999 s; every slot expires at 60 s.
     clock.now += 59_999
-    expect((await fetch(base + BALANCE_PATH + "?refresh=1")).status).toBe(429)
+    expect((await fetch(`${base + BALANCE_PATH}?refresh=1`)).status).toBe(429)
     clock.now += 1
-    expect((await fetch(base + BALANCE_PATH + "?refresh=1")).status).toBe(200)
+    expect((await fetch(`${base + BALANCE_PATH}?refresh=1`)).status).toBe(200)
     expect(request).toHaveBeenCalledTimes(7)
   })
   it("does not spend the window on disabled settings, invalid queries or cached reads", async () => {
@@ -202,14 +202,14 @@ describe("utility routes", () => {
     const { base, settings, request } = await fixture({ credentialKey: "synthetic-test-key", balanceLimiter: limiter })
     for (let i = 0; i < 8; i++) expect((await fetch(base + BALANCE_PATH)).status).toBe(200)
     expect((await (await fetch(base + BALANCE_PATH)).json()).value.status).toBe("disabled")
-    for (let i = 0; i < 8; i++) expect((await fetch(base + BALANCE_PATH + "?locale=invalid/locale")).status).toBe(400)
+    for (let i = 0; i < 8; i++) expect((await fetch(`${base + BALANCE_PATH}?locale=invalid/locale`)).status).toBe(400)
     expect(request).not.toHaveBeenCalled()
     settings.deepseekBalance = true
-    for (let i = 0; i < 6; i++) expect((await fetch(base + BALANCE_PATH + "?refresh=1")).status).toBe(200)
+    for (let i = 0; i < 6; i++) expect((await fetch(`${base + BALANCE_PATH}?refresh=1`)).status).toBe(200)
     expect(request).toHaveBeenCalledTimes(6)
     expect((await fetch(base + BALANCE_PATH)).status).toBe(200)
     expect(request).toHaveBeenCalledTimes(6)
-    expect((await fetch(base + BALANCE_PATH + "?refresh=1")).status).toBe(429)
+    expect((await fetch(`${base + BALANCE_PATH}?refresh=1`)).status).toBe(429)
     expect(request).toHaveBeenCalledTimes(6)
   })
 })

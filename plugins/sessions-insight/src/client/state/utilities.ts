@@ -1,14 +1,14 @@
 import { useEffect, useSyncExternalStore } from "react"
 
 import {
-  isBalanceValue,
   type BalanceFailureReason,
   type BalanceValue,
+  isBalanceValue,
   type VersionValue,
 } from "../../protocol/utilities.ts"
 import { PLUGIN_NAME } from "../../version.ts"
 import type { Api, ApiResult } from "../api.ts"
-import { SettingsStore, useSettings } from "./settings.ts"
+import { type SettingsStore, useSettings } from "./settings.ts"
 
 export interface UtilitySnapshot {
   balance: BalanceValue | null
@@ -149,33 +149,34 @@ export class UtilityStore {
     this.snapshot = { ...this.snapshot, ...patch }
     for (const listener of this.listeners) listener()
   }
-  private readBalance = async (
-    force: boolean,
-    signal: AbortSignal,
-  ): Promise<BalanceAnswer | undefined> => await this.read(this.api.balance(force, signal), (result) => {
-    if (!result.ok) return { value: { status: "failed", checkedAt: Date.now(), reason: balanceFailureReason(result.error, result.status) }, answered: true }
-    if (!isBalanceValue(result.value)) return { value: { status: "failed", checkedAt: Date.now(), reason: "invalid-response" }, answered: true }
-    if (result.value.status === "failed") {
-      const { checkedAt, reason, source } = result.value
-      return { value: { status: "failed", checkedAt, reason, source }, answered: true }
-    }
-    return { value: result.value, answered: true }
-  })
-  private readVersion = async (
-    manual: boolean,
-    signal: AbortSignal,
-  ): Promise<VersionAnswer | undefined> => await this.read(this.api.version(manual, signal), (result) => {
-    if (result.ok) return { value: result.value, answered: true }
-    return {
-      value: {
-        status: "failed",
-        packageName: this.snapshot.version?.packageName ?? PLUGIN_NAME,
-        currentVersion: this.snapshot.version?.currentVersion ?? "",
-        checkedAt: Date.now(),
-      },
-      answered: true,
-    }
-  })
+  private readBalance = async (force: boolean, signal: AbortSignal): Promise<BalanceAnswer | undefined> =>
+    await this.read(this.api.balance(force, signal), (result) => {
+      if (!result.ok)
+        return {
+          value: { status: "failed", checkedAt: Date.now(), reason: balanceFailureReason(result.error, result.status) },
+          answered: true,
+        }
+      if (!isBalanceValue(result.value))
+        return { value: { status: "failed", checkedAt: Date.now(), reason: "invalid-response" }, answered: true }
+      if (result.value.status === "failed") {
+        const { checkedAt, reason, source } = result.value
+        return { value: { status: "failed", checkedAt, reason, source }, answered: true }
+      }
+      return { value: result.value, answered: true }
+    })
+  private readVersion = async (manual: boolean, signal: AbortSignal): Promise<VersionAnswer | undefined> =>
+    await this.read(this.api.version(manual, signal), (result) => {
+      if (result.ok) return { value: result.value, answered: true }
+      return {
+        value: {
+          status: "failed",
+          packageName: this.snapshot.version?.packageName ?? PLUGIN_NAME,
+          currentVersion: this.snapshot.version?.currentVersion ?? "",
+          checkedAt: Date.now(),
+        },
+        answered: true,
+      }
+    })
   /**
    * Shared transport settlement: a rejected transport and an aborted answer are
    * both "not an answer" for the panel, so neither overwrites the last success.

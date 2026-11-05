@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 
 import { SettingsStore } from "../src/client/state/settings.ts"
-import { UtilityStore, useUtilities } from "../src/client/state/utilities.ts"
+import { useUtilities, UtilityStore } from "../src/client/state/utilities.ts"
 import { SETTINGS_DEFAULTS } from "../src/protocol/settings.ts"
 
 vi.mock("react", () => ({

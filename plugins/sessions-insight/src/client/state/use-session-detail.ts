@@ -3,7 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { MAX_TURN_LIMIT } from "../../protocol.ts"
 import type { ContextSource, CostValue, SessionMetadataValue, Turn } from "../../protocol.ts"
 import type { Api, ApiFailure } from "../api.ts"
-import type { LoadedSession } from "../ui/session-pane.tsx"
+import type { LoadedSession } from "../ui/session/session-pane.tsx"
 
 export const PAGE_SIZE = 40
 export interface SessionRef {

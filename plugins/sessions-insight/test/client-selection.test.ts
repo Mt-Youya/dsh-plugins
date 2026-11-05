@@ -7,8 +7,8 @@ import {
   selectSessions,
   toggleSelection,
   visibleSessions,
-} from "../src/client/state/selection.ts"
-import { buildProjects, flattenTree, sessionKey, type TreeSession } from "../src/client/state/tree.ts"
+} from "../src/client/model/selection.ts"
+import { buildProjects, flattenTree, sessionKey, type TreeSession } from "../src/client/model/tree.ts"
 
 function session(id: string, workdir = "/a", source: TreeSession["source"] = "claude"): TreeSession {
   return { id, source, workdir, title: id, bytes: 1, updatedAt: 1 }

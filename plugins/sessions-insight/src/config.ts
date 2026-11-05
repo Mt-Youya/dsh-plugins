@@ -1,6 +1,6 @@
 import Schema from "@deepseek-ai/schemastery"
 
-import { SETTINGS_DEFAULTS, SETTINGS_KEYS, type Settings } from "./protocol/settings.ts"
+import { type Settings, SETTINGS_DEFAULTS, SETTINGS_KEYS } from "./protocol/settings.ts"
 
 /** Native schemastery is required by settings' volatileForm / plainSchema. */
 export const Config = Schema.object(

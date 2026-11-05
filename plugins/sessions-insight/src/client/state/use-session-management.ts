@@ -3,10 +3,10 @@ import { useEffect, useRef, useState } from "react"
 import type { AiTitleValue } from "../../protocol/ai-title.ts"
 import type { SessionMetadataValue } from "../../protocol/management.ts"
 import { type Api, failureText } from "../api.ts"
-import { t } from "../locale.ts"
+import { t } from "../locale/index.ts"
+import { emptySelection, removeSelection } from "../model/selection.ts"
+import { sessionKey, type TreeSession } from "../model/tree.ts"
 import { type ManagementApi, type ManagementFailure, runSessionBatch } from "./management.ts"
-import { emptySelection, removeSelection } from "./selection.ts"
-import { sessionKey, type TreeSession } from "./tree.ts"
 
 export interface ManagementDialog {
   serial: number

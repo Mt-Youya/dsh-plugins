@@ -76,7 +76,7 @@
 
 **3.方案**
 
-在 [stacked-bar.tsx](../../plugins/sessions-insight/src/client/ui/stacked-bar.tsx) 增加 `partColor`，按 `segment.part` 和 `slice.part` 返回 `var(--color-part-*)`，条形和图例都显式设置背景。移除已知类别的 thinking 兜底背景及失效颜色表；未知段继续使用原有纹理表达。
+在 [stacked-bar.tsx](../../plugins/sessions-insight/src/client/ui/charts/stacked-bar.tsx) 增加 `partColor`，按 `segment.part` 和 `slice.part` 返回 `var(--color-part-*)`，条形和图例都显式设置背景。移除已知类别的 thinking 兜底背景及失效颜色表；未知段继续使用原有纹理表达。
 
 **4.实现与验证**
 

@@ -3,8 +3,8 @@ import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 
-import { t } from "../src/client/locale.ts"
-import { PartLegend, StackedBar } from "../src/client/ui/stacked-bar.tsx"
+import { t } from "../src/client/locale/index.ts"
+import { PartLegend, StackedBar } from "../src/client/ui/charts/stacked-bar.tsx"
 
 const attribution: Attribution = {
   total: { tokens: 1000, precision: "exact", basis: "usage" },

@@ -61,16 +61,16 @@ import {
   WORKDIRS_URL,
   type WorkdirsValue,
 } from "../protocol.ts"
-import { isSettings, SETTINGS_URL, type Settings } from "../protocol/settings.ts"
+import { isSettings, type Settings, SETTINGS_URL } from "../protocol/settings.ts"
 import {
   BALANCE_URL,
-  VERSION_URL,
+  type BalanceValue,
   isBalanceValue,
   isVersionValue,
-  type BalanceValue,
+  VERSION_URL,
   type VersionValue,
 } from "../protocol/utilities.ts"
-import { t } from "./locale.ts"
+import { t } from "./locale/index.ts"
 import { clientListCache } from "./state/list-cache.ts"
 
 export type { ApiFailure, ApiResult } from "@cyrusdoyle/dsh-plugin-kit-client"

@@ -3,9 +3,9 @@ import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 
-import { sessionOverviewState } from "../src/client/state/session-insights.ts"
-import { SessionOverview } from "../src/client/ui/session-overview.tsx"
-import { SessionPane } from "../src/client/ui/session-pane.tsx"
+import { sessionOverviewState } from "../src/client/model/session-insights.ts"
+import { SessionOverview } from "../src/client/ui/session/session-overview.tsx"
+import { SessionPane } from "../src/client/ui/session/session-pane.tsx"
 
 function turn(index: number): Turn {
   return {

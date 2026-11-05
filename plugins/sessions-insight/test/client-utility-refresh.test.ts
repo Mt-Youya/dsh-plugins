@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest"
 
 import { UtilityStore } from "../src/client/state/utilities.ts"
 
-const ok = <T,>(value: T) => ({ ok: true as const, value })
+const ok = <T>(value: T) => ({ ok: true as const, value })
 /** Let the store's settle handlers (and the queued forced request) run. */
 const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0))
 const version = {

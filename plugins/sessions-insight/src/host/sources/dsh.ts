@@ -329,7 +329,7 @@ export class DshSource implements SessionSource {
   }
 
   #saveIndex(): Promise<void> {
-    const entries = [...(this.#index?.values() ?? [])].map((entry) => Object.assign({}, entry))
+    const entries = [...(this.#index?.values() ?? [])].map((entry) => ({ ...entry }))
     this.#saving = this.#saving.then(() => saveDshIndex(this.#indexPath, entries))
     return this.#saving
   }

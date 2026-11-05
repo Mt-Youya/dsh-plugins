@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { createPluginConfig } from "../../../tooling/tsdown/plugin-config.ts"
 import { compareVersions } from "../src/host/utilities/semver.ts"
-import { VersionChecker, VERSION_FAILED_TTL_MS, VERSION_TTL_MS } from "../src/host/utilities/version.ts"
+import { VERSION_FAILED_TTL_MS, VERSION_TTL_MS, VersionChecker } from "../src/host/utilities/version.ts"
 import { isVersionValue } from "../src/protocol/utilities.ts"
 
 afterEach(() => {

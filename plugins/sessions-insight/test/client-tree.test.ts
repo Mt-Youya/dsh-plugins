@@ -9,7 +9,7 @@ import {
   sessionKey,
   type TreeSession,
   writeExpanded,
-} from "../src/client/state/tree.ts"
+} from "../src/client/model/tree.ts"
 import type { ContextSource, WorkdirEntry } from "../src/protocol.ts"
 
 function split(path: string) {

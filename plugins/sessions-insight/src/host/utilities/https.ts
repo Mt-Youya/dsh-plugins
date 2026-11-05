@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer"
 import { get } from "node:https"
-import { setTimeout, clearTimeout } from "node:timers"
+import { clearTimeout, setTimeout } from "node:timers"
 
 import { isPluginName, isUtilityFailureReason, type UtilityFailureReason } from "../../protocol/utilities.ts"
 

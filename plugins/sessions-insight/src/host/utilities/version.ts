@@ -1,4 +1,4 @@
-import { isRecord, isPluginName, type PluginName, type VersionValue } from "../../protocol/utilities.ts"
+import { isPluginName, isRecord, type PluginName, type VersionValue } from "../../protocol/utilities.ts"
 import { PLUGIN_NAME } from "../../version.ts"
 import { requestUtilityJson, type UtilityRequest } from "./https.ts"
 import { compareVersions } from "./semver.ts"

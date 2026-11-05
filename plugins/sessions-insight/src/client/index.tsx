@@ -21,13 +21,13 @@ import { registerLocale, registerPanel } from "@cyrusdoyle/dsh-plugin-kit-client
 import type { ReactElement } from "react"
 
 import { createApi, preloadSessionLists } from "./api.ts"
-import { en, LOCALE_NS, setRuntimeTranslate, t, zh } from "./locale.ts"
-import { registerSettings, type SettingsClientContext } from "./settings-registration.tsx"
+import { en, LOCALE_NS, setRuntimeTranslate, t, zh } from "./locale/index.ts"
 import { SettingsStore } from "./state/settings.ts"
 import { UtilityStore } from "./state/utilities.ts"
 import { injectStyles } from "./styles.ts"
 import { ContextInsightPanel } from "./ui/panel.tsx"
-import { makeUtilitySections } from "./ui/utilities.tsx"
+import { registerSettings, type SettingsClientContext } from "./ui/settings/registration.tsx"
+import { makeUtilitySections } from "./ui/settings/utilities.tsx"
 
 export type { ClientContext, Dispose, LocaleFace, SlotsFace } from "@cyrusdoyle/dsh-plugin-kit-client"
 
@@ -45,7 +45,6 @@ export const inject = ["slots", "locale", "uiWorkspace"] as const
 
 declare global {
   /** Apply guard shared by every module instance in one page lifetime. */
-  // eslint-disable-next-line no-var
   var __dshContextInsightApplied: boolean | undefined
 }
 

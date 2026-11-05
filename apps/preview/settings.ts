@@ -1,7 +1,7 @@
 import {
   type ConfigForm,
-  type ConfigFormSnapshot,
   type ConfigForms,
+  type ConfigFormSnapshot,
   SettingsStore,
 } from "../../plugins/sessions-insight/src/client/state/settings.ts"
 import {

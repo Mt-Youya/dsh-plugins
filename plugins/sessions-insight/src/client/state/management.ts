@@ -1,7 +1,7 @@
 import type { AiTitleValue } from "../../protocol/ai-title.ts"
 import type { MetadataPatch, MetadataValue, SessionMetadataValue } from "../../protocol/management.ts"
 import { type Api, type ApiResult, failureText } from "../api.ts"
-import { sessionKey, type TreeSession } from "./tree.ts"
+import { sessionKey, type TreeSession } from "../model/tree.ts"
 
 /** Structurally matches the API being connected by the panel owner. */
 export type ManagementApi = Pick<Api, "deleteSession"> & {

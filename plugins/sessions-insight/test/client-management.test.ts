@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 
 import type { ApiResult } from "../src/client/api.ts"
+import type { TreeSession } from "../src/client/model/tree.ts"
 import { applySessionMetadata, runSessionBatch } from "../src/client/state/management.ts"
-import type { TreeSession } from "../src/client/state/tree.ts"
 
 const sessions: TreeSession[] = ["a", "b", "c"].map((id) => ({
   source: "claude",

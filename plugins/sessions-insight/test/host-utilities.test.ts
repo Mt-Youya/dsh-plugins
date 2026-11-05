@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { BalanceReader, BALANCE_TTL_MS, type BalanceDeps } from "../src/host/utilities/balance.ts"
+import { BALANCE_TTL_MS, type BalanceDeps, BalanceReader } from "../src/host/utilities/balance.ts"
 import { BALANCE_TIMEOUT_MS, UTILITY_TIMEOUT_MS, UtilityRequestError } from "../src/host/utilities/https.ts"
 import { apply, type HostContext, watchCredentialUpdates } from "../src/index.ts"
 import { isAmount, isBalanceValue } from "../src/protocol/utilities.ts"
@@ -415,4 +415,3 @@ describe("credential reference invalidation", () => {
     expect(table.size).toBe(0)
   })
 })
-

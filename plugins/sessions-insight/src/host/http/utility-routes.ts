@@ -51,12 +51,12 @@ export function createUtilityRoutes(deps: UtilityRouteDeps): WebRoute[] {
           writeFail(res, "forbidden", "non-loopback")
           return
         }
-        const allowed = ["refresh", "locale", "timezoneOffsetSeconds"]
+        const allowed = new Set(["refresh", "locale", "timezoneOffsetSeconds"])
         const locale = url.searchParams.get("locale") ?? "en-US"
         const rawOffset = url.searchParams.get("timezoneOffsetSeconds") ?? "0"
         const timezoneOffsetSeconds = Number(rawOffset)
         if (
-          [...url.searchParams.keys()].some((key) => !allowed.includes(key)) ||
+          [...url.searchParams.keys()].some((key) => !allowed.has(key)) ||
           !/^[a-z]{2,3}(?:-[a-zA-Z]{2,8})?$/.test(locale) ||
           !/^-?\d+$/.test(rawOffset) ||
           !Number.isInteger(timezoneOffsetSeconds) ||

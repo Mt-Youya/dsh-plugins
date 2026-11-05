@@ -3,21 +3,26 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { createApi } from "../src/client/api.ts"
-import { fillParams, setRuntimeTranslate, en, zh } from "../src/client/locale.ts"
-import { SETTINGS_EN, SETTINGS_ZH } from "../src/client/settings-labels.ts"
+import { SETTINGS_EN, SETTINGS_ZH } from "../src/client/locale/dictionaries/settings.ts"
+import { en, fillParams, setRuntimeTranslate, zh } from "../src/client/locale/index.ts"
 import { SettingsStore } from "../src/client/state/settings.ts"
 import { UtilityStore } from "../src/client/state/utilities.ts"
-import { SettingsPage } from "../src/client/ui/settings.tsx"
-import { BalanceDisplay, VersionDisplay, UtilityStrip, makeUtilitySections } from "../src/client/ui/utilities.tsx"
-import { SETTINGS_DEFAULTS, type Settings } from "../src/protocol/settings.ts"
+import { SettingsPage } from "../src/client/ui/settings/settings.tsx"
+import {
+  BalanceDisplay,
+  makeUtilitySections,
+  UtilityStrip,
+  VersionDisplay,
+} from "../src/client/ui/settings/utilities.tsx"
+import { type Settings, SETTINGS_DEFAULTS } from "../src/protocol/settings.ts"
 import {
   BALANCE_URL,
-  VERSION_URL,
-  RECHARGE_LINK,
-  UPDATE_LINKS,
   isBalanceValue,
   isVersionValue,
+  RECHARGE_LINK,
+  UPDATE_LINKS,
   UTILITY_FAILURE_REASONS,
+  VERSION_URL,
 } from "../src/protocol/utilities.ts"
 
 afterEach(() => {
@@ -109,11 +114,11 @@ describe("client utility API/store", () => {
     vi.stubGlobal("fetch", fetcher)
     const api = createApi()
     expect((await api.balance(true)).ok).toBe(true)
-    expect(fetcher.mock.calls[0]![0]).toContain(BALANCE_URL + "?")
+    expect(fetcher.mock.calls[0]![0]).toContain(`${BALANCE_URL}?`)
     expect(fetcher.mock.calls[0]![0]).toContain("refresh=1")
     expect(fetcher.mock.calls[0]![0]).toContain("timezoneOffsetSeconds=")
     await api.version(true)
-    expect(fetcher.mock.calls[1]![0]).toBe(VERSION_URL + "?check=1")
+    expect(fetcher.mock.calls[1]![0]).toBe(`${VERSION_URL}?check=1`)
   })
   it.each([404, 401, 403])("classifies host HTTP %s even when the body is not JSON", async (status) => {
     vi.stubGlobal(

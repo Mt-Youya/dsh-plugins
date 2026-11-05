@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { Api, ApiResult } from "../src/client/api.ts"
-import { MANAGEMENT_EN, MANAGEMENT_ZH } from "../src/client/management-labels.ts"
+import { MANAGEMENT_EN, MANAGEMENT_ZH } from "../src/client/locale/dictionaries/management.ts"
+import type { TreeSession } from "../src/client/model/tree.ts"
 import type { ManagementApi } from "../src/client/state/management.ts"
-import type { TreeSession } from "../src/client/state/tree.ts"
 import { useSessionManagement } from "../src/client/state/use-session-management.ts"
 import type { AiTitleValue } from "../src/protocol/ai-title.ts"
 
@@ -33,7 +33,7 @@ vi.mock("react", () => ({
     }
   },
 }))
-vi.mock("../src/client/locale.ts", () => ({
+vi.mock("../src/client/locale/index.ts", () => ({
   t: (key: string, params?: Record<string, unknown>) => {
     const text = (MANAGEMENT_EN as Record<string, string>)[key] ?? key
     return text.replace(/\{(\w+)\}/g, (whole, name: string) => String(params?.[name] ?? whole))

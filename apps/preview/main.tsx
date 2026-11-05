@@ -9,7 +9,7 @@
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 
-import { fillParams, setRuntimeTranslate, zh } from "../../plugins/sessions-insight/src/client/locale.ts"
+import { fillParams, setRuntimeTranslate, zh } from "../../plugins/sessions-insight/src/client/locale/index.ts"
 import { injectStyles } from "../../plugins/sessions-insight/src/client/styles.ts"
 import { ContextInsightPanel } from "../../plugins/sessions-insight/src/client/ui/panel.tsx"
 import { reportProbe } from "./probe.ts"

@@ -6,26 +6,26 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { createPreviewSettings } from "../../../apps/preview/settings.ts"
 import { createApi } from "../src/client/api.ts"
-import { en, zh } from "../src/client/locale.ts"
-import { registerSettings, type SettingsClientContext } from "../src/client/settings-registration.tsx"
+import { en, zh } from "../src/client/locale/index.ts"
 import { type ConfigForm, type ConfigFormSnapshot, SettingsStore } from "../src/client/state/settings.ts"
 import { ContextInsightPanel } from "../src/client/ui/panel.tsx"
-import { SessionPane } from "../src/client/ui/session-pane.tsx"
-import { SettingsPage } from "../src/client/ui/settings.tsx"
+import { SessionPane } from "../src/client/ui/session/session-pane.tsx"
+import { registerSettings, type SettingsClientContext } from "../src/client/ui/settings/registration.tsx"
+import { SettingsPage } from "../src/client/ui/settings/settings.tsx"
 import { Config, readSettings } from "../src/config.ts"
 import { createSettingsRoute } from "../src/index.ts"
 import type { SessionDetail } from "../src/protocol.ts"
 import {
+  enabledSessionTabs,
+  isSettings,
+  resolveSessionTab,
+  type Settings,
   SETTINGS_DEFAULTS,
   SETTINGS_ENTRIES,
   SETTINGS_KEYS,
   SETTINGS_PACKAGES,
   SETTINGS_PATH,
-  enabledSessionTabs,
-  isSettings,
-  resolveSessionTab,
   settingsFrom,
-  type Settings,
 } from "../src/protocol/settings.ts"
 
 function form(initial: ConfigFormSnapshot = { status: "ready", writable: true, value: SETTINGS_DEFAULTS }) {
