@@ -7,9 +7,9 @@
  * split by payload kind. Every constant below was fitted on this machine's
  * Claude corpus: 214 turns across the 33 session files that carry a
  * `prompt_snapshot`, minimising per-turn |estimate − usage| / usage against
- * the exact `input + cache_creation + cache_read` total. `node
- * scripts/probe-claude.mjs --corpus ~/.claude/projects` re-reports the fit on
- * demand; the numbers are measurements, not conventions.
+ * the exact `input + cache_creation + cache_read` total. The numbers are
+ * measurements, not conventions; re-fit them by hand if the corpus ever changes
+ * enough to matter.
  *
  * @see docs/IR.md (precision, basis)
  */
@@ -64,7 +64,7 @@ export const MAX_IMAGE_EDGE = 1568
 /** Tokens assumed when an image header cannot be decoded. */
 export const IMAGE_TOKENS_FALLBACK = 1_500
 
-/** Human-readable provenance of the calipers, for the panel and the probe report. */
+/** Human-readable provenance of the calipers, for the panel. */
 export const CHAR_CALIBRATION_NOTE =
   `chars-per-token: schema ${CHARS_PER_TOKEN_SCHEMA}, text ${CHARS_PER_TOKEN_TEXT}, ` +
   `cjk ${CHARS_PER_TOKEN_CJK}; images: ${PIXELS_PER_TOKEN} px/token, ` +

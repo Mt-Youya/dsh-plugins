@@ -47,6 +47,8 @@
   "scripts": {
     "dev": "vite --config apps/preview/vite.config.ts",
     "screenshots": "node scripts/screenshots.mjs",
+    "smoke:preview": "node scripts/smoke-preview.mjs",
+    "check:ui": "node scripts/check-session-menu.mjs",
     "css": "node scripts/build-css.mjs plugins/sessions-insight",
     "build": "pnpm css && pnpm typecheck && pnpm typecheck:client && tsdown --minify && pnpm build:libs",
     "build:libs": "pnpm --filter './packages/*' -r run build",

@@ -109,6 +109,11 @@ Regenerate the README screenshots from the preview (headless Chrome, 1440×900; 
 pnpm screenshots
 ```
 
+Optional browser checks (need a local Chrome; not part of CI):
+
+- `pnpm smoke:preview` measures the mounted panel in both themes under `?probe=1`.
+- `pnpm check:ui` drives the session-menu interactions against a fixture server.
+
 ## Publishing
 
 Follow [`docs/RELEASE.md`](./docs/RELEASE.md): the member and the collection share one version number and are published together, member first (ADR 0010).

@@ -109,6 +109,11 @@ pnpm install:plugin
 pnpm screenshots
 ```
 
+可选浏览器检查（需要本机 Chrome，不在 CI 里跑）：
+
+- `pnpm smoke:preview` 用 `?probe=1` 在明暗两套主题下测量已挂载的面板。
+- `pnpm check:ui` 对本地起的 fixture 服务跑会话菜单交互回归。
+
 ## 发布
 
 按 [`docs/RELEASE.zh.md`](./docs/RELEASE.zh.md) 的步骤来：成员包和组合包共用一个版本号、成对发布，先发成员包（ADR 0010）。
