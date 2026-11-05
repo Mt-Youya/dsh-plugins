@@ -25,6 +25,9 @@ const PREVIEW_ROOT = fileURLToPath(new URL(".", import.meta.url))
 /** Repository root; the dev server may read anything above the app. */
 const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url))
 
+/** Port the dev server binds; the scripts read the same PREVIEW_PORT. */
+const PREVIEW_PORT = Number(process.env.PREVIEW_PORT ?? 5178)
+
 /** The Host entry, resolved against this file rather than the preview root. */
 const manifest = JSON.parse(
   readFileSync(new URL("../../plugins/sessions-insight/package.json", import.meta.url), "utf8"),
@@ -109,5 +112,5 @@ export default defineConfig({
   },
   plugins: [react(), hostRoutes()],
   resolve: { alias: viteAlias() },
-  server: { fs: { allow: [REPO_ROOT] }, port: 5178 },
+  server: { fs: { allow: [REPO_ROOT] }, port: PREVIEW_PORT },
 })

@@ -81,6 +81,31 @@ type Envelope<T> = { ok: true; value: T } | { ok: false; error: string; detail?:
 
 `POST /api/dsh-sessions-insight/handoff/reveal`：体 `{source:"dsh",id}`（id 可带 `session-` 前缀）。从日志确定真实工作目录，创建或复用对应工作区并补齐会话成员关系；返回 `{sessionId}`，不启动模型轮次。
 
+## 会话元数据与自动命名（补充）
+
+两条用户触发的路由，都不改会话日志：一条写插件自己的元数据文件，一条只回标题建议。两者都是 `kind:'exact'`，都先过 Origin/Host 同源门；`POST` 另需 JSON content-type 与合法请求体。
+
+| 方法          | 路径                                                | 用途                   | 关键约束                                                               |
+| ------------- | --------------------------------------------------- | ---------------------- | ---------------------------------------------------------------------- |
+| GET/HEAD/POST | `/api/dsh-sessions-insight/session/metadata`         | 自建标题与分组         | `GET`/`HEAD` 只读；`POST` 是**补丁不是整体替换**，`null` 表示清除该字段 |
+| POST          | `/api/dsh-sessions-insight/session/title/suggest`    | 用宿主默认模型拟标题   | 只回建议、不落库；同一时刻只跑一个；60s 超时                           |
+
+### 元数据（`/session/metadata`）
+
+- 存储：`$DSH_HOME/dsh-sessions-insight/metadata.json`（`DSH_HOME` 未设或为空时落 `~/.dsh/dsh-sessions-insight/`），内容是 `{entries: SessionMetadata[]}`。写入是临时文件 + `rename`（mode `0600`），进程内按文件路径串行化，因此重载后的多个 Host fiber 不会互相覆盖。宿主没注入 metadata store 时整条路由返回 `503 source-unavailable`（detail `session-metadata-unavailable`），不静默降级。
+- `GET` / `HEAD`：`{ok:true, value:{entries}}`，条目形如 `{source, id, title?, group?}`。
+- `POST` 体 `{source, id, title?, group?}`：
+  1. `title` / `group` 至少给一个；字符串必须 trim 后非空且 ≤ 80 字符（`METADATA_TEXT_LIMIT`），`null` 表示删掉该字段；未知键、缺 `source`/`id` 一律 `400 bad-request`（detail `invalid-metadata-patch`）。
+  2. 先按 `source` 匹配已配置的来源（否则 `503 source-unavailable`，detail `source-not-configured`），再读一次该会话详情；会话读不到就透传该来源自己的错误码，不写盘。
+  3. 成功返回 `{metadata, displayTitle?}`。`displayTitle = 自建 title ?? cleanTitle(会话自带标题)`；形如 uuid / `session-<uuid>` 的自带标题会被丢弃，所以这个字段可能缺席。
+
+### 自动命名（`/session/title/suggest`）
+
+- 只有 `POST`，体 `{source, id}`，不接受其他键。**只返回建议**：不写 metadata、不发会话命令、不产生事件；用户确认后再调 `/session/metadata` 落库。
+- 用宿主的默认模型选择（`agentDefaultModel.currentSelection()`）：输入是最多 3 条人类输入、序列化后 ≤ 4 KiB 的 JSON，`maxTokens` 固定 64，整体 60s 绝对超时；客户端断开即 abort，不会继续占着模型。
+- 单飞：同一时刻只允许一个建议请求，重入返回 `503 source-unavailable`（detail `ai-naming-busy`）；宿主没提供 LLM 面时 detail 是 `ai-naming-unavailable`。
+- 返回 `{source, id, title, provider, model}`。`title` 先剥掉终端转义与 Markdown／引号包裹，再要求是 trim 过的 1–80 字符、不含控制字符，否则整次失败（detail `ai-naming-invalid-title`）。
+
 ## 设置与辅助功能（补充）
 
 三条只读路由，都是 `kind:'exact'`，和其余路由一样先过 Origin/Host 同源门。**设置写入不经过插件**：`/settings` 只读，配置由宿主 `configForms` 保存，插件自身不落盘。

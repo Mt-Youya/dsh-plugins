@@ -53,6 +53,8 @@
     "coverage",
     "*.d.ts",
     "**/routeTree.gen.ts",
+    "plugins/sessions-insight/lib/**",
+    "**/generated.css.ts",
     ".wrangler",
     "films",
     "design"

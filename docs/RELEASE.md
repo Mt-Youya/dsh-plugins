@@ -9,7 +9,7 @@ This repository publishes two packages and nothing else:
 | `@cyrusdoyle/dsh-sessions-insight` | `plugins/sessions-insight` | The Sessions Insight plugin itself (a member package)                                  |
 | `@cyrusdoyle/dsh-plugins`         | repository root           | The collection bundle: `cordis.patch.yml`, `locale/` and its own embedded `lib/` (ADR 0009) |
 
-`packages/*` are inlined into the member's `lib/` at build time and are **not published**. They are not marked `private` today, so **never run `pnpm -r publish`**: it would publish them too.
+`packages/*` are inlined into the member's `lib/` at build time and are **not published**; every internal package is marked `private: true`, so `pnpm -r publish` skips them.
 
 ## One version, one order
 

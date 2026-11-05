@@ -15,7 +15,6 @@
 import type {
   ContextSource,
   CostValue,
-  SessionDetail,
   SessionSummary,
   SessionsValue,
   SourceProblem,
@@ -370,44 +369,6 @@ export function handleSearch(deps: RouteDeps): RouteHandler {
     )
     writeOk(res, value)
   })
-}
-
-/**
- * Read one session through its source, mapping a thrown adapter to a refusal.
- * @param deps - route dependencies.
- * @param source - source name from the request.
- * @param id - session id from the request.
- */
-async function readSession(
-  deps: RouteDeps,
-  source: ContextSource,
-  id: string,
-): Promise<
-  | { ok: true; session: SessionDetail["session"] }
-  | {
-      ok: false
-      error: "source-unavailable" | "not-found" | "bad-request" | "forbidden" | "read-limit" | "parse-failed"
-      detail: string
-    }
-> {
-  const reader = deps.sources.find((candidate) => candidate.id === source)
-  if (reader === undefined) return { ok: false, error: "source-unavailable", detail: "source-not-configured" }
-  const answer = await ask(reader, () => reader.detail(id))
-  if (!answer.ok) return { ok: false, error: "source-unavailable", detail: answer.problem.detail ?? "adapter-error" }
-  if (!answer.value.ok) return { ok: false, error: answer.value.error, detail: answer.value.detail }
-  const session = answer.value.session
-  const detail: SessionDetail["session"] = {
-    id: session.id,
-    source: reader.id,
-    workdir: session.workdir,
-    createdAt: session.createdAt,
-    updatedAt: session.updatedAt,
-    turns: session.turns,
-    dataQuality: session.dataQuality,
-    segments: [],
-  }
-  if (session.title !== undefined) detail.title = session.title
-  return { ok: true, session: detail }
 }
 
 /**

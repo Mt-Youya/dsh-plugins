@@ -182,10 +182,6 @@ function customOutput(ordinal: number, turnId: string, callId: string, output = 
   })
 }
 
-function additionalTools(ordinal: number, schema: unknown): Envelope {
-  return envelope(ordinal, "response_item", { type: "additional_tools", tools: [schema] })
-}
-
 interface Fixture {
   /** File uuid suffix after the timestamp, e.g. the session uuid. */
   name: string

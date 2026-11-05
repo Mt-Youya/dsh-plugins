@@ -9,7 +9,7 @@
  */
 import { spawnSync } from "node:child_process"
 
-import { CHROME, ensureServer, ORIGIN } from "./preview-server.mjs"
+import { CHROME, ensureServer, ORIGIN } from "./lib/preview.mjs"
 
 function measure(theme) {
   const url = `${ORIGIN}/?theme=${theme}&probe=1`

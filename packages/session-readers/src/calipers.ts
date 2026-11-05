@@ -70,6 +70,7 @@ export const CHAR_CALIBRATION_NOTE =
   `cjk ${CHARS_PER_TOKEN_CJK}; images: ${PIXELS_PER_TOKEN} px/token, ` +
   `${MAX_IMAGE_EDGE} px max edge`
 
+// eslint-disable-next-line no-control-regex -- the test is "any non-ASCII byte".
 const NON_ASCII = /[^\u0000-\u007f]/
 
 /** Character counts separated by the caliper each one is converted with. */
@@ -105,7 +106,6 @@ export function isEmptyCounts(counts: CharCounts): boolean {
  */
 export function addText(counts: CharCounts, value: string): void {
   if (value.length === 0) return
-  // eslint-disable-next-line no-control-regex -- the test is "any non-ASCII byte".
   if (!NON_ASCII.test(value)) {
     counts.text += value.length
     return

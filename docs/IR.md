@@ -1,6 +1,6 @@
 # IR 契约
 
-`src/core/ir.ts` 的唯一真相。三个 adapter 都产出它，所有视图只读它。字段一旦定稿，改动要过 ADR。
+`packages/session-contract/src/ir.ts` 的唯一真相（线上类型与守卫在 `packages/session-contract/src/types.ts` 与 `packages/session-contract/src/guards/`）。三个 adapter 都产出它，所有视图只读它。字段一旦定稿，改动要过 ADR。
 
 ```ts
 type Source = "claude" | "dsh" | "codex"

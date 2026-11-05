@@ -9,7 +9,7 @@
 | `@cyrusdoyle/dsh-sessions-insight` | `plugins/sessions-insight` | 会话洞察插件本体（成员包）                               |
 | `@cyrusdoyle/dsh-plugins`         | 仓库根                    | 组合包：`cordis.patch.yml`、`locale/`，以及它自己内嵌的 `lib/`（ADR 0009） |
 
-`packages/*` 在构建时被内联进成员包的 `lib/`，**不要发布**。它们现在没有标 `private`，所以**永远不要用 `pnpm -r publish`**，那会把它们一并发上去。
+`packages/*` 在构建时被内联进成员包的 `lib/`，**不发布**；所有内部包都已标记 `private: true`，`pnpm -r publish` 会跳过它们。
 
 ## 一个版本，一条顺序
 

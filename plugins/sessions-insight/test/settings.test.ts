@@ -4,7 +4,6 @@ import { createElement, type ReactElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { createPreviewSettings } from "../../../apps/preview/settings.ts"
 import { createApi } from "../src/client/api.ts"
 import { en, zh } from "../src/client/locale/index.ts"
 import { type ConfigForm, type ConfigFormSnapshot, SettingsStore } from "../src/client/state/settings.ts"
@@ -49,6 +48,14 @@ function form(initial: ConfigFormSnapshot = { status: "ready", writable: true, v
     }),
   }
   return { controller, publish, listeners }
+}
+
+/** The ready, writable in-memory store the preview app hands to the panel. */
+function previewSettings(): { store: SettingsStore; form: ConfigForm } {
+  const { controller } = form()
+  const store = new SettingsStore()
+  store.attach(controller)
+  return { store, form: controller }
 }
 
 afterEach(() => {
@@ -182,11 +189,11 @@ describe("settings bridge", () => {
     expect(accepted).toHaveBeenCalledWith("waterfall", false)
     off()
   })
-  it("uses only in-memory preview forms", async () => {
-    const first = createPreviewSettings()
+  it("uses only in-memory forms", async () => {
+    const first = previewSettings()
     await first.store.set("deepseekBalance", true)
-    expect(first.forms.get(SETTINGS_ENTRIES[0]).getSnapshot().value).toMatchObject({ deepseekBalance: true })
-    expect(createPreviewSettings().store.getSnapshot().value.deepseekBalance).toBe(false)
+    expect(first.form.getSnapshot().value).toMatchObject({ deepseekBalance: true })
+    expect(previewSettings().store.getSnapshot().value.deepseekBalance).toBe(false)
   })
 })
 
@@ -309,7 +316,7 @@ describe("settings details and rendering", () => {
     expect(warn).toHaveBeenCalledTimes(2)
   })
   it("renders the settings overlay above a session panel that stays mounted", () => {
-    const { store } = createPreviewSettings()
+    const { store } = previewSettings()
     const html = renderToStaticMarkup(
       createElement(ContextInsightPanel, { settingsStore: store, initialPage: "settings" }),
     )
@@ -336,7 +343,7 @@ describe("settings details and rendering", () => {
     expect(underneath).toContain(en["panel.loading"])
   })
   it("renders only the session panel when the initial page is sessions", () => {
-    const { store } = createPreviewSettings()
+    const { store } = previewSettings()
     const html = renderToStaticMarkup(createElement(ContextInsightPanel, { settingsStore: store }))
     const sessions = html.match(/<div[^>]*data-dsh-sessions-insight-layer="sessions"[^>]*>/)?.[0]
     expect(sessions).toBeDefined()
@@ -349,7 +356,7 @@ describe("settings details and rendering", () => {
     expect(html).toContain(en["tree.loadingIndex"])
   })
   it("renders six labelled switches and extension sections in the scoped surface", () => {
-    const { store } = createPreviewSettings()
+    const { store } = previewSettings()
     const html = renderToStaticMarkup(
       createElement(SettingsPage, {
         store,
@@ -397,7 +404,7 @@ describe("settings details and rendering", () => {
     expect(html).toContain(en["settings.retry"])
     expect(html.match(/role="switch"/g)).toHaveLength(6)
 
-    html = renderToStaticMarkup(createElement(SettingsPage, { store: createPreviewSettings().store }))
+    html = renderToStaticMarkup(createElement(SettingsPage, { store: previewSettings().store }))
     expect(html.match(/role="switch"/g)).toHaveLength(6)
     expect(html).toContain(en["settings.saved"])
   })

@@ -19,7 +19,6 @@ import {
   booleanField,
   epochOf,
   isObject,
-  type JsonObject,
   objectField,
   streamRecords,
   type StreamStats,
@@ -132,7 +131,6 @@ function turnUsage(usageByMessage: Map<string, UsageReading>, peak: number): Usa
  * @param options - see {@link ClaudeReadOptions}.
  */
 export async function readTranscript(path: string): Promise<TranscriptRead> {
-  const started = Date.now()
   const dedupe = new UuidDeduplicator()
   const normalizer = new UsageNormalizer()
   const window = new ContextWindow()

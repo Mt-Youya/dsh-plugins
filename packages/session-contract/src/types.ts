@@ -10,36 +10,29 @@
 
 import type { Envelope as GenericEnvelope, Fail as GenericFail, Ok as GenericOk } from "@cyrusdoyle/dsh-plugin-kit"
 
-import type { Attribution, CompactionPoint, ContextPart, Measure, Turn, Usage } from "./ir.ts"
+import type { Source, Turn } from "./ir.ts"
 
 /**
  * Session sources the panel attributes context for.
  *
+ * The union itself is the IR's `Source`; this is the wire's name for it.
  * `codex` and `dsh` are announced ahead of their adapters: the panel renders
  * whatever the Host reports as available, so a source may be listed before its
  * reader exists.
  */
-export type ContextSource = "claude" | "dsh" | "codex"
+export type ContextSource = Source
 
 /** Every announced source, in the order the panel renders them. */
-export const CONTEXT_SOURCES: readonly ContextSource[] = ["claude", "dsh", "codex"]
+export { CONTEXT_SOURCES } from "./ir.ts"
 
 /**
  * Stable failure codes. `detail` carries the human-readable specific, this
  * carries the machine-readable class.
  */
-export type ApiErrorCode =
-  | "bad-request"
-  | "method-not-allowed"
-  | "forbidden"
-  | "not-found"
-  | "read-limit"
-  | "parse-failed"
-  | "source-unavailable"
-  | "handoff-unavailable"
+export type ApiErrorCode = (typeof API_ERROR_CODES)[number]
 
 /** Every failure code, as one list the decoders can check membership against. */
-export const API_ERROR_CODES: readonly ApiErrorCode[] = [
+export const API_ERROR_CODES = [
   "bad-request",
   "method-not-allowed",
   "forbidden",
@@ -48,7 +41,7 @@ export const API_ERROR_CODES: readonly ApiErrorCode[] = [
   "parse-failed",
   "source-unavailable",
   "handoff-unavailable",
-]
+] as const
 
 /** Successful answer. */
 export type Ok<T> = GenericOk<T>

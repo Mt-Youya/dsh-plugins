@@ -1,0 +1,2 @@
+# The repository ignores build output named `lib/`; files here are source.
+!lib/

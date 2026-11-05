@@ -6,48 +6,17 @@
  * degrade one column, not throw away a session.
  */
 
-/** A decoded JSON object, as the log stores it. */
-export type JsonObject = Record<string, unknown>
+import type { JsonObject } from "../records/fields.ts"
+import { isObject, numberField, objectField, stringField } from "../records/fields.ts"
 
-/** True for a non-null, non-array object. */
-export function isObject(value: unknown): value is JsonObject {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-}
-
-/** Read one string field, or undefined when it is absent or another type. */
-export function stringField(record: JsonObject | undefined, key: string): string | undefined {
-  if (record === undefined) return undefined
-  const value = record[key]
-  return typeof value === "string" ? value : undefined
-}
-
-/** Read one finite number field. */
-export function numberField(record: JsonObject | undefined, key: string): number | undefined {
-  if (record === undefined) return undefined
-  const value = record[key]
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined
-}
-
-/** Read one boolean field. */
-export function booleanField(record: JsonObject | undefined, key: string): boolean | undefined {
-  if (record === undefined) return undefined
-  const value = record[key]
-  return typeof value === "boolean" ? value : undefined
-}
-
-/** Read one object field. */
-export function objectField(record: JsonObject | undefined, key: string): JsonObject | undefined {
-  if (record === undefined) return undefined
-  const value = record[key]
-  return isObject(value) ? value : undefined
-}
-
-/** Read one array field. */
-export function arrayField(record: JsonObject | undefined, key: string): unknown[] | undefined {
-  if (record === undefined) return undefined
-  const value = record[key]
-  return Array.isArray(value) ? value : undefined
-}
+/**
+ * The field helpers are shared with the Claude and Codex adapters; this module
+ * keeps re-exporting them so the DSH readers keep importing one path. All of
+ * them accept an `undefined` record here — a DSH event may be missing the
+ * nested object a field would be read from.
+ */
+export { arrayField, booleanField, isObject, numberField, objectField, stringField } from "../records/fields.ts"
+export type { JsonObject } from "../records/fields.ts"
 
 /** One line as the log wrote it: the envelope plus whatever `data` holds. */
 export interface LogEvent {

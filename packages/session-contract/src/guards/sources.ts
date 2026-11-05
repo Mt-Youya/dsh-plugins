@@ -6,7 +6,7 @@
  */
 
 import { CONTEXT_SOURCES } from "../types.ts"
-import type { ContextSource, HealthFailure, HealthOk, HealthResponse, HealthValue, SourcesValue } from "../types.ts"
+import type { ContextSource, HealthResponse, HealthValue, SourcesValue } from "../types.ts"
 import { isRecord } from "./shared.ts"
 
 /**

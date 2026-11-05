@@ -6,64 +6,24 @@
  * counted as invalid instead of aborting the session, and every field is
  * narrowed where it is read.
  *
- * The JSON helpers are deliberately local rather than imported from the Claude
- * adapter: the two adapters share a contract (docs/IR.md), not code, and a
- * cross-adapter import would make one source's change break the other.
+ * The field helpers come from `records/fields.ts`, which the Claude and DSH
+ * adapters also use: the three logs share the questions ("what is under this
+ * key"), not the answers, and the envelopes around them stay per-adapter.
  */
 
+import { type JsonObject, numberField, objectField, stringField } from "../records/fields.ts"
 import { streamLines } from "./zstd.ts"
 
-/** JSON as JSON.parse can produce it. */
-export type JsonValue = null | boolean | number | string | JsonValue[] | JsonObject
-
-/** A decoded JSON object. */
-export interface JsonObject {
-  [key: string]: JsonValue
-}
-
-/** Whether a decoded value is a plain object (not an array, not null). */
-export function isObject(value: JsonValue | undefined): value is JsonObject {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-}
-
-/** Narrow an object field to a nested object. */
-export function objectField(record: JsonObject, key: string): JsonObject | undefined {
-  const value = record[key]
-  return isObject(value) ? value : undefined
-}
-
-/** Narrow an object field to a string. */
-export function stringField(record: JsonObject, key: string): string | undefined {
-  const value = record[key]
-  return typeof value === "string" ? value : undefined
-}
-
-/** Narrow an object field to a finite number. */
-export function numberField(record: JsonObject, key: string): number | undefined {
-  const value = record[key]
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined
-}
-
-/** Narrow an object field to a boolean. */
-export function booleanField(record: JsonObject, key: string): boolean | undefined {
-  const value = record[key]
-  return typeof value === "boolean" ? value : undefined
-}
-
-/** Narrow an object field to an array. */
-export function arrayField(record: JsonObject, key: string): JsonValue[] | undefined {
-  const value = record[key]
-  return Array.isArray(value) ? value : undefined
-}
-
-/** Every object element of an array field, dropping the rest. */
-export function objectArrayField(record: JsonObject, key: string): JsonObject[] {
-  const value = arrayField(record, key)
-  if (value === undefined) return []
-  const result: JsonObject[] = []
-  for (const item of value) if (isObject(item)) result.push(item)
-  return result
-}
+export {
+  arrayField,
+  booleanField,
+  isObject,
+  numberField,
+  objectArrayField,
+  objectField,
+  stringField,
+} from "../records/fields.ts"
+export type { JsonObject } from "../records/fields.ts"
 
 /**
  * A timestamp as epoch milliseconds.
@@ -73,7 +33,7 @@ export function objectArrayField(record: JsonObject, key: string): JsonObject[] 
  * being read as 1970: Codex writes durations into similarly named fields, and a
  * 300 ms duration must not become a start time.
  */
-export function epochOfValue(value: JsonValue | undefined): number | undefined {
+export function epochOfValue(value: unknown): number | undefined {
   if (typeof value === "string") {
     const epoch = Date.parse(value)
     return Number.isFinite(epoch) ? epoch : undefined

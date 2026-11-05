@@ -6,7 +6,8 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 
-import { CHROME, ORIGIN } from "./preview-server.mjs"
+import { screenshot as captureScreenshot, connect, until } from "./lib/cdp.mjs"
+import { CHROME, isReachable, ORIGIN, sleep } from "./lib/preview.mjs"
 const root = fileURLToPath(new URL("..", import.meta.url))
 const scratch = await mkdtemp(join(tmpdir(), "ci-menu-check-"))
 const corpus = join(scratch, "claude", "-tmp-menu")
@@ -41,42 +42,35 @@ for (const id of ["s1", "s2"]) {
   ]
   await writeFile(join(corpus, `${id}.jsonl`), `${records.map((record) => JSON.stringify(record)).join("\n")}\n`)
 }
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-async function until(read, label) {
-  for (let attempt = 0; attempt < 80; attempt += 1) {
-    if (await read()) return
-    await delay(100)
-  }
-  throw new Error(`Timed out: ${label}`)
-}
-let server, chrome, socket
-const pending = new Map()
 const browserErrors = []
-let nextId = 0
-function send(method, params = {}) {
-  const id = ++nextId
-  const result = new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`DevTools timeout: ${method}`)), 8000)
-    pending.set(id, {
-      resolve: (value) => {
-        clearTimeout(timer)
-        resolve(value)
-      },
-      reject,
-    })
-  })
-  socket.send(JSON.stringify({ id, method, params }))
-  return result
-}
-async function evaluate(expression) {
-  const response = await send("Runtime.evaluate", { expression, returnByValue: true, userGesture: true })
-  assert.equal(response.exceptionDetails, undefined, JSON.stringify(response.exceptionDetails))
-  return response.result.value
-}
+let server, chrome, cdp
+const send = (method, params) => cdp.send(method, params)
+const evaluate = (expression) => cdp.evaluate(expression)
 async function press(key, code = key, modifiers = 0, commands) {
-  const windowsVirtualKeyCode = { Enter: 13, End: 35, ArrowDown: 40, Escape: 27, Tab: 9, F10: 121, Backspace: 8 }[key]
-  await send("Input.dispatchKeyEvent", { type: "keyDown", key, code, modifiers, windowsVirtualKeyCode, commands })
-  await send("Input.dispatchKeyEvent", { type: "keyUp", key, code, modifiers, windowsVirtualKeyCode })
+  const windowsVirtualKeyCode = {
+    Enter: 13,
+    End: 35,
+    ArrowDown: 40,
+    Escape: 27,
+    Tab: 9,
+    F10: 121,
+    Backspace: 8,
+  }[key]
+  await send("Input.dispatchKeyEvent", {
+    type: "keyDown",
+    key,
+    code,
+    modifiers,
+    windowsVirtualKeyCode,
+    commands,
+  })
+  await send("Input.dispatchKeyEvent", {
+    type: "keyUp",
+    key,
+    code,
+    modifiers,
+    windowsVirtualKeyCode,
+  })
 }
 async function click(selector, button = "left", modifiers = 0) {
   const point = await evaluate(`(() => {
@@ -87,7 +81,13 @@ async function click(selector, button = "left", modifiers = 0) {
     return { x, y }
   })()`)
   for (const type of ["mousePressed", "mouseReleased"]) {
-    await send("Input.dispatchMouseEvent", { type, ...point, button, modifiers, clickCount: 1 })
+    await send("Input.dispatchMouseEvent", {
+      type,
+      ...point,
+      button,
+      modifiers,
+      clickCount: 1,
+    })
   }
 }
 const opened = () => evaluate('document.querySelectorAll("[data-session-menu]:popover-open").length')
@@ -106,9 +106,8 @@ async function checkDropdown(open, label) {
   )
 }
 async function screenshot(name) {
-  const { data } = await send("Page.captureScreenshot", { format: "png" })
   const path = join("/tmp", `ci-${name}.png`)
-  await writeFile(path, Buffer.from(data, "base64"))
+  await writeFile(path, await captureScreenshot(cdp))
   console.log(path)
 }
 async function checkOverview(label) {
@@ -195,7 +194,7 @@ async function checkSkillDropdown(theme) {
   )
   await click(trigger)
   await checkDropdown(true, "outside dismissal setup")
-  await delay(100) // Allow the opening gesture and outside pointer listener to settle.
+  await sleep(100) // Allow the opening gesture and outside pointer listener to settle.
   await click('[role="tabpanel"] h3')
   await checkDropdown(false, "outside click closes dropdown")
   await click(skillSearch)
@@ -256,29 +255,17 @@ try {
   const { readFile } = await import("node:fs/promises")
   const port = (await readFile(join(scratch, "chrome", "DevToolsActivePort"), "utf8")).split("\n")[0]
   const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()
-  socket = new WebSocket(targets.find((target) => target.type === "page").webSocketDebuggerUrl)
-  await new Promise((resolve) => socket.addEventListener("open", resolve, { once: true }))
-  socket.addEventListener("message", ({ data }) => {
-    const response = JSON.parse(String(data)),
-      waiter = pending.get(response.id)
-    if (response.method === "Runtime.exceptionThrown") {
-      const details = response.params.exceptionDetails
+  cdp = await connect(targets.find((target) => target.type === "page").webSocketDebuggerUrl, {
+    timeout: 8000,
+    onEvent: (message) => {
+      if (message.method !== "Runtime.exceptionThrown") return
+      const details = message.params.exceptionDetails
       browserErrors.push(details.exception?.description ?? details.text)
-    }
-    if (waiter === undefined) return
-    pending.delete(response.id)
-    if (response.error) waiter.reject(new Error(JSON.stringify(response.error)))
-    else waiter.resolve(response.result)
+    },
   })
   await send("Page.enable")
   await send("Runtime.enable")
-  await until(async () => {
-    try {
-      return (await fetch(`${ORIGIN}/api/dsh-sessions-insight/health`)).ok
-    } catch {
-      return false
-    }
-  }, "preview start")
+  await until(() => isReachable(), "preview start")
   await send("Page.navigate", { url: `${ORIGIN}/?theme=light` })
   await until(() => evaluate('!!document.querySelector("[role=tablist]")'), "initial client before old Host reload")
   // Reload clears only client module caches; the same isolated Host and corpus stay alive.
@@ -353,7 +340,7 @@ try {
       ),
     "stale untitled list preserves learned row",
   )
-  await delay(200)
+  await sleep(200)
   assert.deepEqual(
     await evaluate(
       `[document.querySelector('[data-key="claude:s2"] > span > span:last-child').textContent, document.querySelector('header h2').textContent]`,
@@ -415,7 +402,7 @@ try {
     const first = '[data-key="claude:s1"]',
       second = '[data-key="claude:s2"]'
     await click(first, "right")
-    await delay(500) // Assert persistence after the opening right-button release and queued browser events.
+    await sleep(500) // Assert persistence after the opening right-button release and queued browser events.
     assert.equal(await opened(), 1)
     await evaluate(`(() => {
       const frame = document.createElement('iframe')
@@ -432,7 +419,7 @@ try {
     assert.equal(await opened(), 0)
     assert.equal(await evaluate(`document.activeElement.matches(${JSON.stringify(first)})`), true)
     await click(first, "left", 2) // macOS Control-click.
-    await delay(100)
+    await sleep(100)
     assert.equal(await opened(), 1)
     await click(second, "right")
     assert.equal(await opened(), 1)
@@ -501,7 +488,7 @@ try {
         "reopened tree paints cached rows before network returns",
       )
       await evaluate("window.fetch = window.originalFetch; window.resumeLists.forEach((resume) => resume())")
-      await delay(200)
+      await sleep(200)
       await evaluate(`(() => {
         window.listRequests = []
         const originalFetch = window.fetch
@@ -524,7 +511,7 @@ try {
     )
   }
 } finally {
-  socket?.close()
+  cdp?.close()
   const children = [chrome, server].filter(Boolean)
   await Promise.all(
     children.map(

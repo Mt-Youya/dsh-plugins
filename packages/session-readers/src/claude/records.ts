@@ -7,57 +7,22 @@
  * 1.2 MB line, so materializing the file is not an option.
  */
 
-/** JSON as `JSON.parse` can produce it. */
-export type JsonValue = null | boolean | number | string | JsonValue[] | JsonObject
+import { type JsonObject, stringField } from "../records/fields.ts"
 
-/** A decoded JSON object. */
-export interface JsonObject {
-  [key: string]: JsonValue
-}
-
-/** Whether a decoded value is a plain object (not an array, not null). */
-export function isObject(value: JsonValue | undefined): value is JsonObject {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-}
-
-/** Narrow an object field to a nested object. */
-export function objectField(record: JsonObject, key: string): JsonObject | undefined {
-  const value = record[key]
-  return isObject(value) ? value : undefined
-}
-
-/** Narrow an object field to a string. */
-export function stringField(record: JsonObject, key: string): string | undefined {
-  const value = record[key]
-  return typeof value === "string" ? value : undefined
-}
-
-/** Narrow an object field to a finite number. */
-export function numberField(record: JsonObject, key: string): number | undefined {
-  const value = record[key]
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined
-}
-
-/** Narrow an object field to a boolean. */
-export function booleanField(record: JsonObject, key: string): boolean | undefined {
-  const value = record[key]
-  return typeof value === "boolean" ? value : undefined
-}
-
-/** Narrow an object field to an array. */
-export function arrayField(record: JsonObject, key: string): JsonValue[] | undefined {
-  const value = record[key]
-  return Array.isArray(value) ? value : undefined
-}
-
-/** Every object element of an array field, dropping the rest. */
-export function objectArrayField(record: JsonObject, key: string): JsonObject[] {
-  const value = arrayField(record, key)
-  if (value === undefined) return []
-  const result: JsonObject[] = []
-  for (const item of value) if (isObject(item)) result.push(item)
-  return result
-}
+/**
+ * The field helpers are shared with the other two adapters; this module keeps
+ * re-exporting them so the Claude readers keep importing one path.
+ */
+export {
+  arrayField,
+  booleanField,
+  isObject,
+  numberField,
+  objectArrayField,
+  objectField,
+  stringField,
+} from "../records/fields.ts"
+export type { JsonObject } from "../records/fields.ts"
 
 /**
  * Read a record's ISO timestamp as epoch milliseconds.

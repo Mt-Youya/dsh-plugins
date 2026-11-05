@@ -16,7 +16,7 @@
 
 import type { ToolCall } from "@cyrusdoyle/dsh-session-contract"
 
-import { booleanField, isObject, type JsonObject, type JsonValue, stringField } from "./records.ts"
+import { booleanField, isObject, type JsonObject, stringField } from "./records.ts"
 
 /** A call the model made. */
 export interface ToolInvocation {
@@ -117,7 +117,7 @@ export function toolOutcomeOf(payload: JsonObject, at: number): ToolOutcome | un
  * Only explicit failure markers (a failed status, an error payload, success:false)
  * override that, and exec failures that are only text stay read as delivered.
  */
-function statusOf(payload: JsonObject, output: JsonValue): "ok" | "error" | "unknown" {
+function statusOf(payload: JsonObject, output: unknown): "ok" | "error" | "unknown" {
   const status = stringField(payload, "status")
   if (status === "failed" || status === "error") return "error"
   if (status === "cancelled") return "unknown"

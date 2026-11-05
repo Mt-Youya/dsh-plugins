@@ -151,7 +151,6 @@ export async function readClaudeSession(path: string, options: ClaudeReadOptions
     for (const slice of turn.attribution.parts) tokens += slice.measure.tokens
     return sum + tokens
   }, 0)
-  const totalContext = turns.reduce((sum, turn) => sum + turn.attribution.total.tokens, 0)
   void attributed
   if (window.scaledTurnCount > 0 && Math.abs(window.worstReconciliation - 1) > 0.05) {
     dataQuality.add(`attribution-reconciled:worst-factor=${window.worstReconciliation.toFixed(3)}`)

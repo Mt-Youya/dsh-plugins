@@ -12,7 +12,6 @@ import {
   isHealthResponse,
   isHealthValue,
   isMeasure,
-  isSafeId,
   isSessionDetail,
   isTurn,
   MAX_TURN_LIMIT,

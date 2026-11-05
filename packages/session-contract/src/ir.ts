@@ -8,8 +8,11 @@
  * @see docs/adr/0001-turn-as-first-class.md
  */
 
+/** Every host a session can come from, in the order the panel renders them. */
+export const CONTEXT_SOURCES = ["claude", "dsh", "codex"] as const
+
 /** Which host produced a session. */
-export type Source = "claude" | "dsh" | "codex"
+export type Source = (typeof CONTEXT_SOURCES)[number]
 
 /** Whether a token number was logged or derived. */
 export type Precision = "exact" | "estimate"

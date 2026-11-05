@@ -65,7 +65,7 @@ _Avoid_: 公共样式、全局类
 _Avoid_: 样式模块、theme 文件
 
 **本地预览（preview harness）**:
-preview/ 与 vite.config.ts 组成的调试入口：dev server 里挂载宿主半边，页面读本机真实会话并热更新，不参与打包。
+apps/preview/ 与它自己的 vite.config.ts 组成的调试入口：`pnpm dev` 起 dev server，挂载宿主半边，页面读本机真实会话并热更新，不参与打包。
 _Avoid_: mock 环境、演示页
 
 ## 分发

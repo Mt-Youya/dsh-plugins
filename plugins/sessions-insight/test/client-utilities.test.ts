@@ -31,8 +31,6 @@ afterEach(() => {
   setRuntimeTranslate(() => "")
 })
 const ok = <T>(value: T) => ({ ok: true as const, value })
-/** Let the store's settle handlers (and the queued forced request) run. */
-const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0))
 const version = {
   packageName: "@cyrusdoyle/dsh-sessions-insight" as const,
   status: "update" as const,

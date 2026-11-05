@@ -165,21 +165,27 @@ curl -sS http://127.0.0.1:<port>/api/dsh-sessions-insight/health
 ```
 src/
 ├── index.ts          宿主入口：装配三源、注册路由（唯一碰 cordis 的文件）
-├── protocol.ts       本包的线上契约出口：路由路径 + 转出契约包的 IR / 类型 / 守卫
+├── config.ts         六个开关的 schemastery 配置与 live ref 读取
+├── protocol.ts       本包的线上契约出口：转出 protocol/ 与契约包的 IR / 类型 / 守卫
+├── protocol/         按功能拆分的路由路径与线上载荷（paths、management、insights、ai-title、settings、utilities）
 ├── version.ts        版本常量（构建时从 package.json 注入）
+├── shared/           两个半边共用的解析：insights 抽取与 skill 证据
 ├── host/             宿主半边
-│   ├── http/         同源门、信封、路由表（routes.ts + routes/）
+│   ├── http/         同源门、信封、路由表与每条路由一个处理器（routes.ts + *-route.ts）、列表缓存、限速
+│   ├── management/   用户标题与分组（元数据存储）、AI 拟标题、元数据投影
 │   ├── sources/      三源装配、工作目录归并、快照索引、路径白名单
-│   ├── views/        search / cost / pricing / brief
+│   ├── utilities/    余额与版本检查：凭据引用、HTTPS 客户端、semver
+│   ├── views/        search / cost / pricing / brief / insights
 │   └── handoff/      交接状态机（accepted ≠ 成功）
 └── client/           浏览器半边
     ├── index.tsx     入口：注册 sidebar/main 槽位与词典
     ├── api.ts        同源 fetch + 响应解码
-    ├── format.ts / labels.ts / locale.ts   格式化、标签回落、zh/en 词典
     ├── styles.ts     注入编译好的 CSS（一次）
-    ├── state/        纯状态逻辑：树展平、轮次行、堆叠条算术
+    ├── locale/       zh/en 词典、按功能切分的词表与 locale 解析
+    ├── model/        纯模型逻辑：格式化、标签回落、树展平、轮次行、堆叠条算术、会话统计
+    ├── state/        fetch 与刷新状态：列表缓存、设置、管理、辅助功能
     ├── theme/        app.css、components.css、构建产物 generated.css.ts
-    └── ui/           组件：面板、工具栏、项目树、会话头部、轮次列表与详情、工具明细、交接、搜索面板…
+    └── ui/           组件：面板、工具栏、项目树、会话头部、轮次列表与详情、工具明细、交接、搜索面板、设置…
 ```
 
 **它依赖的包**（`packages/`，构建时内联进 `lib/`，不单独发布）：

@@ -165,21 +165,27 @@ This package owns the plugin's two halves; the capabilities live in the workspac
 ```
 src/
 ├── index.ts          host entry: assembles the three sources, registers the routes (the only file that touches cordis)
-├── protocol.ts       this plugin's wire entry: route paths plus a re-export of the contract package's IR, types and guards
+├── config.ts         settings schema and live-ref reader for the six switches
+├── protocol.ts       this plugin's wire entry: re-exports protocol/ plus the contract package's IR, types and guards
+├── protocol/         route paths and wire payloads per feature (paths, management, insights, ai-title, settings, utilities)
 ├── version.ts        version constant, injected from package.json at build time
+├── shared/           parsing both halves need: insights extraction and skill evidence
 ├── host/             host half
-│   ├── http/         same-origin gate, envelope, route table (routes.ts + routes/)
+│   ├── http/         same-origin gate, envelope, route table and one handler per route (routes.ts + *-route.ts), list cache, rate limit
+│   ├── management/   user titles and groups (metadata store), AI title generation, metadata projection
 │   ├── sources/      the three sources, workdir merge, snapshot index, path allowlist
-│   ├── views/        search / cost / pricing / brief
+│   ├── utilities/    balance and version checks: credential refs, HTTPS client, semver
+│   ├── views/        search / cost / pricing / brief / insights
 │   └── handoff/      handoff state machine (accepted ≠ success)
 └── client/           browser half
     ├── index.tsx     entry: registers the sidebar/main slots and the dictionary
     ├── api.ts        same-origin fetch + response decoding
-    ├── format.ts / labels.ts / locale.ts   formatting, label fallback, zh/en dictionaries
     ├── styles.ts     injects the compiled CSS once
-    ├── state/        pure state logic: tree flattening, turn rows, stacked-bar arithmetic
+    ├── locale/       zh/en dictionaries, per-feature tables and the locale resolver
+    ├── model/        pure model logic: formatting, labels, tree flattening, turn rows, bar arithmetic, session stats
+    ├── state/        fetch and refresh state: list cache, settings, management, utilities
     ├── theme/        app.css, components.css and the generated.css.ts build artefact
-    └── ui/           components: panel, toolbar, project tree, session head, turn list and detail, tool detail, handoff, search palette…
+    └── ui/           components: panel, toolbar, project tree, session head, turn list and detail, tool detail, handoff, search palette, settings…
 ```
 
 **The packages it depends on** (`packages/`, inlined into `lib/` at build time, never published on their own):

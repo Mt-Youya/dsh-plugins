@@ -2,6 +2,8 @@
 
 DSH Web GUI 的「会话洞察」插件（Sessions Insight）。只读解析三个来源的会话，统一成以轮次为一等公民的 IR，把模型每轮实际收到的 prompt 构成拆开给人看；并把旧会话摘要交接进 DSH 继续。
 
+> **历史计划，现状见 README/ADR。** 本文保留立项时的决策、里程碑与当时的验收证据，不再是当前状态的来源：实现与契约以 `plugins/sessions-insight/README.md`（及 `README.zh.md`）、`docs/API.md` 与 `docs/adr/` 为准。文末「状态」段原先被写成一行字面转义（`\n\n` 与丢失的行内代码），已修复为正常 Markdown；数字与结论未改。
+
 ## 已敲定的决策（四轮盘问）
 
 | 决策    | 结论                                                                                       |
@@ -40,4 +42,30 @@ DSH Web GUI 的「会话洞察」插件（Sessions Insight）。只读解析三�
 **Codex**：`_<uuid2>` 是同一会话的分段（`history_base` 链），不是分叉；子代理也是同样的文件名形态，靠 `parent_thread_id` / `agent_thread_id` 区分；usage 只从 `token_usage_record` 取，`turn_token_usage`/`thread_token_usage` 是累计值（×287）；`cached_input_tokens ⊂ input_tokens`（96.9%）不可相加；`token_count.info.last_token_usage` 与前者逐字重复，两边都读 ×2；压缩是**历史替换**（`replacement_history`），`message` 恒空；reasoning 是密文，思维链不可得。
 
 **DSH**：多帧 zstd 必须逐帧切分，单调用静默只解第一帧；projcache 与日志 1:1（131/131），每行投影自带 `seq`，`max(rows.*.seq)` 与日志末 seq 比较即可验鲜（127/133 同步或领先）；但 projcache **没有正文投影**，看内容仍须解日志。
-\n\n## 状态（M1–M8 完成）\n\n| # | 结果 | 关键证据 |\n|---|---|---|\n| M1 | 骨架可挂载 | 隔离 boot + 无头 Chromium 面板渲染，截图 |\n| M2 | Claude adapter + 归因 | 121 文件/467MB 2.1s、0 失败； 归一（朴素求和 2.0×）； 380/380 |\n| M3 | Codex adapter | 260 文件（含 237 个 zst）→ **108 逻辑会话**（ 链）；四种错读倍数实测（cached 相加 1.96×、thread 累计 403×）；Codex 专用 caliper 3.27 |\n| M4 | DSH adapter | 136 会话/40,511 帧/0 坏帧；解压产物 sha256 与 一致；投影 95.3% 精确 + 4.7% 回落 |\n| M5 | 面板五视图 | 真实 Claude 数据截图；「未知 20.3%」斜纹切片；49.6MB 会话首屏冷 227ms / 热 1.6ms |\n| M6 | 三源接线 + 搜索 | 一个节点合并三源 126 个会话；深搜 P95 2512ms 且如实 truncated |\n| M7 | 交接 + 成本 + 搜索两档 | 隔离环境端到端到 ；三源成本（claude 5.10 / dsh .19 / codex null）；快搜 0–2ms 全覆盖 |\n| M8 | 发布就绪 | npm pack 72 文件、零 node_modules/test 泄漏；按 README 三步用 tarball 真装真跑 |\n\n**已知未闭**：真实 分支未在真实模型下跑通（隔离环境无 API Key）；Codex 成本为 （价格表未覆盖 ）；「用模型润色」按钮 disabled。\n\n\n## 真实交接闭环（2026-10-20，隔离实例 + 生产凭据）\n\n- **成功分支已验证**： → ，。\n- **发现并修复一个真 bug**：状态观察窗口原本用「apply 返回后的墙上时间」，而 比它早 **25ms**，长轮次因此永久停在 。改为 （prompt 前取样）后，实测 。回归测试 +5（共 159）。\n- 取证期间生产 始终 136 个会话未变；凭据文件未被修改（Oct 9 / 600 / 内容一致）；六个历史隔离 home 里残留的 副本已清除。\n\n\n## 成本口径（三轮迭代后定稿）\n\n两张价目表并存，不做汇率换算：（USD，DeepSeek 官方 peak 价）/ （USD，公开参考）。主金额只取 official（Claude/GPT 无主价），参考列固定 openrouter；合计按 分组。未列价通道按 0 计入并标 + 。\n\n实测：Claude 会话 （无主价）/ 参考 （完整）；Codex （无主价）/ 参考 ；DSH （official，无参考列）。\n
+
+## 状态（M1–M8 完成）
+
+| #   | 结果                   | 关键证据                                                                                                                                                 |
+| --- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M1  | 骨架可挂载             | 隔离 boot + 无头 Chromium 面板渲染，截图                                                                                                                 |
+| M2  | Claude adapter + 归因  | 121 文件 / 467MB / 2.1s、0 失败；按 `message.id` 归一（朴素求和 2.0×）；`dataQuality` 380/380                                                             |
+| M3  | Codex adapter          | 260 文件（含 237 个 zst）→ **108 逻辑会话**（`history_base` 链）；四种错读倍数实测（cached 相加 1.96×、thread 累计 403×）；Codex 专用 caliper 3.27          |
+| M4  | DSH adapter            | 136 会话 / 40,511 帧 / 0 坏帧；解压产物 sha256 与 `zstd -dc` 一致；投影 95.3% 精确 + 4.7% 回落                                                            |
+| M5  | 面板五视图             | 真实 Claude 数据截图；「未知 20.3%」斜纹切片；49.6MB 会话首屏冷 227ms / 热 1.6ms                                                                          |
+| M6  | 三源接线 + 搜索        | 一个节点合并三源 126 个会话；深搜 P95 2512ms 且如实 truncated                                                                                             |
+| M7  | 交接 + 成本 + 搜索两档 | 隔离环境端到端到 DSH 续跑出第一轮；三源成本（claude 5.10 / dsh .19 / codex null）；快搜 0–2ms 全覆盖                                                       |
+| M8  | 发布就绪               | npm pack 72 文件、零 node_modules/test 泄漏；按 README 三步用 tarball 真装真跑                                                                            |
+
+**已知未闭**：真实交接分支未在真实模型下跑通（隔离环境无 API Key）；Codex 成本为 `null`（价格表未覆盖该模型）；「用模型润色」按钮 disabled。
+
+## 真实交接闭环（2026-10-20，隔离实例 + 生产凭据）
+
+- **成功分支已验证**：`handoff/prepare` → `handoff/apply` → `status: succeeded`，DSH 侧跑出第一轮。
+- **发现并修复一个真 bug**：状态观察窗口原本用「apply 返回后的墙上时间」，而 `turn/start` 的 `time` 比它早 **25ms**，长轮次因此永久停在 `delivered`。改为 `baselineSeq`（prompt 前取样）后，实测不再复现。回归测试 +5（共 159）。
+- 取证期间生产环境始终 136 个会话未变；凭据文件未被修改（Oct 9 / 600 / 内容一致）；六个历史隔离 home 里残留的凭据副本已清除。
+
+## 成本口径（三轮迭代后定稿）
+
+两张价目表并存，不做汇率换算：`official`（USD，DeepSeek 官方 peak 价）/ `openrouter`（USD，公开参考）。主金额只取 `official`（Claude/GPT 无主价），参考列固定 `openrouter`；合计按 `(表, 币种)` 分组。未列价通道按 0 计入并标 `partial` + `≥`。
+
+实测：Claude 无主价、参考价完整；Codex 无主价；DSH 有 `official` 主价、无参考列。

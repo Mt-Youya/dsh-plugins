@@ -18,7 +18,8 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 
-import { CHROME, ensureServer, ORIGIN, sleep } from "./preview-server.mjs"
+import { connect, screenshot } from "./lib/cdp.mjs"
+import { CHROME, ensureServer, ORIGIN, sleep } from "./lib/preview.mjs"
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url))
 const OUT = join(ROOT, "plugins/sessions-insight/docs/images")
@@ -35,34 +36,6 @@ const SHOTS = [
   ["03-search-palette.png", "search"],
   ["04-handoff-dialog.png", "handoff"],
 ]
-
-/** A minimal DevTools-protocol client over Node's global WebSocket. */
-async function connect(url) {
-  const socket = new WebSocket(url)
-  await new Promise((resolve, reject) => {
-    socket.addEventListener("open", resolve, { once: true })
-    socket.addEventListener("error", reject, { once: true })
-  })
-  let next = 0
-  const pending = new Map()
-  socket.addEventListener("message", (event) => {
-    const message = JSON.parse(String(event.data))
-    const waiter = pending.get(message.id)
-    if (waiter === undefined) return
-    pending.delete(message.id)
-    if (message.error !== undefined) waiter.reject(new Error(message.error.message))
-    else waiter.resolve(message.result)
-  })
-  return {
-    send(method, params = {}) {
-      next += 1
-      const id = next
-      socket.send(JSON.stringify({ id, method, params }))
-      return new Promise((resolve, reject) => pending.set(id, { resolve, reject }))
-    },
-    close: () => socket.close(),
-  }
-}
 
 /** Start headless Chrome and return its first page target plus a stop function. */
 async function launchChrome() {
@@ -112,14 +85,12 @@ async function capture(cdp, scene) {
   const started = Date.now()
   for (;;) {
     await sleep(250)
-    const { result } = await cdp.send("Runtime.evaluate", { expression: "document.title" })
-    const title = String(result.value ?? "")
+    const title = String((await cdp.evaluate("document.title")) ?? "")
     if (title === "shot:ready") break
     if (title.startsWith("shot:failed:")) throw new Error(`${scene}: ${title.slice("shot:failed:".length)}`)
     if (Date.now() - started > 60_000) throw new Error(`${scene}: page never reported ready`)
   }
-  const { data } = await cdp.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false })
-  return Buffer.from(data, "base64")
+  return screenshot(cdp, { captureBeyondViewport: false })
 }
 
 const stopServer = await ensureServer()

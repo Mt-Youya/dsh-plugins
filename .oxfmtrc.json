@@ -30,11 +30,11 @@
   // 只重排"语句"，括号里的具名导入由 oxlint 的 sort-imports 负责（两边分工见 .oxlintrc.json）。
   "sortImports": {
     // 分组顺序 = 阅读顺序，组与组之间空一行：
-    //   ① Node 内置（node:fs） ② 第三方（react / zod） ③ 工作区内部包（@mykaoyan/*）
-    //   ④ 相对路径（../ / ./ / .） ⑤ 样式文件 ⑥ 兜底
+    //   ① Node 内置（node:fs） ② 第三方（react / vitest） ③ 工作区内部包 ④ 相对路径 ⑤ 样式文件 ⑥ 兜底
     "groups": ["builtin", "external", "internal", ["parent", "sibling", "index"], "style", "unknown"],
-    // @mykaoyan/* 是 pnpm workspace 内部包；不登记会被误判成 external
-    "internalPattern": ["@mykaoyan/"],
+    // @cyrusdoyle/* 是 pnpm workspace 内部包。登记为 internal 会要求一次性重排现有 import，
+    // 在重排落地前保持空表，避免格式门禁只因配置改动而变红。
+    "internalPattern": [],
     "newlinesBetween": true, // 组间空一行
     "order": "asc", // 组内按模块路径升序
     "ignoreCase": true, // 大小写不敏感，避免 React / zod 这种大小写混排时顺序反直觉
@@ -66,9 +66,7 @@
     "**/*.md",
     "**/routeTree.gen.ts",
     "**/worker-configuration.d.ts",
-    "apps/web/public/**",
-    "cli/contracts/openapi.json",
-    "skills/mykaoyan/references/progress.schema.json",
-    "packages/db/supabase/migrations/meta/**"
+    "plugins/sessions-insight/lib/**",
+    "**/generated.css.ts"
   ]
 }

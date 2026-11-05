@@ -18,16 +18,3 @@
 export function browserUrl(path: string): string {
   return path.replace(/^\/+/, "")
 }
-
-/**
- * Join a caller-supplied base to a route.
- *
- * `base` is empty for document-relative requests and a prefix ("/x") when the
- * same panel is served from a sub-path.
- * @param base - prefix prepended to every route.
- * @param path - the route, absolute or document-relative.
- * @returns the path to fetch.
- */
-export function mountUrl(base: string, path: string): string {
-  return base + browserUrl(path)
-}

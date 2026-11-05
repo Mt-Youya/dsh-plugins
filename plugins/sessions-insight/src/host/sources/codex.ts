@@ -32,7 +32,7 @@ import {
 import type { SegmentInfo, SessionSummary, SourceStatus, WorkdirEntry } from "../../protocol.ts"
 import { isSafeId, LIST_ITEM_UNPARSED } from "../../protocol.ts"
 import { deleteLogs } from "./delete.ts"
-import { fingerprintOf, readSnapshot, snapshotPath, walkFingerprint, writeSnapshot } from "./snapshot.ts"
+import { fingerprintOf, readSnapshot, snapshotPath, walkFingerprint } from "./snapshot.ts"
 import type { ParsedSession, SearchCandidate, SessionSource, SourceFailure } from "./source.ts"
 import { cleanTitle, firstInputOf } from "./source.ts"
 

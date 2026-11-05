@@ -36,9 +36,6 @@ export const DSH_LOG_NAME = "session.v4.jsonl.zstd"
 /** Milliseconds the directory walk is reused. */
 export const DEFAULT_DSH_SCAN_TTL_MS = 30_000
 
-/** Bytes read from a log head for its header line. */
-export const DEFAULT_DSH_HEADER_BYTES = 64 * 1024
-
 /** Parsed sessions kept live. */
 export const DEFAULT_DSH_CACHE_ENTRIES = 4
 
@@ -47,7 +44,6 @@ export interface DshSourceConfig {
   root?: string
   projectionRoot?: string
   scanTtlMs?: number
-  headerBytes?: number
   /** Light-index path override (tests). */
   indexPath?: string
   /** Header reader override (tests count calls / avoid zstd fixtures). */
@@ -179,7 +175,6 @@ export class DshSource implements SessionSource {
   readonly #root: string
   readonly #projectionRoot: string
   readonly #scanTtlMs: number
-  readonly #headerBytes: number
   readonly #parsed: Lru<CachedSession>
   #scan: DshScan | undefined
   #index: Map<string, DshIndexEntry> | undefined
@@ -194,7 +189,6 @@ export class DshSource implements SessionSource {
     this.#readMeta = config.readMeta ?? ((path) => readDshListMeta(path))
     this.#projectionRoot = config.projectionRoot ?? DEFAULT_PROJECTION_ROOT
     this.#scanTtlMs = config.scanTtlMs ?? DEFAULT_DSH_SCAN_TTL_MS
-    this.#headerBytes = config.headerBytes ?? DEFAULT_DSH_HEADER_BYTES
     this.#parsed = new Lru<CachedSession>(config.cacheEntries ?? DEFAULT_DSH_CACHE_ENTRIES)
   }
 
