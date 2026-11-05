@@ -7,6 +7,7 @@ packages:
 # `catalog:` instead of repeating ranges, so the plugin cannot build against a
 # different TypeScript than the packages it inlines.
 catalog:
+  "@deepseek-ai/schemastery": "3.18.5"
   "@tailwindcss/cli": "4.3.3"
   "@types/node": "^26.6.5"
   "@types/react": "^19.3.0"

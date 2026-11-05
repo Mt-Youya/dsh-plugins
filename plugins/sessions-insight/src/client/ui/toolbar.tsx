@@ -81,6 +81,7 @@ export function Toolbar({
   onToggleSidebar,
   onSearch,
   onRefresh,
+  onSettings,
 }: {
   sources: SourceStatus[]
   busy: boolean
@@ -88,6 +89,7 @@ export function Toolbar({
   onToggleSidebar: () => void
   onSearch: () => void
   onRefresh: () => void
+  onSettings?: () => void
 }): ReactElement {
   return (
     <header className="flex h-12 min-w-0 shrink-0 items-center gap-3 border-b border-line-soft bg-bg px-3">
@@ -107,6 +109,11 @@ export function Toolbar({
       </div>
       <SourceStrip sources={sources} />
       <div className="ms-auto flex min-w-0 items-center gap-1.5">
+        {onSettings === undefined ? null : (
+          <button type="button" className="ci-btn active:bg-bg-3" onClick={onSettings} aria-label={t("settings.title")}>
+            {t("settings.title")}
+          </button>
+        )}
         <button type="button" className="ci-search w-[clamp(160px,28cqw,280px)]" onClick={onSearch}>
           <Glyph name="search" size={13} />
           <span className="flex-1 truncate">{t("search.trigger")}</span>

@@ -16,6 +16,7 @@
 
 import type { IncomingMessage, ServerResponse } from "node:http"
 
+import { readSettings, type SettingsConfig } from "./config.ts"
 import { HandoffRunner } from "./host/handoff/handoff.ts"
 import type { SessionCommandsFace } from "./host/handoff/handoff.ts"
 import { clearListCache, preloadLists } from "./host/http/list-cache.ts"
@@ -30,8 +31,17 @@ import { observeSession } from "./host/sources/dsh-events.ts"
 import { DshSource } from "./host/sources/dsh.ts"
 import { claudeRootFrom, codexRootFrom, dshRootFrom, hostSessionsRoot } from "./host/sources/paths.ts"
 import type { SessionSource } from "./host/sources/source.ts"
+import { BalanceReader, type UtilityServices } from "./host/utilities/balance.ts"
+import { VersionChecker } from "./host/utilities/version.ts"
 import { CONTEXT_SOURCES, HEALTH_PATH, type HealthOk } from "./protocol.ts"
+import { SETTINGS_PATH } from "./protocol/settings.ts"
 import { PLUGIN_VERSION } from "./version.ts"
+export { BalanceReader } from "./host/utilities/balance.ts"
+export { VersionChecker } from "./host/utilities/version.ts"
+export { createUtilityRoutes } from "./host/http/utility-routes.ts"
+
+export { Config, readSettings } from "./config.ts"
+export type { SettingsConfig } from "./config.ts"
 
 export type { RouteHandler, WebRoute } from "./host/http/server.ts"
 export { isSameOrigin, statusOf } from "./host/http/server.ts"
@@ -68,7 +78,7 @@ export { Lru } from "@cyrusdoyle/dsh-plugin-kit-host"
  * Version the health route reports; defined once in `src/version.ts` so the
  * route and its test cannot drift from `package.json`.
  */
-export { PLUGIN_VERSION } from "./version.ts"
+export { PLUGIN_VERSION, PLUGIN_NAME } from "./version.ts"
 
 /** Services this entry waits for before `apply` runs. */
 export const inject = ["webServer", "sessionController", "workspaceController", "workspaceRegistry"] as const
@@ -101,13 +111,20 @@ export interface HostContext {
   workspaceRegistry?: { get(id: string): { attachSession(id: string): Promise<void> } | undefined }
   /** Cordis service lookup, kept as a fallback for a lazily-activated gateway. */
   get?: (name: string) => unknown
+  /**
+   * Cordis event subscription. `credentials/reference-updated` fires once per
+   * committed credential write, with the changed reference as its payload; the
+   * returned disposer removes the listener.
+   */
+  on?: (name: string, listener: (ref: string) => void) => unknown
   /** rc.5 Cordis child fiber: missing model services suspend only this capability. */
   inject?: (
     services: readonly string[],
     callback: (
-      ctx: AiTitleHost & {
-        effect: (setup: () => () => void, label?: string) => unknown
-      },
+      ctx: AiTitleHost &
+        UtilityServices & {
+          effect: (setup: () => () => void, label?: string) => unknown
+        },
     ) => void,
   ) => unknown
 }
@@ -117,6 +134,18 @@ export interface HostContext {
  * @param req - the incoming request.
  * @param res - the response this handler owns.
  */
+/** Read-only route; all mutations and persistence belong to Host configForms. */
+export function createSettingsRoute(read: () => ReturnType<typeof readSettings>): WebRoute {
+  return {
+    kind: "exact",
+    path: SETTINGS_PATH,
+    handler: (req, res) => {
+      if (!guardRequest(req, res, ["GET", "HEAD"])) return
+      writeOk(res, read())
+    },
+  }
+}
+
 export function handleHealth(req: IncomingMessage, res: ServerResponse): void {
   if (!guardRequest(req, res, ["GET", "HEAD"])) return
   const answer: HealthOk = {
@@ -140,6 +169,23 @@ export function createSources(env: NodeJS.ProcessEnv = process.env): SessionSour
 }
 
 /**
+ * Drop the cached balance whenever the Host reports a credential reference
+ * change. Writing an API key from the Models page fires this event; without
+ * this listener the panel would keep serving the previous failure until the
+ * TTL expired, even though the credential already changed.
+ * @param ctx - Host context face carrying the event bus.
+ * @param balance - reader whose cache follows credential writes.
+ * @returns disposer removing the listener; a no-op on a Host without an event bus.
+ */
+export function watchCredentialUpdates(
+  ctx: Pick<HostContext, "on">,
+  balance: Pick<BalanceReader, "invalidate">,
+): () => void {
+  const off = ctx.on?.("credentials/reference-updated", () => balance.invalidate())
+  return typeof off === "function" ? (off as () => void) : (): void => {}
+}
+
+/**
  * Mount the Host half.
  *
  * The readers are created per fiber, so two Host instances (or a reloaded
@@ -148,7 +194,7 @@ export function createSources(env: NodeJS.ProcessEnv = process.env): SessionSour
  * @param ctx - Host context (service: webServer).
  * @returns disposer releasing every registered route.
  */
-export function apply(ctx: HostContext): () => void {
+export function apply(ctx: HostContext, config: SettingsConfig = {}): () => void {
   const sources = createSources()
   const commands = (): SessionCommandsFace | undefined => {
     let controller: unknown
@@ -197,20 +243,61 @@ export function apply(ctx: HostContext): () => void {
       "sessions-insight: AI title capability",
     )
   })
+  let credentials: UtilityServices["credentials"]
+  let account: UtilityServices["deepseekAccount"]
+  const balance = new BalanceReader({
+    credentialsSupported: typeof ctx.inject === "function",
+    credentials: () => credentials,
+    account: () => account,
+    version: PLUGIN_VERSION,
+  })
+  ctx.inject?.(["credentials"], (child) => {
+    credentials = child.credentials
+    balance.invalidate()
+    child.effect(
+      () => () => {
+        credentials = undefined
+        balance.invalidate()
+      },
+      "sessions-insight: credentials capability",
+    )
+  })
+  ctx.inject?.(["deepseekAccount"], (child) => {
+    account = child.deepseekAccount
+    balance.invalidate()
+    child.effect(
+      () => () => {
+        account = undefined
+        balance.invalidate()
+      },
+      "sessions-insight: account capability",
+    )
+  })
+  // The Host fires this after every committed credential write; the listener is
+  // released by the same fiber-owned disposer as the routes below.
+  const offCredentialUpdates = watchCredentialUpdates(ctx, balance)
+  const utilities = { balance, versions: new VersionChecker(PLUGIN_VERSION), settings: () => readSettings(config) }
   const deps: RouteDeps & { aiTitles: AiTitleGenerator } = {
     sources,
     version: PLUGIN_VERSION,
     handoff,
     metadata: new SessionMetadataStore(),
     aiTitles,
+    utilities,
   }
   const preload = { aborted: false }
   let timer: ReturnType<typeof setTimeout> | undefined
-  const routes: WebRoute[] = [{ kind: "exact", path: HEALTH_PATH, handler: handleHealth }, ...createRoutes(deps)]
+  const routes: WebRoute[] = [
+    { kind: "exact", path: HEALTH_PATH, handler: handleHealth },
+    createSettingsRoute(() => readSettings(config)),
+    ...createRoutes(deps),
+  ]
   const release = (disposers: readonly (() => void)[]): void => {
     if (timer !== undefined) globalThis.clearTimeout(timer)
     preload.aborted = true
     aiTitles.dispose()
+    offCredentialUpdates()
+    balance.invalidate()
     clearListCache(deps)
     for (const dispose of disposers) dispose()
     for (const source of sources) source.invalidate()

@@ -35,8 +35,8 @@ describe("apply", () => {
     let activate: ((child: AiTitleHost & { effect: (setup: () => () => void) => unknown }) => void) | undefined
     let releaseChild: (() => void) | undefined
     ctx.inject = vi.fn((services, callback) => {
-      expect(services).toEqual(["llm", "agentDefaultModel"])
-      activate = callback
+      expect([["llm", "agentDefaultModel"], ["credentials"], ["deepseekAccount"]]).toContainEqual(services)
+      if (services[0] === "llm") activate = callback
     })
     const dispose = apply(ctx)
     expect(table.has(HEALTH_PATH)).toBe(true)

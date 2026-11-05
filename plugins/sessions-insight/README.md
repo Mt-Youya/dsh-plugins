@@ -8,7 +8,7 @@ A **Sessions Insight** panel for the DSH Web GUI. It parses session logs from **
 
 > Insight reads never rewrite source logs. Right-click a session and confirm Delete session to permanently remove its original logs.
 
-> **Current scope**: read-only insight, the summary handoff and confirmed deletion. The handoff delivers a generated brief into a new DSH session and **only calls the official `session.create` / `session.prompt`** — it never hand-writes session events and never rewrites the source session (`docs/HANDOFF.md`, `docs/adr/0003-never-handwrite-session-events.md`, `docs/adr/0007-accepted-is-not-success.md`).
+> **Current scope**: read-only insight, the summary handoff, confirmed deletion, and a settings page with two opt-in utilities (DeepSeek balance and update checks). The handoff delivers a generated brief into a new DSH session and **only calls the official `session.create` / `session.prompt`** — it never hand-writes session events and never rewrites the source session (`docs/HANDOFF.md`, `docs/adr/0003-never-handwrite-session-events.md`, `docs/adr/0007-accepted-is-not-success.md`).
 
 ## What it answers
 
@@ -38,6 +38,27 @@ Open a Claude Code or Codex session and click **Hand off to DSH**. Preview and e
 
 ![Hand off to DSH: working directory and editable handoff brief](docs/images/04-handoff-dialog.png)
 
+## Settings, balance and update checks
+
+The settings page is reachable from the **Settings** button in the panel toolbar and from the package details section under DSH settings. It is driven by the Host configuration form; **all six switches are saved by the Host** and the plugin writes no config file:
+
+| Switch | Default | Effect |
+| --- | --- | --- |
+| Session overview | on | Show the Overview tab in the session detail |
+| Skills tab | on | Show the Skills tab |
+| Cumulative level chart | on | Show the context-level chart on the Turns page |
+| Expand tool list by default | off | Open a session with every tool call expanded |
+| DeepSeek balance display | off | Show the balance panel |
+| Automatic version checks | off | Check the registry for a newer package version |
+
+**Both utilities are off by default.** Enabling a switch — or pressing its button — is the only thing that makes the plugin go out. Outbound traffic is limited to two fixed endpoints, `https://api.deepseek.com/user/balance` and `https://registry.npmjs.org/@cyrusdoyle%2F<package>/latest`, with no redirects, no cookies and no caller-controlled URL.
+
+- **Balance** (30 s cache, failures are not cached): prefers the Host credential `DEEPSEEK_API_KEY`; without it, it asks the signed-in DeepSeek account. This release supports only that default credential ref, and the plugin never stores or logs the key. A Host credential update invalidates the cache, so a new API key takes effect on the next request. Failures are shown as plain sentences (`credential-error` / `unauthorized` / `rate-limited` / `timeout` / `network` / `http-error` / `invalid-response` / `account-error`, plus a synthesized `host-unavailable` when the route cannot be reached).
+- **Version check**: compares the **effective package** — the collection when installed as `@cyrusdoyle/dsh-plugins`, this member when installed standalone — against the same package on npm. Successful checks cache for 1 h, failures for 5 min. `HEAD` probes only read the cache, so a liveness check never goes to the network; the manual button always forces a check.
+- The routes are fenced where they touch account data: `/balance` accepts loopback callers only and answers `HEAD` with 405, and `/settings` is read-only (writes go through the Host form). Full contract in `docs/API.md`.
+
+The settings form needs **DSH 0.2.1-rc.5+** (`configForms` plus the `plugins.bundle.config` slot); on an older Host it shows the reason and a Retry button instead of a permanently read-only page.
+
 ## Sources and their roots
 
 | Source      | Default root         | Override                          |
@@ -50,7 +71,7 @@ A missing or unreadable source never takes the others down: the strip at the top
 
 ## Install
 
-Requires DSH **0.2.1-rc.2 or newer** (the plugin is aligned with the behaviour of the running `app.asar`; see `docs/adr/0002-asar-021-is-the-contract.md`).
+Requires DSH **0.2.1-rc.5 or newer** — the settings page needs the `configForms` client service and the `plugins.bundle.config` slot introduced in that version. The plugin follows the behaviour of the running `app.asar`; see `docs/adr/0002-asar-021-is-the-contract.md`.
 
 **Step 0 — know which profile you are installing into**
 
@@ -70,9 +91,10 @@ To install just this plugin:
 ```sh
 dsh plugin --profile desktop add @cyrusdoyle/dsh-sessions-insight   # desktop app
 dsh plugin --profile web     add @cyrusdoyle/dsh-sessions-insight   # dsh web
-# from a checkout, or from a packed tarball:
+# from a checkout, a packed tarball, or Git — lib/ is committed, so Git installs need no build:
 # dsh plugin --profile <name> add link:$PWD
 # dsh plugin --profile <name> add /abs/path/cyrus-dsh-sessions-insight-<version>.tgz
+# dsh plugin --profile <name> add github:Mt-Youya/dsh-plugins#path:/plugins/sessions-insight
 ```
 
 You can also install the collection `@cyrusdoyle/dsh-plugins`, which brings in every plugin of the collection (see the [repository README](../../README.md)).
@@ -112,10 +134,12 @@ curl -sS http://127.0.0.1:<port>/api/dsh-sessions-insight/health
 ## Permissions and security boundary
 
 - **Confirmed deletion**: right-click sessions from any source to delete their original logs and refresh the list. Shared Codex logs are protected; sidecar files and host indexes are retained.
-- **Nothing persisted**: no index, no cache files; the in-process LRU keys on `source + id + mtime + size`.
+- **The plugin stores nothing itself**: no index, no cache files; settings live in the Host configuration form; utility results are in-memory only (30 s / 1 h TTLs). The in-process LRU keys on `source + id + mtime + size`.
 - **Path allowlist**: every path argument is resolved and `realpath`-checked to stay inside the three allowed roots, which blocks `..` and symlink escapes.
-- **Same-origin gate**: every route is `kind:'exact'` and passes an Origin/Host gate first — `Sec-Fetch-Site: cross-site` is a 403, a mismatched `Origin`/`Host` is a 403, a same-origin GET without `Origin` passes.
-- **The only write path is the handoff**: the query surface is all GETs (`health` / `sources` / `workdirs` / `sessions` / `session` / `search` / `cost`); the single write action is `handoff/apply`, which only calls the official `session.create` + `session.prompt` — it writes no source data and injects no events into a live session.
+- **Same-origin gate**: every route is `kind:'exact'` and passes an Origin/Host gate first — `Sec-Fetch-Site: cross-site` is a 403, a mismatched `Origin`/`Host` is a 403, a same-origin GET without `Origin` passes. `/settings` is read-only, `/balance` is additionally loopback-only and rejects `HEAD` with 405.
+- **Writes**: settings changes go through the Host's configuration form; the plugin's own write routes are the handoff (`handoff/apply` uses the official `session.create` + `session.prompt`; `handoff/reveal` creates or reuses a workspace for an existing session) and confirmed session deletion. Utility routes only read.
+- **Outbound network**: only the two fixed HTTPS endpoints listed above, and only after a utility is enabled or its button pressed — no redirects, no cookies, no caller-controlled URL; requests have an 8 s (registry) or 30 s (balance) absolute deadline and a 128 KiB response cap.
+- **Credentials**: the balance check resolves `DEEPSEEK_API_KEY` through the Host credential service, falling back to the signed-in account; only the default credential ref is supported in this release. The key is never persisted or logged.
 - **Read limits**: single-file decoding is byte-capped and answers `read-limit` instead of starving the Host.
 
 ## Known limitations
@@ -207,7 +231,7 @@ dsh try --host 127.0.0.1 --port 49744 --no-open     # boot on its own port
 
 These live at the **repository root**, not inside this package (the npm tarball only ships `docs/images`):
 
-- `docs/RELEASE.en.md` — publishing to npm
+- `docs/RELEASE.md` — publishing to npm
 - `docs/PLAN.md` — decisions and milestones (Chinese, like the rest below)
 - `docs/IR.md` — the unified turn IR (adapter contract)
 - `docs/API.md` — host route contract

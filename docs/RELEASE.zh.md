@@ -1,4 +1,4 @@
-[English](./RELEASE.en.md) | 简体中文
+[English](./RELEASE.md) | 简体中文
 
 # 发布到 npm
 
@@ -7,13 +7,17 @@
 | 包                           | 目录                      | 是什么                                                     |
 | ---------------------------- | ------------------------- | ---------------------------------------------------------- |
 | `@cyrusdoyle/dsh-sessions-insight` | `plugins/sessions-insight` | 会话洞察插件本体（成员包）                               |
-| `@cyrusdoyle/dsh-plugins`         | 仓库根                    | 组合包：只有 `cordis.patch.yml` 和 `locale/`，依赖各成员包 |
+| `@cyrusdoyle/dsh-plugins`         | 仓库根                    | 组合包：`cordis.patch.yml`、`locale/`，以及它自己内嵌的 `lib/`（ADR 0009） |
 
 `packages/*` 在构建时被内联进成员包的 `lib/`，**不要发布**。它们现在没有标 `private`，所以**永远不要用 `pnpm -r publish`**，那会把它们一并发上去。
 
-## 顺序只有一条
+## 一个版本，一条顺序
 
-**先发成员，再发组合包。** 组合包的依赖写的是 `workspace:^`，发布时会被改写成成员当前的版本号（例如 `^0.0.3`）。成员没先发上去，别人装组合包就会解析失败。
+**成员包与组合包永远发同一个版本号**（ADR 0010），并且**先发成员包**。组合包的依赖写的是 `workspace:^`，`pnpm pack` 会把它改写成 `^<成员版本>`；这个版本还没上 registry 时，装组合包会解析失败。两个包承载同一份插件代码，只发其中一个会让两种安装渠道报出不同版本。
+
+`/health` 和版本检查报的是**生效包**的版本——装组合包报组合包的 `package.json`，单装成员包报成员包的。因为两个包一起 bump，这两个数字始终相同。
+
+[`release` workflow](../.github/workflows/release.yml) 用 npm Trusted Publishing（GitHub OIDC，仓库不存 token、不需要 2FA）把这些步骤跑完；workflow 不可用时按下面的手工流程操作。
 
 ## 一次性准备
 
@@ -32,11 +36,11 @@
 
 ## 每次发布
 
-所有命令都在**仓库根**执行。下面以把成员从 `0.0.2` 升到 `0.0.3`、组合包从 `0.0.1` 升到 `0.0.2` 为例。
+所有命令都在**仓库根**执行。下面以两个包一起从 `0.0.2` 升到 `0.0.3` 为例——目标版本号相同（原因见下面的「版本规则」）。
 
 ### 1. 工作区干净、在 main 上
 
-`pnpm publish` 默认拒绝在有未提交改动、或不在 `main` 分支时发布。
+发布要在干净的 `main` 上进行。`pnpm publish` 会强制检查这一点，但下面用的 `npm publish <tgz>` 不检查，得自己把关。
 
 ```bash
 git status
@@ -51,59 +55,83 @@ pnpm install
 ```
 
 ```bash
-npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && npx tsdown && node scripts/check-bundle.mjs plugins/sessions-insight
+npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && node scripts/build-css.mjs plugins/sessions-insight && npx tsdown && node scripts/check-bundle.mjs plugins/sessions-insight && node scripts/check-bundle.mjs .
 ```
 
-### 3. 升版本号
+CSS 构建必须排在 `tsdown` 之前：组合包把编译好的样式内联进自己的 `lib/`，顺序反过来会发出旧样式。
 
-成员改过就升成员；**成员升了，组合包也要升**（原因见下面的「版本规则」）。
+### 3. 两个包升到同一个版本
+
+ADR 0010：成员包和组合包共用一个发布版本。用**显式目标版本号**一起升，别用相对 bump，避免两个 manifest 漂移：
 
 ```bash
-pnpm --filter @cyrusdoyle/dsh-sessions-insight version patch --no-git-tag-version
+pnpm --filter @cyrusdoyle/dsh-sessions-insight version 0.0.3 --no-git-tag-version
 ```
 
 ```bash
-pnpm version patch --no-git-tag-version
+pnpm version 0.0.3 --no-git-tag-version
 ```
 
-`patch` 换成 `minor` / `major` 即可升对应位。插件的 `/health` 返回的版本号是构建时从 `package.json` 注入的，不用另外改。
+插件的 `/health` 返回的版本号、版本检查比较的版本号，都是构建时从**生效包**的 `package.json` 注入的，不用另外改。要升 minor / major 就直接写目标版本号。
 
 ### 4. 提交并打 tag
 
 ```bash
-git commit -am "release: dsh-sessions-insight 0.0.3, dsh-plugins 0.0.2"
+git commit -am "release: dsh-sessions-insight 0.0.3, dsh-plugins 0.0.3"
 ```
 
 ```bash
-git tag dsh-sessions-insight@0.0.3 && git tag dsh-plugins@0.0.2
+git tag dsh-sessions-insight@0.0.3 && git tag dsh-plugins@0.0.3
 ```
 
 ### 5. 预演
 
-只打包、不上传，看清楚 tarball 里有什么：
+只打包、不上传，看清楚 tarball 里有什么。`pnpm pack` 会改写 `workspace:` / `catalog:` 协议，并执行成员包的 `prepack`（重建 + 加载契约校验）：
 
 ```bash
-pnpm --filter @cyrusdoyle/dsh-sessions-insight publish --dry-run
+mkdir -p /tmp/dsh-release/member
+pnpm --filter @cyrusdoyle/dsh-sessions-insight pack --pack-destination /tmp/dsh-release/member
+tar -tzf /tmp/dsh-release/member/*.tgz | head -40
 ```
+
+组合包必须先构建再打包（`lib/` 在 .gitignore 里）：
 
 ```bash
-pnpm publish --dry-run
+node scripts/build-css.mjs plugins/sessions-insight
+npx tsdown
+mkdir -p /tmp/dsh-release/collection
+pnpm pack --pack-destination /tmp/dsh-release/collection
+tar -tzf /tmp/dsh-release/collection/*.tgz | head -40
 ```
 
-成员的 tarball 应该有 `lib/index.js`、`lib/client.js`、`cordis.patch.yml`、`locale/`、`icon.svg`；组合包只有 `cordis.patch.yml`、`locale/`、`package.json`、README 和 LICENSE，并且 `dependencies` 里是 `^0.0.3`，不是 `workspace:^`。
+成员的 tarball 应该有 `lib/index.js`、`lib/client.js`、`cordis.patch.yml`、`locale/`、`icon.svg`；组合包应该有 `cordis.patch.yml`、`locale/`、`package.json`、README 和 LICENSE，**以及它自己的 `lib/index.js` 与 `lib/client.js`**（ADR 0009：组合包内嵌插件产物），并且 `dependencies` 里是 `^0.0.3`，不是 `workspace:^`。
 
 ### 6. 发布成员
 
-`prepublishOnly` 会再跑一遍 typecheck、测试和构建，`prepack` 会校验加载契约，任何一步失败都不会上传。开了 2FA 就在末尾加 `--otp=<6 位码>`。
+`pnpm pack` 会执行成员包的 `prepack`（重建 + 加载契约校验），任何一步失败都不会产出 tarball；`npm publish <tgz>` 上传的就是这份字节。开了 2FA 就加 `--otp=<6 位码>`。
+
+跳过了预演就先执行第 5 步里的 `pnpm pack`，再发布它产出的 tarball：
 
 ```bash
-pnpm --filter @cyrusdoyle/dsh-sessions-insight publish --registry=https://registry.npmjs.org/
+npm publish /tmp/dsh-release/member/*.tgz --registry=https://registry.npmjs.org/
 ```
 
 ### 7. 发布组合包
 
+先构建组合包，再打包并发布这份 tarball：
+
 ```bash
-pnpm publish --registry=https://registry.npmjs.org/
+node scripts/build-css.mjs plugins/sessions-insight && npx tsdown && pnpm pack --pack-destination /tmp/dsh-release/collection
+```
+
+```bash
+npm publish /tmp/dsh-release/collection/*.tgz --registry=https://registry.npmjs.org/
+```
+
+release workflow 会在发布前断言两个 manifest 版本相同；手工路径也保留同样的检查：
+
+```bash
+node -e "const v=['./package.json','./plugins/sessions-insight/package.json'].map((p)=>require(p).version); if (v[0]!==v[1]) { console.error('version mismatch', v); process.exit(1) } console.log('shared version', v[0])"
 ```
 
 ### 8. 核对
@@ -115,6 +143,8 @@ npm view @cyrusdoyle/dsh-sessions-insight version --registry=https://registry.np
 ```bash
 npm view @cyrusdoyle/dsh-plugins dependencies --registry=https://registry.npmjs.org/
 ```
+
+两个 `version` 必须是同一个数字，组合包的 `dependencies` 必须钉住这个数字。装好之后，插件的 `/health` 报的是实际生效包的版本——两种安装方式报同一个数字。
 
 ### 9. 推送
 
@@ -134,8 +164,9 @@ dsh plugin --profile desktop add @cyrusdoyle/dsh-plugins
 
 ## 版本规则
 
-- `0.x` 阶段 `^` 的含义比较窄：`^0.0.3` 只匹配 `0.0.3`，`^0.1.3` 匹配 `>=0.1.3 <0.2.0`。所以在 `0.0.x` 阶段，**成员每发一版，组合包都必须跟着发一版**，否则装组合包拿到的还是旧成员。
-- 同一个版本号在 npm 上只能发布一次，删掉也不能复用。发错了就升一个补丁号重发。
+- **两个包共用一个版本号**（ADR 0010）：成员包和组合包在同一次发布里升到同一个数字，先发成员包、再发组合包。不要单独给组合包发补丁版——那会让两种安装渠道通过 `/health` 和版本检查报出不同版本。
+- 版本号是构建时从**生效包**的 `package.json` 注入的；`/health` 和版本检查比较的都是这个生效包在 registry 上的同包版本。`0.x` 阶段 `^` 的含义比较窄（`^0.0.3` 只匹配 `0.0.3`），这也是两个包必须一起动的另一个原因。
+- 同一个版本号在 npm 上只能发布一次，删掉也不能复用。发错了就把两个包的补丁号一起升上去重发。
 - 发布后 72 小时内可以 `npm unpublish <包>@<版本>`，之后只能 `npm deprecate <包>@<版本> "<原因>"`。
 
 ## 两种安装方式只能选一种
@@ -157,7 +188,7 @@ dsh plugin --profile desktop remove @cyrusdoyle/dsh-sessions-insight
 2. 根 `package.json` 的 `dependencies` 加 `"<新插件包名>": "workspace:^"`。
 3. 根 `cordis.patch.yml` 的 `insert` 下加一行 `- id: <唯一 id>` / `name: "<新插件包名>"`，id 和新插件自己那份 patch 保持一致。
 4. 更新两份根 README 的插件表。
-5. 按上面的流程发布：先发新插件，再升并发布组合包。
+5. 按上面的流程发布：把所有成员包和组合包升到同一个版本，先发成员包，再发组合包。
 
 ## 常见报错
 

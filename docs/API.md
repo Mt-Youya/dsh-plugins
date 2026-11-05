@@ -14,9 +14,12 @@ type Envelope<T> = { ok: true; value: T } | { ok: false; error: string; detail?:
 
 ## 路由
 
-| 方法 | 路径                                                | 用途                                     | 关键约束                                                          |
-| ---- | --------------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------- |
-| GET  | `/api/dsh-sessions-insight/health`                   | 存活与版本                               | 已实现（M1）                                                      |
+| 方法     | 路径                                           | 用途                                     | 关键约束                                                                          |
+| -------- | ---------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------- |
+| GET      | `/api/dsh-sessions-insight/health`             | 存活与版本                               | 已实现（M1）；`version` 是**生效包**的版本（ADR 0010）                            |
+| GET/HEAD | `/api/dsh-sessions-insight/settings`           | 读取生效中的 6 个设置开关                | 只读；设置写入由宿主 `configForms` 负责；每次请求重读，不是挂载快照               |
+| GET      | `/api/dsh-sessions-insight/balance`            | DeepSeek 余额（默认关闭）                | **HEAD 返回 405**；仅 loopback；query 白名单；缓存 30s，失败不缓存                 |
+| GET/HEAD | `/api/dsh-sessions-insight/version`            | 生效包版本 vs registry 最新版（默认关闭） | **HEAD 只回 passive peek，不发网络请求**；成功 TTL 1h、failed TTL 5min             |
 | GET  | `/api/dsh-sessions-insight/sources`                  | 三源可用性、根路径、会话数、最后扫描时间 | 单源缺失不报错，返回 `available:false` 与原因                     |
 | GET  | `/api/dsh-sessions-insight/workdirs`                 | 工作目录聚合（导航主轴）                 | 每项含 `workdir`、按来源分组的会话数与最近时间                    |
 | GET  | `/api/dsh-sessions-insight/sessions?workdir=`        | 轻量会话列表                             | **不解析正文**；DSH 走 projcache、Claude/Codex 只读文件头与 mtime |
@@ -77,3 +80,74 @@ type Envelope<T> = { ok: true; value: T } | { ok: false; error: string; detail?:
 - Claude/Codex 侧以文件 mtime+size 失效；Codex 的分段文件必须按 `history_base` 链整体失效（任一分段变化即整会话失效）。
 
 `POST /api/dsh-sessions-insight/handoff/reveal`：体 `{source:"dsh",id}`（id 可带 `session-` 前缀）。从日志确定真实工作目录，创建或复用对应工作区并补齐会话成员关系；返回 `{sessionId}`，不启动模型轮次。
+
+## 设置与辅助功能（补充）
+
+三条只读路由，都是 `kind:'exact'`，和其余路由一样先过 Origin/Host 同源门。**设置写入不经过插件**：`/settings` 只读，配置由宿主 `configForms` 保存，插件自身不落盘。
+
+### 设置（`/settings`）
+
+`GET` / `HEAD`，响应 `{ok:true, value: Settings}`，6 个字段都是 boolean：
+
+| 键                       | 默认    | 含义                                             |
+| ------------------------ | ------- | ------------------------------------------------ |
+| `sessionOverview`        | `true`  | 会话详情显示「概览」页签                         |
+| `skillsTab`              | `true`  | 显示 Skills 页签                                 |
+| `waterfall`              | `true`  | 轮次列显示累计水位图                             |
+| `defaultToolsExpanded`   | `false` | 打开会话时默认展开全部工具调用                   |
+| `deepseekBalance`        | `false` | 显示 DeepSeek 余额；开启后才访问 `api.deepseek.com`    |
+| `autoCheckVersion`       | `false` | 自动检查插件版本；开启后才访问 `registry.npmjs.org`     |
+
+- 默认值来自 `SETTINGS_DEFAULTS`；宿主注入的是 live ref，路由每次请求重新读，只改宿主配置不需要重启插件。
+- 没有写路由，也不解析请求体和 query：修改设置只能走宿主设置页（`configForms`），浏览器端拿不到宿主配置对象或凭据。
+
+### 余额（`/balance`）
+
+只有 `GET`；`HEAD` 返回 **405 `method-not-allowed`**（允许的方法只列 `GET`），避免 HEAD 探测触发一次 provider 请求。
+
+- **来源限制**：只接受 loopback 来源（`127.0.0.0/8`、`::1`、`::ffff:127.*`），其他来源返回 `403 forbidden`。DSH 的 webserver 没有全站鉴权，绑到非 loopback 地址时这条路由会直接暴露财务数据。
+- **处理顺序**：同源门与 loopback 来源校验 → query 校验 → 设置短路。因此开关关闭时非法 query 仍是 400；开关关闭且 query 合法时返回 `{status:"disabled"}`，不读凭据、不发任何出站请求。
+- **query 白名单**：
+  - `refresh=1`：绕过 30s 缓存强制刷新，其他值 400。
+  - `locale`：默认 `en-US`，形如 `zh` / `zh-CN`（2–3 位语言 + 可选 2–8 位地区）。
+  - `timezoneOffsetSeconds`：整数，默认 `0`，绝对值上限 86400。
+  - 未知键或取值非法 → `400 bad-request`，`detail: invalid-utility-query`。
+- **缓存**：成功结果 TTL 30s；`failed` / `missing-credentials` 不缓存（一次失败不会粘住 30s）；同一时刻只有一个 inflight 请求。宿主凭据变更事件（`credentials/reference-updated`）会清掉余额缓存，改完 API Key 下一次请求就重读。
+- **凭据**：优先宿主凭据服务 `credentials.resolve("DEEPSEEK_API_KEY")`，没有该 key 时走已登录账号的 `deepseekAccount.getBalance`；响应里的 `source` 标明本次来源。插件不保存密钥。
+- **出站**：只有固定地址 `https://api.deepseek.com/user/balance`，无重定向、无 cookie、URL 不可由调用方指定；余额请求 30s 绝对超时（含 DNS/TLS/慢速响应），宿主账号调用同样按 30s 计时。
+- **响应**：
+
+```ts
+type BalanceSource = "api-key" | "account"
+type BalanceWallet = { currency: "CNY" | "USD"; balance: string; grantedBalance?: string; toppedUpBalance?: string }
+type BalanceValue =
+  | { status: "disabled" | "missing-credentials"; checkedAt: number }
+  | { status: "failed"; checkedAt: number; reason?: BalanceFailureReason; source?: BalanceSource }
+  | {
+      status: "ready"; checkedAt: number; source: BalanceSource; available: boolean | null
+      value: BalanceWallet[]; bonusWallets: BalanceWallet[]
+    }
+```
+
+- `reason` 的宿主回传值就是 `UtilityFailureReason` 的 8 个：`credential-error`（凭据读取失败）/ `unauthorized`（余额 API 401/403；账号来源时客户端显示为 `account-unauthorized`）/ `rate-limited`（429）/ `timeout` / `network` / `http-error` / `invalid-response` / `account-error`。`host-unavailable` 只由浏览器侧合成：路由不可达（404/401/403）、传输失败或响应无法解码时使用。
+- `ready` 只透出已知金额字段：最多 32 个钱包，金额是十进制字符串；`available: false` 表示余额不足以调用；奖励钱包单列 `bonusWallets`。各币种独立展示，**不折算、不合并**。
+
+### 版本（`/version`）
+
+`GET` / `HEAD`。`HEAD` 是 passive peek：只读当前缓存，**绝不发起网络检查**，用于面板探测宿主是否支持版本检查。自动检查关闭且没有 `check=1` 时两种方法都返回 `{status:"disabled"}`；否则 `HEAD` 返回上次结果（没有则 `unchecked`），`GET` 才可能真的去查。
+
+- `GET`：`check=1` 手动强制检查（`autoCheckVersion` 关闭时也能用）；`refresh=1` 在确实发生检查时绕过 TTL 强制重查（单独使用不会触发检查）。query 白名单只有这两个键且只接受值 `1`，其余 → `400 bad-request`。
+- 自动检查：`autoCheckVersion` 关闭且没有 `check=1` 时返回 `{status:"disabled"}`，不联网。query 校验先于设置短路，非法 query 与开关状态无关，一律 400。
+- TTL：`current` / `update` 成功结果缓存 1h；`failed` 只缓存 5min（宿主短暂不可用不会把失败结果粘一小时）；同一时刻只有一个 inflight 请求。
+- 出站：固定 `https://registry.npmjs.org/@cyrusdoyle%2F<生效包>/latest`，只读响应里的 `name` / `version`，无重定向、无 cookie；8s 绝对超时，响应上限 128KiB。
+- **响应**：
+
+```ts
+type VersionValue = { packageName: PluginName } & (
+  | { status: "unchecked" | "disabled" | "failed"; currentVersion: string; checkedAt: number | null }
+  | { status: "current" | "update"; currentVersion: string; latestVersion: string; checkedAt: number }
+)
+```
+
+- `packageName` 是**生效包**：装集合包时是 `@cyrusdoyle/dsh-plugins`，装成员包时是 `@cyrusdoyle/dsh-sessions-insight`。版本检查拿同一个包在 registry 上的 `latest` 比较；`/health` 的 `version` 同样是生效包的版本。两个包按 ADR 0010 统一版本发布，所以两种安装渠道报出的数字一致。
+- 版本比较用严格 SemVer 规则（含 prerelease 优先级），非法版本串按 `failed` 处理。

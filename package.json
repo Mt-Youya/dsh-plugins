@@ -66,7 +66,8 @@
     "install:plugin": "bash scripts/install-plugin.sh"
   },
   "dependencies": {
-    "@cyrusdoyle/dsh-sessions-insight": "workspace:^"
+    "@cyrusdoyle/dsh-sessions-insight": "workspace:^",
+    "@deepseek-ai/schemastery": "3.18.5"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.3",
@@ -90,7 +91,7 @@
   "packageManager": "pnpm@12.16.1",
   "dsh": {
     "engines": {
-      "dsh": ">=0.2.1-rc.2"
+      "dsh": ">=0.2.1-rc.5"
     },
     "bundle": {
       "patch": "./cordis.patch.yml"
@@ -101,7 +102,8 @@
         "@deepseek-ai/dsh-client-locale",
         "@deepseek-ai/dsh-client-ui-layout",
         "@deepseek-ai/dsh-client-ui-sidebar",
-        "@deepseek-ai/dsh-client-ui-workspace"
+        "@deepseek-ai/dsh-client-ui-workspace",
+        "@deepseek-ai/dsh-client-ui-settings"
       ]
     }
   }

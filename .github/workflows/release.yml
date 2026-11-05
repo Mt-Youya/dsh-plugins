@@ -32,26 +32,45 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # ADR 0010：两个包共用一个发布版本。版本对不上时宁可失败，也不发对不上的包。
+      - name: Assert both packages share one version
+        run: |
+          member="$(node -p "require('./plugins/sessions-insight/package.json').version")"
+          collection="$(node -p "require('./package.json').version")"
+          if [ "$member" != "$collection" ]; then
+            echo "::error::版本不一致：@cyrusdoyle/dsh-sessions-insight=$member，@cyrusdoyle/dsh-plugins=$collection；按 ADR 0010 两个包必须以同一版本成对发布"
+            exit 1
+          fi
+          echo "shared version: $collection"
+
       - name: Gates
         run: |
           npx tsc --noEmit
           npx tsc --noEmit -p tsconfig.client.json
           npx vitest run
+          # 集合包把插件源码内联进自己的 lib/，CSS 必须先于 tsdown 生成，否则产物带着旧样式。
+          node scripts/build-css.mjs plugins/sessions-insight
           npx tsdown
           node scripts/check-bundle.mjs plugins/sessions-insight
           node scripts/check-bundle.mjs .
 
-      # 成员包：npm publish 直接读 package.json 与 lib/，OIDC 由 npm CLI 自动完成。
-      - name: Publish member
+      # 成员包先 pnpm pack 出 tarball 再发 tarball：pnpm 会改写 workspace 协议，
+      # npm 直接读目录发布时不会。prepack 还会重新构建并校验加载契约。
+      - name: Pack member
         working-directory: plugins/sessions-insight
-        run: npm publish --registry=https://registry.npmjs.org/
+        run: |
+          mkdir -p "$RUNNER_TEMP/npm-release/member"
+          pnpm pack --pack-destination "$RUNNER_TEMP/npm-release/member"
+
+      - name: Publish member
+        run: npm publish "$RUNNER_TEMP"/npm-release/member/*.tgz --registry=https://registry.npmjs.org/
 
       # 集合包的 dependencies 写的是 workspace:^，npm 不认 workspace 协议，
       # 先用 pnpm pack 让 pnpm 把它改写成 ^<member version>，再发 tarball。
       - name: Pack collection
         run: |
-          mkdir -p "$RUNNER_TEMP/npm-release"
-          pnpm pack --pack-destination "$RUNNER_TEMP/npm-release"
+          mkdir -p "$RUNNER_TEMP/npm-release/collection"
+          pnpm pack --pack-destination "$RUNNER_TEMP/npm-release/collection"
 
       - name: Publish collection
-        run: npm publish "$RUNNER_TEMP"/npm-release/*.tgz --registry=https://registry.npmjs.org/
+        run: npm publish "$RUNNER_TEMP"/npm-release/collection/*.tgz --registry=https://registry.npmjs.org/

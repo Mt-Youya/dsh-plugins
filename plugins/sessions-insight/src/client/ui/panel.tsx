@@ -36,14 +36,18 @@ import { createApi, failureText } from "../api.ts"
 import { compactTokens } from "../format.ts"
 import { LOCALE_NS, t } from "../locale.ts"
 import { clientListCache } from "../state/list-cache.ts"
+import { SettingsStore, useSettings } from "../state/settings.ts"
 import { applySessionMetadata, sameSession, useSessionDetail } from "../state/use-session-detail.ts"
 import type { SessionRef } from "../state/use-session-detail.ts"
+import { UtilityStore } from "../state/utilities.ts"
 import { HandoffDialog } from "./handoff.tsx"
 import { ProjectTree } from "./project-tree.tsx"
 import { SearchPalette, type SearchTarget } from "./search-palette.tsx"
 import { SessionPane } from "./session-pane.tsx"
+import { SettingsPage, type SettingsSections } from "./settings.tsx"
 import { EmptyBlock, ErrorBlock, Notice, SessionSkeleton, TreeSkeleton } from "./states.tsx"
 import { Toolbar } from "./toolbar.tsx"
+import { makeUtilitySections, UtilityStrip } from "./utilities.tsx"
 
 export { PAGE_SIZE } from "../state/use-session-detail.ts"
 
@@ -92,8 +96,26 @@ const ROOT_STYLE = {
  */
 export function ContextInsightPanel({
   onOpenSession,
-}: { onOpenSession?: (id: string) => void | Promise<void> } = {}): ReactElement {
+  settingsStore,
+  settingsSections,
+  utilityStore,
+  initialPage = "sessions",
+}: {
+  onOpenSession?: (id: string) => void | Promise<void>
+  settingsStore?: SettingsStore
+  settingsSections?: SettingsSections
+  utilityStore?: UtilityStore
+  initialPage?: "sessions" | "settings"
+} = {}): ReactElement {
   const api: Api = useMemo(() => createApi(), [])
+  const store = useMemo(() => settingsStore ?? new SettingsStore(), [settingsStore])
+  const utilities = useMemo(() => utilityStore ?? new UtilityStore(api), [utilityStore, api])
+  const sections = useMemo(
+    () => settingsSections ?? makeUtilitySections(utilities, store),
+    [settingsSections, utilities, store],
+  )
+  const settings = useSettings(store, api).value
+  const [page, setPage] = useState(initialPage)
   const cache = clientListCache()
   const [boot, setBoot] = useState<Boot>(() =>
     cache.sources === undefined || cache.workdirs === undefined
@@ -120,7 +142,7 @@ export function ContextInsightPanel({
     jumpTurn,
     overlaySession,
     onMetadataChanged: updateDetailMetadata,
-  } = useSessionDetail(api, selected)
+  } = useSessionDetail(api, selected, settings.defaultToolsExpanded)
   const [reloadToken, setReloadToken] = useState(0)
   const [listRevision, setListRevision] = useState(0)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -387,6 +409,7 @@ export function ContextInsightPanel({
       <SessionPane
         key={`${detail.ref.source}:${detail.ref.id}`}
         session={detail}
+        settings={settings}
         revealTurns={pendingJump !== null}
         title={detail.data.session.title ?? detail.ref.id}
         cost={cost}
@@ -404,6 +427,9 @@ export function ContextInsightPanel({
       />
     )
 
+  if (page === "settings")
+    return <SettingsPage store={store} api={api} sections={sections} onBack={() => setPage("sessions")} />
+
   return (
     <div className="ci-panel" style={ROOT_STYLE} data-dsh-sessions-insight-view="">
       <Toolbar
@@ -413,7 +439,9 @@ export function ContextInsightPanel({
         onToggleSidebar={() => setSidebarOpen((open) => !open)}
         onSearch={() => setSearchOpen(true)}
         onRefresh={retry}
+        onSettings={() => setPage("settings")}
       />
+      <UtilityStrip store={utilities} settingsStore={store} />
       {failures.length === 0 ? null : (
         <div className="flex shrink-0 flex-col gap-1.5 border-b border-line-soft px-3 py-2">
           {failures.map((problem) => (

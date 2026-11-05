@@ -63,6 +63,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
+    "@deepseek-ai/schemastery": "3.18.5",
     "@hugeicons/core-free-icons": "^4.4.0",
     "@hugeicons/react": "^1.1.10",
     "cn": "^0.5.1"
@@ -83,7 +84,7 @@
   },
   "dsh": {
     "engines": {
-      "dsh": ">=0.2.0-rc.2"
+      "dsh": ">=0.2.1-rc.5"
     },
     "bundle": {
       "patch": "./cordis.patch.yml"
@@ -94,7 +95,8 @@
         "@deepseek-ai/dsh-client-locale",
         "@deepseek-ai/dsh-client-ui-layout",
         "@deepseek-ai/dsh-client-ui-sidebar",
-        "@deepseek-ai/dsh-client-ui-workspace"
+        "@deepseek-ai/dsh-client-ui-workspace",
+        "@deepseek-ai/dsh-client-ui-settings"
       ]
     }
   }

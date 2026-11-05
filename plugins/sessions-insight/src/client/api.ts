@@ -61,6 +61,15 @@ import {
   WORKDIRS_URL,
   type WorkdirsValue,
 } from "../protocol.ts"
+import { isSettings, SETTINGS_URL, type Settings } from "../protocol/settings.ts"
+import {
+  BALANCE_URL,
+  VERSION_URL,
+  isBalanceValue,
+  isVersionValue,
+  type BalanceValue,
+  type VersionValue,
+} from "../protocol/utilities.ts"
 import { t } from "./locale.ts"
 import { clientListCache } from "./state/list-cache.ts"
 
@@ -68,6 +77,9 @@ export type { ApiFailure, ApiResult } from "@cyrusdoyle/dsh-plugin-kit-client"
 
 /** The reads the panel performs. */
 export interface Api {
+  balance(refresh?: boolean, signal?: AbortSignal): Promise<ApiResult<BalanceValue>>
+  version(manual?: boolean, signal?: AbortSignal): Promise<ApiResult<VersionValue>>
+  settings(signal?: AbortSignal): Promise<ApiResult<Settings>>
   deleteSession(source: string, id: string): Promise<ApiResult<DeleteSessionValue>>
   metadata(signal?: AbortSignal): Promise<ApiResult<MetadataValue>>
   updateMetadata(patch: MetadataPatch): Promise<ApiResult<SessionMetadataValue>>
@@ -132,6 +144,16 @@ function post<T>(url: string, body: unknown, guard: Guard<T>, signal?: AbortSign
 export function createApi(base = ""): Api {
   const cache = clientListCache(base)
   return {
+    balance: (refresh = false, signal) => {
+      const params = new URLSearchParams({
+        locale: t("handoff.language") === "zh" ? "zh-CN" : "en-US",
+        timezoneOffsetSeconds: String(-new Date().getTimezoneOffset() * 60),
+      })
+      if (refresh) params.set("refresh", "1")
+      return get(`${base}${BALANCE_URL}?${params}`, isBalanceValue, signal)
+    },
+    version: (manual = false, signal) => get(base + VERSION_URL + (manual ? "?check=1" : ""), isVersionValue, signal),
+    settings: (signal) => get(base + SETTINGS_URL, isSettings, signal),
     deleteSession: (source, id) => post(base + SESSION_DELETE_URL, { source, id }, isDeleteSessionValue),
     metadata: (signal) => get(base + SESSION_METADATA_URL, isMetadataValue, signal),
     updateMetadata: (patch) => post(base + SESSION_METADATA_URL, patch, isSessionMetadataValue),

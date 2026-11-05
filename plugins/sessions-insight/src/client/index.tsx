@@ -17,13 +17,17 @@
  * @module @cyrusdoyle/dsh-sessions-insight/client
  */
 
-import { type ClientContext, registerLocale, registerPanel } from "@cyrusdoyle/dsh-plugin-kit-client"
+import { registerLocale, registerPanel } from "@cyrusdoyle/dsh-plugin-kit-client"
 import type { ReactElement } from "react"
 
 import { createApi, preloadSessionLists } from "./api.ts"
 import { en, LOCALE_NS, setRuntimeTranslate, t, zh } from "./locale.ts"
+import { registerSettings, type SettingsClientContext } from "./settings-registration.tsx"
+import { SettingsStore } from "./state/settings.ts"
+import { UtilityStore } from "./state/utilities.ts"
 import { injectStyles } from "./styles.ts"
 import { ContextInsightPanel } from "./ui/panel.tsx"
+import { makeUtilitySections } from "./ui/utilities.tsx"
 
 export type { ClientContext, Dispose, LocaleFace, SlotsFace } from "@cyrusdoyle/dsh-plugin-kit-client"
 
@@ -77,7 +81,7 @@ export function ContextInsightPanelIcon({ size }: { size: number; active: boolea
  * Mount the browser half.
  * @param ctx - client root context (services: slots, locale).
  */
-export function apply(ctx: ClientContext & { get?: (name: string) => unknown }): void {
+export function apply(ctx: SettingsClientContext): void {
   // A duplicated client injection (the module factory executed twice in one
   // page lifetime, e.g. a stale bundle mixed with a rebuilt one) would
   // otherwise mount a second sidebar row and a second panel page. First
@@ -102,6 +106,18 @@ export function apply(ctx: ClientContext & { get?: (name: string) => unknown }):
 
   registerLocale(ctx, LOCALE_NS, { zh, en }, setRuntimeTranslate)
 
+  const settingsStore = new SettingsStore()
+  const utilityStore = new UtilityStore(createApi())
+  const utilitySections = makeUtilitySections(utilityStore, settingsStore)
+  try {
+    // The bundle page reads through its own endpoint handle, so a retry there
+    // does not depend on the panel having mounted first.
+    registerSettings(ctx, settingsStore, utilitySections, createApi())
+  } catch (error) {
+    console.warn("[sessions-insight] settings registration failed", error)
+  }
+  ctx.effect?.(() => () => utilityStore.dispose(), "sessions-insight: utilities")
+
   const preload = new AbortController()
   const timer = setTimeout(() => {
     void preloadSessionLists(createApi(), preload.signal).catch(() => undefined)
@@ -125,6 +141,9 @@ export function apply(ctx: ClientContext & { get?: (name: string) => unknown }):
       icon: ContextInsightPanelIcon,
       panel: () => (
         <ContextInsightPanel
+          settingsStore={settingsStore}
+          utilityStore={utilityStore}
+          settingsSections={utilitySections}
           onOpenSession={async (id) => {
             const workspace = ctx.get?.("uiWorkspace") as
               | { openSession?: (id: string) => void | Promise<void> }

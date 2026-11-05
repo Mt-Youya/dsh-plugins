@@ -67,3 +67,31 @@ _Avoid_: 样式模块、theme 文件
 **本地预览（preview harness）**:
 preview/ 与 vite.config.ts 组成的调试入口：dev server 里挂载宿主半边，页面读本机真实会话并热更新，不参与打包。
 _Avoid_: mock 环境、演示页
+
+## 分发
+
+**集合包（collection）**:
+一次安装即可获得全部插件的入口包；与成员包二选一安装，同时安装会因重复 Loader 条目启动失败。
+_Avoid_: 主包、聚合包、bundle
+
+**成员包（member package）**:
+可单独安装的单个插件包；与集合包承载同一份插件代码，发布时共用同一个版本号。
+_Avoid_: 子包、插件包、standalone
+
+## 产品能力
+
+**设置（settings）**:
+由宿主保存、在插件页或面板内切换的开关集合；插件自身不持久化设置值。
+_Avoid_: 配置、偏好、preferences
+
+**辅助功能（utilities）**:
+面板与设置页里不属于会话洞察的附加能力——DeepSeek 余额显示与插件版本检查；两者默认关闭，需用户显式开启。
+_Avoid_: utility、工具、扩展（会与「工具类」混淆）
+
+**DeepSeek 余额**:
+宿主凭据或已登录账号能读到的 DeepSeek 账户可用金额，只用于展示，不参与成本估算。
+_Avoid_: 额度、quota、余额查询
+
+**版本检查**:
+把当前安装包的版本与 registry 上同包的最新版本比较，提示是否存在更新。
+_Avoid_: 更新检查、升级提示

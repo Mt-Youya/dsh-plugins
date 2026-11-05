@@ -68,11 +68,13 @@ import { handleSessionMetadata } from "./management-route.ts"
 import { ask, route } from "./route-utils.ts"
 import type { RouteHandler, WebRoute } from "./server.ts"
 import { guardRequest, writeFail, writeOk } from "./server.ts"
+import { createUtilityRoutes, type UtilityRouteDeps } from "./utility-routes.ts"
 export { clearListCache, listOptions, LIST_TTL_MS } from "./list-cache.ts"
 export { handleHandoffApply, handleHandoffPrepare, handleHandoffStatus } from "./handoff-routes.ts"
 
 /** Everything the routes need. */
 export interface RouteDeps {
+  utilities?: UtilityRouteDeps
   aiTitles?: AiTitleGenerator
   /** One reader per source; order determines nothing, CONTEXT_SOURCES does. */
   sources: readonly SessionSource[]
@@ -455,6 +457,7 @@ export function handleCost(deps: RouteDeps): RouteHandler {
  */
 export function createRoutes(deps: RouteDeps): WebRoute[] {
   return [
+    ...(deps.utilities === undefined ? [] : createUtilityRoutes(deps.utilities)),
     { kind: "exact", path: SOURCES_PATH, handler: handleSources(deps) },
     { kind: "exact", path: WORKDIRS_PATH, handler: handleWorkdirs(deps) },
     { kind: "exact", path: SESSIONS_PATH, handler: handleSessions(deps) },

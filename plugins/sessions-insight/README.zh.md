@@ -8,7 +8,7 @@ DSH Web GUI 的「会话洞察」面板：解析 **Claude Code / DSH / Codex** �
 
 > 洞察读取不改写源日志；会话行支持右键「删除会话」，确认后永久删除该会话原始日志。
 
-> **当前范围**：只读洞察 + 摘要交接 + 确认删除。交接把生成好的简报投递进 DSH 新会话，**只调官方 `session.create` / `session.prompt`**，不手写会话事件、不改写原会话（`docs/HANDOFF.md`、`docs/adr/0003-never-handwrite-session-events.md`、`docs/adr/0007-accepted-is-not-success.md`）。
+> **当前范围**：只读洞察 + 摘要交接 + 确认删除，外加一个设置页和两个需要手动开启的辅助功能（DeepSeek 余额、版本检查）。交接把生成好的简报投递进 DSH 新会话，**只调官方 `session.create` / `session.prompt`**，不手写会话事件、不改写原会话（`docs/HANDOFF.md`、`docs/adr/0003-never-handwrite-session-events.md`、`docs/adr/0007-accepted-is-not-success.md`）。
 
 ## 它能回答什么
 
@@ -38,6 +38,27 @@ DSH Web GUI 的「会话洞察」面板：解析 **Claude Code / DSH / Codex** �
 
 ![交接给 DSH：工作目录与可编辑的交接简报](docs/images/04-handoff-dialog.png)
 
+## 设置、余额与版本检查
+
+设置页有两个入口：面板顶栏的「设置」按钮，以及 DSH 设置里的插件详情区。它由宿主的配置表单驱动，**六个开关都由宿主保存**，插件不写任何配置文件：
+
+| 开关 | 默认 | 作用 |
+| --- | --- | --- |
+| 会话概览 | 开 | 会话详情显示「概览」页签 |
+| Skills 标签 | 开 | 显示 Skills 页签 |
+| 累计水位图 | 开 | 在轮次页显示上下文水位变化 |
+| 默认展开工具列表 | 关 | 打开会话时展开全部工具调用 |
+| DeepSeek 余额显示 | 关 | 显示余额面板 |
+| 自动检查版本 | 关 | 自动向 registry 查询当前安装包的新版本 |
+
+**两个辅助功能默认都关闭。** 只有主动打开开关、或按下对应按钮，插件才会发起外部请求。出站只有两个固定地址：`https://api.deepseek.com/user/balance` 和 `https://registry.npmjs.org/@cyrusdoyle%2F<包名>/latest`，无重定向、无 cookie、URL 不可由调用方指定。
+
+- **余额**（缓存 30s，失败不缓存）：优先使用宿主凭据 `DEEPSEEK_API_KEY`，没有配置时查询已登录的 DeepSeek 账号。本轮只支持这一个默认 credential ref，插件不保存、不记录密钥。宿主凭据更新会使缓存失效，换 key 后下一次请求就生效。失败会显示成人话（`credential-error` / `unauthorized` / `rate-limited` / `timeout` / `network` / `http-error` / `invalid-response` / `account-error`，路由不可达时客户端再合成一个 `host-unavailable`）。
+- **版本检查**：比较的是**生效包**——装组合包时是 `@cyrusdoyle/dsh-plugins`，单装本成员包时是 `@cyrusdoyle/dsh-sessions-insight`——与 npm 上同一个包的最新版。成功结果缓存 1h，失败缓存 5min。`HEAD` 探测只读缓存、绝不联网；手动按钮一定会强制检查。
+- 涉及账户数据的路由都加了围栏：`/balance` 只接受 loopback 来源且 `HEAD` 返回 405，`/settings` 只读（写入走宿主表单）。完整契约见 `docs/API.md`。
+
+设置表单需要 **DSH 0.2.1-rc.5+**（`configForms` 与 `plugins.bundle.config` 槽位）；旧宿主上会显示原因和「重试」按钮，而不是永久只读页。
+
 ## 三源与读取位置
 
 | 来源        | 默认根目录           | 覆盖用的环境变量                  |
@@ -50,7 +71,7 @@ DSH Web GUI 的「会话洞察」面板：解析 **Claude Code / DSH / Codex** �
 
 ## 安装
 
-需要 DSH **0.2.1-rc.2 或更高**（插件按运行版 `app.asar` 内的行为对齐，见 `docs/adr/0002-asar-021-is-the-contract.md`）。
+需要 DSH **0.2.1-rc.5 或更高**——设置页依赖该版本才有的 `configForms` 客户端服务与 `plugins.bundle.config` 槽位。插件按运行版 `app.asar` 内的行为对齐，见 `docs/adr/0002-asar-021-is-the-contract.md`。
 
 **第 0 步：先确认装进哪个 profile**
 
@@ -70,9 +91,10 @@ DSH Web GUI 的「会话洞察」面板：解析 **Claude Code / DSH / Codex** �
 ```sh
 dsh plugin --profile desktop add @cyrusdoyle/dsh-sessions-insight   # 桌面端
 dsh plugin --profile web     add @cyrusdoyle/dsh-sessions-insight   # dsh web
-# 本地开发时换成目录或打包产物：
+# 本地开发时换成目录、打包产物或 Git（lib/ 已入库，Git 安装不需要构建）：
 # dsh plugin --profile <name> add link:$PWD
 # dsh plugin --profile <name> add /abs/path/cyrus-dsh-sessions-insight-<版本>.tgz
+# dsh plugin --profile <name> add github:Mt-Youya/dsh-plugins#path:/plugins/sessions-insight
 ```
 
 也可以装组合包 `@cyrusdoyle/dsh-plugins`，它会把合集里的插件一起装上（见[仓库根 README](../../README.md)）。
@@ -112,10 +134,12 @@ curl -sS http://127.0.0.1:<port>/api/dsh-sessions-insight/health
 ## 权限与安全边界
 
 - **确认删除**：三个来源的会话行均可右键删除，确认后删除原始日志并刷新列表。Codex 共用日志时拒绝删除；附属文件和宿主全局索引保留。
-- **不落盘**：不建索引、不写缓存文件；进程内 LRU 以 `source + id + mtime + size` 失效。
+- **插件自身不落盘**：不建索引、不写缓存文件；设置存在宿主的配置表单里；辅助功能的查询结果只在内存里（30s / 1h TTL）。进程内 LRU 以 `source + id + mtime + size` 失效。
 - **路径白名单**：所有路径参数先解析、再做 `realpath` 校验，必须仍落在三个白名单根目录之内——挡掉 `..` 与符号链接逃逸。
-- **同源校验**：每条路由都是 `kind:'exact'`，先过 Origin/Host 门：`Sec-Fetch-Site: cross-site` 直接 403，`Origin` 与 `Host` 不一致 403；不带 `Origin` 的同源 GET 放行。
-- **写路径只有交接**：查询面全是 GET（`health` / `sources` / `workdirs` / `sessions` / `session` / `search` / `cost`）；唯一的写动作是 `handoff/apply`，它只调官方 `session.create` + `session.prompt`——不写源目录，也不往活会话里塞事件。
+- **同源校验**：每条路由都是 `kind:'exact'`，先过 Origin/Host 门：`Sec-Fetch-Site: cross-site` 直接 403，`Origin` 与 `Host` 不一致 403；不带 `Origin` 的同源 GET 放行。`/settings` 只读；`/balance` 额外只接受 loopback 来源，且 `HEAD` 返回 405。
+- **写路径**：设置修改走宿主的配置表单；插件自己的写路由只有交接（`handoff/apply` 通过官方 `session.create` + `session.prompt` 投递；`handoff/reveal` 为已有会话创建/复用工作区）和确认后的删除会话。辅助功能路由只读。
+- **出站网络**：只有上面列出的两个固定 HTTPS 地址，且只在辅助功能开启或按下按钮后发起——无重定向、无 cookie、URL 不可由调用方指定；请求有 8s（registry）/ 30s（余额）绝对上限和 128KiB 响应上限。
+- **凭据**：余额检查通过宿主凭据服务解析 `DEEPSEEK_API_KEY`，未配置时使用已登录账号；本轮只支持默认 credential ref。密钥不落盘、不写日志。
 - **读取上限**：单文件解码有字节上限，超限返回 `read-limit`，不会把宿主拖死。
 
 ## 已知限制

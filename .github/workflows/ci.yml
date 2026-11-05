@@ -1,0 +1,60 @@
+# PR / push 门禁：类型、测试、两个包的产物与加载契约。
+#
+# 成员包的 lib/ 随源码入库（Git 安装要用预构建产物），所以这里重建后要求
+# 工作区没有差异：改了源码却忘了重建产物，CI 会失败。
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck host half
+        run: npx tsc --noEmit
+
+      - name: Typecheck client half
+        run: npx tsc --noEmit -p tsconfig.client.json
+
+      - name: Test
+        run: npx vitest run
+
+      - name: Build member artifacts
+        run: pnpm --filter @cyrusdoyle/dsh-sessions-insight build
+
+      - name: Build collection artifacts
+        run: |
+          node scripts/build-css.mjs plugins/sessions-insight
+          npx tsdown
+
+      # 成员 lib/ 与生成的 theme/generated.css.ts 都随源码入库：源码改了没重建，
+      # 这里就会报差。根 lib/ 被 gitignore，只在发布时构建。
+      - name: Committed artifacts match source
+        run: git diff --exit-code -- plugins/sessions-insight/lib plugins/sessions-insight/src/client/theme/generated.css.ts
+
+      - name: Check member bundle contract
+        run: node scripts/check-bundle.mjs plugins/sessions-insight
+
+      - name: Check collection bundle contract
+        run: node scripts/check-bundle.mjs .

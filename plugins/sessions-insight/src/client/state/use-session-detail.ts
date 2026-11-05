@@ -78,11 +78,16 @@ interface Reading {
   paging?: Promise<void>
 }
 
-export function useSessionDetail(api: Api, selected: SessionRef | null) {
+export function useSessionDetail(api: Api, selected: SessionRef | null, defaultToolsExpanded = false) {
   const [detail, setDetail] = useState<DetailState>({ kind: "idle" })
   const [cost, setCost] = useState<CostValue | null>(null)
   const [selectedTurn, setSelectedTurn] = useState<number | null>(null)
-  const [toolsExpanded, setToolsExpanded] = useState(false)
+  const [toolsExpanded, setToolsExpanded] = useState(defaultToolsExpanded)
+  const toolsDefault = useRef(defaultToolsExpanded)
+  toolsDefault.current = defaultToolsExpanded
+  useEffect(() => {
+    setToolsExpanded(defaultToolsExpanded)
+  }, [defaultToolsExpanded])
   const reading = useRef<Reading | null>(null)
   const identity = useRef(selected)
   const metadata = useRef(new Map<string, SessionMetadataValue>())
@@ -108,7 +113,7 @@ export function useSessionDetail(api: Api, selected: SessionRef | null) {
   useEffect(() => {
     setCost(null)
     setSelectedTurn(null)
-    setToolsExpanded(false)
+    setToolsExpanded(toolsDefault.current)
     if (source === undefined || id === undefined) {
       reading.current = null
       setDetail({ kind: "idle" })

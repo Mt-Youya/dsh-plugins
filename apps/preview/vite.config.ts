@@ -11,6 +11,7 @@
  * `server.fs.allow` opens the whole repository to the dev server.
  */
 
+import { readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 
 import react from "@vitejs/plugin-react"
@@ -25,6 +26,10 @@ const PREVIEW_ROOT = fileURLToPath(new URL(".", import.meta.url))
 const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url))
 
 /** The Host entry, resolved against this file rather than the preview root. */
+const manifest = JSON.parse(
+  readFileSync(new URL("../../plugins/sessions-insight/package.json", import.meta.url), "utf8"),
+) as { name: string; version: string }
+
 const HOST_ENTRY = fileURLToPath(new URL("../../plugins/sessions-insight/src/index.ts", import.meta.url))
 
 /** Mount the plugin's own routes on the dev server, under the same paths. */
@@ -32,6 +37,7 @@ function hostRoutes(): Plugin {
   return {
     name: "ci-host-routes",
     configureServer(server) {
+      let utilityDeps: unknown
       server.middlewares.use((req, res, next) => {
         const url = req.url ?? ""
         if (!url.startsWith("/api/dsh-sessions-insight")) return next()
@@ -44,15 +50,36 @@ function hostRoutes(): Plugin {
               createSources: () => unknown
               SessionMetadataStore: new () => unknown
               handleHealth: (req: unknown, res: unknown) => void
+              createSettingsRoute: (read: () => unknown) => { handler: (req: unknown, res: unknown) => void }
+              readSettings: () => unknown
+              PLUGIN_VERSION: string
+              BalanceReader: new (deps: unknown) => unknown
+              VersionChecker: new (version: string) => unknown
             }
             const pathname = new URL(url, "http://127.0.0.1").pathname
+            if (pathname.endsWith("/settings")) {
+              host.createSettingsRoute(host.readSettings).handler(req, res)
+              return
+            }
             if (pathname.endsWith("/health")) {
               host.handleHealth(req, res)
               return
             }
+            utilityDeps ??= {
+              // Never resolve the operator's environment key or account in preview.
+              balance: new host.BalanceReader({
+                credentialsSupported: true,
+                credentials: () => undefined,
+                account: () => undefined,
+                version: host.PLUGIN_VERSION,
+              }),
+              versions: new host.VersionChecker(host.PLUGIN_VERSION),
+              settings: host.readSettings,
+            }
             const routes = host.createRoutes({
+              utilities: utilityDeps,
               sources: host.createSources(),
-              version: "preview",
+              version: host.PLUGIN_VERSION,
               metadata: new host.SessionMetadataStore(),
             })
             const match = routes.find((route) =>
@@ -64,9 +91,9 @@ function hostRoutes(): Plugin {
               return
             }
             match.handler(req, res)
-          } catch (error) {
+          } catch {
             res.statusCode = 500
-            res.end(String(error))
+            res.end("preview-route-failed")
           }
         })()
       })
@@ -76,6 +103,10 @@ function hostRoutes(): Plugin {
 
 export default defineConfig({
   root: PREVIEW_ROOT,
+  define: {
+    __DSH_PLUGIN_VERSION__: JSON.stringify(manifest.version),
+    __DSH_PLUGIN_NAME__: JSON.stringify(manifest.name),
+  },
   plugins: [react(), hostRoutes()],
   resolve: { alias: viteAlias() },
   server: { fs: { allow: [REPO_ROOT] }, port: 5178 },

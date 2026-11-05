@@ -13,6 +13,7 @@ import { fillParams, setRuntimeTranslate, zh } from "../../plugins/sessions-insi
 import { injectStyles } from "../../plugins/sessions-insight/src/client/styles.ts"
 import { ContextInsightPanel } from "../../plugins/sessions-insight/src/client/ui/panel.tsx"
 import { reportProbe } from "./probe.ts"
+import { createPreviewSettings } from "./settings.ts"
 import { stageShot } from "./shot.ts"
 
 // The preview asks the dictionary directly (there is no locale service here),
@@ -20,17 +21,21 @@ import { stageShot } from "./shot.ts"
 setRuntimeTranslate((key, params) => fillParams(zh[key as keyof typeof zh], params))
 injectStyles()
 
+const query = new URLSearchParams(location.search)
+const { store: settingsStore } = createPreviewSettings()
 const root = document.getElementById("root")
 if (root === null) throw new Error("preview root missing")
 createRoot(root).render(
   <StrictMode>
     <div style={{ blockSize: "100vh", inlineSize: "100vw", overflow: "hidden" }}>
-      <ContextInsightPanel />
+      <ContextInsightPanel
+        settingsStore={settingsStore}
+        initialPage={query.get("page") === "settings" ? "settings" : "sessions"}
+      />
     </div>
   </StrictMode>,
 )
 
-const query = new URLSearchParams(location.search)
 if (query.get("probe") === "1") reportProbe()
 const scene = query.get("shot")
 if (scene !== null) stageShot(scene)

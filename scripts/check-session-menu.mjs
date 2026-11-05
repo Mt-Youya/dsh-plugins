@@ -5,6 +5,7 @@ import { access, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
+
 import { CHROME, ORIGIN } from "./preview-server.mjs"
 const root = fileURLToPath(new URL("..", import.meta.url))
 const scratch = await mkdtemp(join(tmpdir(), "ci-menu-check-"))
@@ -135,7 +136,10 @@ async function checkOverview(label) {
 async function checkSkills(label) {
   await click('[role="tablist"] button:nth-child(3)')
   await until(
-    () => evaluate('[...document.querySelectorAll("[role=tabpanel] h3")].some((heading) => heading.textContent === "implement")'),
+    () =>
+      evaluate(
+        '[...document.querySelectorAll("[role=tabpanel] h3")].some((heading) => heading.textContent === "implement")',
+      ),
     `${label} implement heading`,
   ).catch(async (error) => {
     error.message += `: ${await evaluate('document.querySelector("[role=tabpanel]")?.textContent')} ${JSON.stringify(browserErrors)}`
@@ -185,7 +189,10 @@ async function checkSkillDropdown(theme) {
   await checkDropdown(true, "reopen before Escape")
   await press("Escape")
   await checkDropdown(false, "Escape closes dropdown")
-  await until(() => evaluate(`document.activeElement === document.querySelector(${JSON.stringify(trigger)})`), "Escape restores trigger focus")
+  await until(
+    () => evaluate(`document.activeElement === document.querySelector(${JSON.stringify(trigger)})`),
+    "Escape restores trigger focus",
+  )
   await click(trigger)
   await checkDropdown(true, "outside dismissal setup")
   await delay(100) // Allow the opening gesture and outside pointer listener to settle.
@@ -201,7 +208,10 @@ async function checkSkillDropdown(theme) {
   await press("a", "KeyA", 4, ["selectAll"])
   await press("Backspace", "Backspace", 0, ["deleteBackward"])
   assert.equal(await evaluate(`document.querySelector(${JSON.stringify(skillSearch)}).value`), "", "search is cleared")
-  await until(() => evaluate(`!!document.querySelector('[role=meter][aria-label="implement: 1"]')`), "clear recovers implement")
+  await until(
+    () => evaluate(`!!document.querySelector('[role=meter][aria-label="implement: 1"]')`),
+    "clear recovers implement",
+  )
 }
 try {
   let occupied = false
@@ -303,22 +313,54 @@ try {
     })()`,
   })
   await send("Page.reload", { ignoreCache: true })
-  await until(() => evaluate(`window.oldHostResponses !== undefined && !!document.querySelector('[data-key="claude:s2"]') && !!document.querySelector('[role=tablist]')`), "old Host reload")
-  assert.equal(await evaluate(`document.querySelector('[data-key="claude:s2"]').title`), "未命名会话", "s2 is untitled before click")
+  await until(
+    () =>
+      evaluate(
+        `window.oldHostResponses !== undefined && !!document.querySelector('[data-key="claude:s2"]') && !!document.querySelector('[role=tablist]')`,
+      ),
+    "old Host reload",
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('[data-key="claude:s2"]').title`),
+    "未命名会话",
+    "s2 is untitled before click",
+  )
   assert.equal(await evaluate("window.oldHostResponses"), 0, "s2 detail has not been opened automatically")
   await screenshot("light-untitled-before-detail")
   await click('[data-key="claude:s2"]')
   await until(() => evaluate("window.oldHostResponses === 1"), "one real session response stripped")
-  await until(() => evaluate(`document.querySelector('[data-key="claude:s2"]').title === 'Full log title' && document.querySelector('header h2')?.textContent === 'Full log title'`), "detail promotes visible row and header")
-  assert.equal(await evaluate(`document.querySelector('[data-key="claude:s2"] > span > span:last-child').textContent`), "Full log title", "actual row DOM label changes")
+  await until(
+    () =>
+      evaluate(
+        `document.querySelector('[data-key="claude:s2"]').title === 'Full log title' && document.querySelector('header h2')?.textContent === 'Full log title'`,
+      ),
+    "detail promotes visible row and header",
+  )
+  assert.equal(
+    await evaluate(`document.querySelector('[data-key="claude:s2"] > span > span:last-child').textContent`),
+    "Full log title",
+    "actual row DOM label changes",
+  )
   await screenshot("light-learned-title")
   const priorLists = await evaluate("window.untitledLists")
   await click("header button[aria-pressed]")
   await until(() => evaluate('!document.querySelector("aside")'), "title check sidebar unmounted")
   await click("header button[aria-pressed]")
-  await until(() => evaluate(`window.untitledLists > ${priorLists} && document.querySelector('[data-key="claude:s2"]')?.title === 'Full log title'`), "stale untitled list preserves learned row")
+  await until(
+    () =>
+      evaluate(
+        `window.untitledLists > ${priorLists} && document.querySelector('[data-key="claude:s2"]')?.title === 'Full log title'`,
+      ),
+    "stale untitled list preserves learned row",
+  )
   await delay(200)
-  assert.deepEqual(await evaluate(`[document.querySelector('[data-key="claude:s2"] > span > span:last-child').textContent, document.querySelector('header h2').textContent]`), ["Full log title", "Full log title"], "stale list cannot overwrite learned DOM title")
+  assert.deepEqual(
+    await evaluate(
+      `[document.querySelector('[data-key="claude:s2"] > span > span:last-child').textContent, document.querySelector('header h2').textContent]`,
+    ),
+    ["Full log title", "Full log title"],
+    "stale list cannot overwrite learned DOM title",
+  )
   await screenshot("light-learned-title-stale-list")
   const fallback = await checkOverview("old Host")
   assert.ok(fallback.includes("宿主未返回 insights"), "old Host renders client fallback notice")
@@ -326,7 +368,9 @@ try {
   await checkSkills("old Host")
   assert.equal(await evaluate("window.oldHostResponses"), 1, "fallback reuses the single stripped response")
   await send("Page.removeScriptToEvaluateOnNewDocument", { identifier })
-  console.log("old Host: untitled s2 learns Full log title and survives stale lists; one stripped response, overview charts and implement recovered")
+  console.log(
+    "old Host: untitled s2 learns Full log title and survives stale lists; one stripped response, overview charts and implement recovered",
+  )
   const dropdownFailures = []
   for (const theme of ["dark", "light"]) {
     browserErrors.length = 0

@@ -164,6 +164,9 @@ settings:
 
 catalogs:
   default:
+    '@deepseek-ai/schemastery':
+      specifier: 3.18.5
+      version: 3.18.5
     '@types/node':
       specifier: ^26.6.5
       version: 26.6.5
@@ -208,6 +211,9 @@ importers:
       '@cyrusdoyle/dsh-sessions-insight':
         specifier: workspace:^
         version: link:plugins/sessions-insight
+      '@deepseek-ai/schemastery':
+        specifier: 3.18.5
+        version: 3.18.5
     devDependencies:
       '@tailwindcss/cli':
         specifier: ^4.3.3
@@ -298,6 +304,9 @@ importers:
       '@base-ui/react':
         specifier: ^1.9.0
         version: 1.9.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@deepseek-ai/schemastery':
+        specifier: 3.18.5
+        version: 3.18.5
       '@hugeicons/core-free-icons':
         specifier: ^4.4.0
         version: 4.4.0
@@ -441,6 +450,12 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+
+  '@deepseek-ai/cosmokit@1.8.6':
+    resolution: {integrity: sha512-ZSD/fN52L498LBIOYwjIOlaLv5veY6ZEwI2yzvZUKQtctn0QAPqu8tKdJ+OF5+Tv6NBq1U+wJWH+QI6OGy5EvQ==}
+
+  '@deepseek-ai/schemastery@3.18.5':
+    resolution: {integrity: sha512-Mnobvqf9rHsZYv4g5edj5ddxS1oF1kIdSlz0DunUgnY3LWG5F26MqvH3YOOsSaodCgyzJ16OMN9O99/s5Crtdw==}
 
   '@esbuild/aix-ppc64@0.28.2':
     resolution: {integrity: sha512-XExcO+dvLKvVtNTibSTBej1NCAbaGhWn9Ww1ZPx80qsahhPFe/8jgWP0IchNe0F3HwkU7n8ejhH8bjonqht8mQ==}
@@ -1221,6 +1236,9 @@ packages:
     resolution: {integrity: sha512-vrvuasIpm/xf+BpZbzgirku0WnrQZMAc+H2Ai26jzqBxYEmQQE4DdJb7h8erkJMfRRipx0ma2Cty8jJwUm9ocQ==}
     cpu: [x64]
     os: [win32]
+
+  '@standard-schema/spec@1.1.0':
+    resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
   '@tailwindcss/cli@4.3.3':
     resolution: {integrity: sha512-ZvS/n1ZHOBKcVlhkt8l5NNr1EDXk1NboYO5CYDOs6NUmvT9z6bzkwsosaJftY57T/3gWNzWMJzIXLodZC8ssdw==}
@@ -2278,6 +2296,13 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
+  '@deepseek-ai/cosmokit@1.8.6': {}
+
+  '@deepseek-ai/schemastery@3.18.5':
+    dependencies:
+      '@deepseek-ai/cosmokit': 1.8.6
+      '@standard-schema/spec': 1.1.0
+
   '@esbuild/aix-ppc64@0.28.2':
     optional: true
 
@@ -2704,6 +2729,8 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.64.10':
     optional: true
+
+  '@standard-schema/spec@1.1.0': {}
 
   '@tailwindcss/cli@4.3.3':
     dependencies:

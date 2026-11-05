@@ -7,13 +7,17 @@ This repository publishes two packages and nothing else:
 | Package                      | Directory                 | What it is                                                                         |
 | ---------------------------- | ------------------------- | ---------------------------------------------------------------------------------- |
 | `@cyrusdoyle/dsh-sessions-insight` | `plugins/sessions-insight` | The Sessions Insight plugin itself (a member package)                                  |
-| `@cyrusdoyle/dsh-plugins`         | repository root           | The collection bundle: only `cordis.patch.yml` and `locale/`, depending on members |
+| `@cyrusdoyle/dsh-plugins`         | repository root           | The collection bundle: `cordis.patch.yml`, `locale/` and its own embedded `lib/` (ADR 0009) |
 
 `packages/*` are inlined into the member's `lib/` at build time and are **not published**. They are not marked `private` today, so **never run `pnpm -r publish`**: it would publish them too.
 
-## There is one order
+## One version, one order
 
-**Publish the member first, then the collection.** The collection depends on `workspace:^`, which publishing rewrites to the member's current version (for example `^0.0.3`). If the member is not on the registry yet, installing the collection fails to resolve.
+**The member and the collection always ship the same version number** (ADR 0010), and **the member goes first**. The collection's `dependencies` read `workspace:^`, which `pnpm pack` rewrites to `^<member version>`; if that version is not on the registry yet, installing the collection fails to resolve. Both packages carry the same plugin code, so publishing only one of them leaves the two install channels reporting different versions.
+
+`/health` and the version check report the version of the **effective package** — the collection reports the collection's `package.json`, a standalone member install reports the member's. Because the two are bumped together, both numbers are the same.
+
+The [`release` workflow](../.github/workflows/release.yml) runs all of this with npm Trusted Publishing (GitHub OIDC, no token, no 2FA prompt). The manual path is documented below for when the workflow is not available.
 
 ## One-time setup
 
@@ -32,11 +36,11 @@ This repository publishes two packages and nothing else:
 
 ## Every release
 
-Run everything from the **repository root**. The example bumps the member from `0.0.2` to `0.0.3` and the collection from `0.0.1` to `0.0.2`.
+Run everything from the **repository root**. The example bumps both packages from `0.0.2` to `0.0.3` — the same target version for both (see "Versioning rules" below).
 
 ### 1. Clean tree, on main
 
-`pnpm publish` refuses by default when there are uncommitted changes or you are not on `main`.
+Release from a clean tree on `main`. `pnpm publish` enforces this, but the `npm publish <tgz>` path used below does not check — this step is on you.
 
 ```bash
 git status
@@ -51,59 +55,83 @@ pnpm install
 ```
 
 ```bash
-npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && npx tsdown && node scripts/check-bundle.mjs plugins/sessions-insight
+npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && node scripts/build-css.mjs plugins/sessions-insight && npx tsdown && node scripts/check-bundle.mjs plugins/sessions-insight && node scripts/check-bundle.mjs .
 ```
 
-### 3. Bump the versions
+The CSS build must come before `tsdown`: the collection embeds the compiled stylesheet into its own `lib/`, so building in the other order ships a stale one.
 
-Bump the member when it changed; **when the member is bumped, bump the collection too** (see "Versioning rules" below).
+### 3. Bump both versions to the same number
+
+ADR 0010: the member and the collection share one release version. Bump them together, with the explicit target version rather than a relative bump, so the two manifests cannot drift apart:
 
 ```bash
-pnpm --filter @cyrusdoyle/dsh-sessions-insight version patch --no-git-tag-version
+pnpm --filter @cyrusdoyle/dsh-sessions-insight version 0.0.3 --no-git-tag-version
 ```
 
 ```bash
-pnpm version patch --no-git-tag-version
+pnpm version 0.0.3 --no-git-tag-version
 ```
 
-Use `minor` / `major` instead of `patch` for the other positions. The version the plugin's `/health` reports is injected from `package.json` at build time, so nothing else needs editing.
+The version the plugin's `/health` reports and the version the update check compares are inlined from the **effective package's** `package.json` at build time, so nothing else needs editing. Use `minor` / `major` in place of `patch` semantics by naming the target version directly.
 
 ### 4. Commit and tag
 
 ```bash
-git commit -am "release: dsh-sessions-insight 0.0.3, dsh-plugins 0.0.2"
+git commit -am "release: dsh-sessions-insight 0.0.3, dsh-plugins 0.0.3"
 ```
 
 ```bash
-git tag dsh-sessions-insight@0.0.3 && git tag dsh-plugins@0.0.2
+git tag dsh-sessions-insight@0.0.3 && git tag dsh-plugins@0.0.3
 ```
 
 ### 5. Dry run
 
-Pack without uploading and look at what the tarballs contain:
+Pack without uploading and look at what the tarballs contain. `pnpm pack` rewrites `workspace:` / `catalog:` protocols and runs the member's `prepack` (rebuild + bundle contract check):
 
 ```bash
-pnpm --filter @cyrusdoyle/dsh-sessions-insight publish --dry-run
+mkdir -p /tmp/dsh-release/member
+pnpm --filter @cyrusdoyle/dsh-sessions-insight pack --pack-destination /tmp/dsh-release/member
+tar -tzf /tmp/dsh-release/member/*.tgz | head -40
 ```
+
+The collection must be built before it is packed (`lib/` is gitignored):
 
 ```bash
-pnpm publish --dry-run
+node scripts/build-css.mjs plugins/sessions-insight
+npx tsdown
+mkdir -p /tmp/dsh-release/collection
+pnpm pack --pack-destination /tmp/dsh-release/collection
+tar -tzf /tmp/dsh-release/collection/*.tgz | head -40
 ```
 
-The member's tarball should have `lib/index.js`, `lib/client.js`, `cordis.patch.yml`, `locale/` and `icon.svg`. The collection's should only have `cordis.patch.yml`, `locale/`, `package.json`, the READMEs and LICENSE, and its `dependencies` should read `^0.0.3`, not `workspace:^`.
+The member's tarball should have `lib/index.js`, `lib/client.js`, `cordis.patch.yml`, `locale/` and `icon.svg`. The collection's should carry `cordis.patch.yml`, `locale/`, `package.json`, the READMEs and LICENSE **plus its own `lib/index.js` and `lib/client.js`** (ADR 0009: the collection embeds the plugin build), and its `dependencies` should read `^0.0.3`, not `workspace:^`.
 
 ### 6. Publish the member
 
-`prepublishOnly` runs typecheck, tests and the build again, and `prepack` checks the loading contract; any failure stops the upload. Add `--otp=<6-digit code>` if 2FA is on.
+`pnpm pack` runs the member's `prepack` (rebuild + bundle contract check); any failure stops the pack. `npm publish <tgz>` then uploads exactly those bytes. Add `--otp=<6-digit code>` if 2FA is on.
+
+If you skipped the dry run, run the `pnpm pack` command from step 5 first; publish what it produced:
 
 ```bash
-pnpm --filter @cyrusdoyle/dsh-sessions-insight publish --registry=https://registry.npmjs.org/
+npm publish /tmp/dsh-release/member/*.tgz --registry=https://registry.npmjs.org/
 ```
 
 ### 7. Publish the collection
 
+Build the collection first, then pack and publish that tarball:
+
 ```bash
-pnpm publish --registry=https://registry.npmjs.org/
+node scripts/build-css.mjs plugins/sessions-insight && npx tsdown && pnpm pack --pack-destination /tmp/dsh-release/collection
+```
+
+```bash
+npm publish /tmp/dsh-release/collection/*.tgz --registry=https://registry.npmjs.org/
+```
+
+The release workflow asserts that both manifests carry the same version before it publishes anything. Keep the same check in the manual path:
+
+```bash
+node -e "const v=['./package.json','./plugins/sessions-insight/package.json'].map((p)=>require(p).version); if (v[0]!==v[1]) { console.error('version mismatch', v); process.exit(1) } console.log('shared version', v[0])"
 ```
 
 ### 8. Verify
@@ -115,6 +143,8 @@ npm view @cyrusdoyle/dsh-sessions-insight version --registry=https://registry.np
 ```bash
 npm view @cyrusdoyle/dsh-plugins dependencies --registry=https://registry.npmjs.org/
 ```
+
+Both `version` values must be the same number, and the collection's `dependencies` must pin that number. After installing, the plugin's `/health` reports the version of the package that is actually in effect — the same number for both install methods.
 
 ### 9. Push
 
@@ -134,8 +164,9 @@ Fully quit and reopen DeepSeek Harness. The plugin manager should list "Cyrus Pl
 
 ## Versioning rules
 
-- In `0.x`, `^` is narrow: `^0.0.3` matches only `0.0.3`, and `^0.1.3` matches `>=0.1.3 <0.2.0`. So while in `0.0.x`, **every member release needs a collection release too**, or installing the collection still pulls the old member.
-- A version number can be published once; even after deletion it cannot be reused. If a release is wrong, bump the patch and publish again.
+- **One version for both packages** (ADR 0010): the member and the collection are bumped to the same number in the same release, and the member is published first. Do not publish a collection-only patch: the two install channels would report different versions through `/health` and the update check.
+- The version is inlined at build time from the **effective** package's `package.json`; `/health` and the version check compare that same package on the registry. In `0.x`, `^` is narrow (`^0.0.3` matches only `0.0.3`), which is another reason both packages move together.
+- A version number can be published once; even after deletion it cannot be reused. If a release is wrong, bump the patch and publish both packages again.
 - Within 72 hours of publishing you can `npm unpublish <pkg>@<version>`; after that, only `npm deprecate <pkg>@<version> "<reason>"`.
 
 ## Pick one install method
@@ -157,7 +188,7 @@ dsh plugin --profile desktop remove @cyrusdoyle/dsh-sessions-insight
 2. Add `"<new package name>": "workspace:^"` to `dependencies` in the root `package.json`.
 3. Add a `- id: <unique id>` / `name: "<new package name>"` row under `insert` in the root `cordis.patch.yml`, using the same id as the plugin's own patch.
 4. Update the plugin table in both root READMEs.
-5. Release with the steps above: the new plugin first, then bump and publish the collection.
+5. Release with the steps above: bump every member and the collection to the same version, publish the members first, then the collection.
 
 ## Common errors
 

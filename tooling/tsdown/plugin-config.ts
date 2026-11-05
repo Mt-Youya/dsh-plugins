@@ -88,11 +88,17 @@ export function createPluginConfig(options: PluginBuildOptions) {
       alias: options.alias,
       // Inline every workspace package: the installed tarball has no
       // node_modules in which a workspace link could resolve.
-      deps: { alwaysBundle: Object.keys(options.alias) },
+      deps: {
+        alwaysBundle: Object.keys(options.alias),
+        neverBundle: ["@deepseek-ai/schemastery"],
+      },
       // `main` and `exports["."]` name lib/index.js; an .mjs extension would
       // leave every manifest path dangling.
       outExtensions: () => ({ js: ".js" }),
-      define: { __DSH_PLUGIN_VERSION__: JSON.stringify(manifest.version) },
+      define: {
+        __DSH_PLUGIN_VERSION__: JSON.stringify(manifest.version),
+        __DSH_PLUGIN_NAME__: JSON.stringify(manifest.name),
+      },
     },
     {
       entry: { client: `${options.srcDir}client/index.tsx` },
@@ -100,7 +106,11 @@ export function createPluginConfig(options: PluginBuildOptions) {
       format: "cjs",
       platform: "browser",
       // Inlined UI dependencies must not read Node globals in the renderer.
-      define: { "process.env.NODE_ENV": JSON.stringify("production") },
+      define: {
+        "process.env.NODE_ENV": JSON.stringify("production"),
+        __DSH_PLUGIN_VERSION__: JSON.stringify(manifest.version),
+        __DSH_PLUGIN_NAME__: JSON.stringify(manifest.name),
+      },
       sourcemap: true,
       dts: false,
       alias: options.alias,

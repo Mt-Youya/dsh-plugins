@@ -15,6 +15,7 @@ import type { ReactElement } from "react"
 
 import type { CostTurnValue, CostValue, SessionDetail } from "../../protocol.ts"
 import type { SessionInsights } from "../../protocol/insights.ts"
+import { SETTINGS_DEFAULTS, enabledSessionTabs, resolveSessionTab, type Settings } from "../../protocol/settings.ts"
 import { skillsOfTurns } from "../../shared/skill-evidence.ts"
 import type { ApiFailure } from "../api.ts"
 import { failureText } from "../api.ts"
@@ -57,7 +58,9 @@ export function SessionPane({
   onOpenSession,
   onJumpTurn,
   revealTurns = false,
+  settings = SETTINGS_DEFAULTS,
 }: {
+  settings?: Settings
   session: LoadedSession
   title: string
   cost: CostValue | null
@@ -90,7 +93,12 @@ export function SessionPane({
     else onSelectTurn(index)
   }
   const currentTurn = session.turns.find((turn) => turn.index === selectedTurn)
-  const tabs = ["overview", "turns", "skills"] as const
+  const tabs = enabledSessionTabs(settings)
+  const resolvedTab = resolveSessionTab(tab, settings)
+  if (resolvedTab !== tab) {
+    tab = resolvedTab
+    setView({ sessionKey, selectedTurn, tab })
+  }
   return (
     <article className="flex h-full min-h-0 flex-col overflow-y-auto @3xl:overflow-hidden" aria-label={title}>
       <SessionHead
@@ -180,9 +188,11 @@ export function SessionPane({
           <div className="flex flex-col @3xl:grid @3xl:min-h-0 @3xl:flex-1 @3xl:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
             {/* Chart and paging footer stay put; only the turn list scrolls. */}
             <div className="flex min-w-0 flex-col border-line-soft @3xl:min-h-0 @3xl:border-e">
-              <div className="shrink-0 border-b border-line-soft">
-                <Waterfall turns={session.turns} selected={selectedTurn} onSelect={onSelectTurn} />
-              </div>
+              {settings.waterfall ? (
+                <div className="shrink-0 border-b border-line-soft">
+                  <Waterfall turns={session.turns} selected={selectedTurn} onSelect={onSelectTurn} />
+                </div>
+              ) : null}
               <div className="ci-scroll @3xl:min-h-0 @3xl:flex-1 @3xl:overflow-y-auto @3xl:overscroll-contain">
                 <TurnList turns={session.turns} selected={selectedTurn} onSelect={onSelectTurn} costs={costs} />
               </div>
