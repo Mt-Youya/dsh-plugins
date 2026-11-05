@@ -54,6 +54,15 @@ jobs:
           node scripts/check-bundle.mjs plugins/sessions-insight
           node scripts/check-bundle.mjs .
 
+      # 诊断 OIDC：npm trusted publishing 需要 npm ≥ 11.5.1，且 id-token: write
+      # 生效后 ACTIONS_ID_TOKEN_REQUEST_URL 才会存在。缺任意一项 npm 会直接
+      # 报 ENEEDAUTH，看不出到底差在哪一步。
+      - name: Debug trusted publishing
+        run: |
+          echo "npm: $(npm --version)"
+          echo "node: $(node --version)"
+          if [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then echo "OIDC env: present"; else echo "OIDC env: MISSING"; fi
+
       # 成员包先 pnpm pack 出 tarball 再发 tarball：pnpm 会改写 workspace 协议，
       # npm 直接读目录发布时不会。prepack 还会重新构建并校验加载契约。
       - name: Pack member
@@ -63,7 +72,7 @@ jobs:
           pnpm pack --pack-destination "$RUNNER_TEMP/npm-release/member"
 
       - name: Publish member
-        run: npm publish "$RUNNER_TEMP"/npm-release/member/*.tgz --registry=https://registry.npmjs.org/
+        run: npm publish "$RUNNER_TEMP"/npm-release/member/*.tgz --registry=https://registry.npmjs.org/ --loglevel=verbose
 
       # 集合包的 dependencies 写的是 workspace:^，npm 不认 workspace 协议，
       # 先用 pnpm pack 让 pnpm 把它改写成 ^<member version>，再发 tarball。
@@ -73,4 +82,4 @@ jobs:
           pnpm pack --pack-destination "$RUNNER_TEMP/npm-release/collection"
 
       - name: Publish collection
-        run: npm publish "$RUNNER_TEMP"/npm-release/collection/*.tgz --registry=https://registry.npmjs.org/
+        run: npm publish "$RUNNER_TEMP"/npm-release/collection/*.tgz --registry=https://registry.npmjs.org/ --loglevel=verbose
