@@ -23,6 +23,8 @@ import {
   buildProjects,
   DEFAULT_SESSION_LIMIT,
   filterProjects,
+  filterProjectsBySources,
+  filterSessionsBySources,
   flattenTree,
   nextIndex,
   readExpanded,
@@ -133,6 +135,8 @@ function ProjectRow({
  * @param props.api - client API.
  * @param props.workdirs - project rows from `/workdirs`.
  * @param props.selected - currently open session.
+ * @param props.sourceFilter - sources the toolbar pills currently keep; empty = all.
+ * @param props.onClearSourceFilter - drop the source filter.
  * @param props.onSelect - open one session.
  * @param props.loading - true while the first `/workdirs` answer is pending.
  * @returns the tree column, filling its parent's height.
@@ -141,6 +145,8 @@ export function ProjectTree({
   api,
   workdirs,
   selected,
+  sourceFilter,
+  onClearSourceFilter,
   onSelect,
   loading,
   onDeleted,
@@ -150,6 +156,8 @@ export function ProjectTree({
   api: Api
   workdirs: readonly WorkdirEntry[]
   selected: TreeSelection | null
+  sourceFilter: readonly ContextSource[]
+  onClearSourceFilter: () => void
   onSelect: (selection: TreeSelection) => void
   loading: boolean
   onDeleted: (session: TreeSession) => void
@@ -160,7 +168,8 @@ export function ProjectTree({
   const deletion = useSyncExternalStore(cache.subscribe, cache.deletionVersion, cache.deletionVersion)
   const allProjects = useMemo(() => buildProjects(workdirs, splitPath), [workdirs])
   const [query, setQuery] = useState("")
-  const projects = useMemo(() => filterProjects(allProjects, query), [allProjects, query])
+  const sourceProjects = useMemo(() => filterProjectsBySources(allProjects, sourceFilter), [allProjects, sourceFilter])
+  const projects = useMemo(() => filterProjects(sourceProjects, query), [sourceProjects, query])
   const [expanded, setExpanded] = useState<Set<string>>(() => {
     const saved = new Set(readExpanded(storageOf()))
     const first = selected?.workdir ?? workdirs[0]?.workdir
@@ -185,7 +194,10 @@ export function ProjectTree({
     },
     onMetadataChanged,
   )
-  const displaySessions = applySessionMetadata(sessions, management.metadata, management.groupFilter)
+  const displaySessions = filterSessionsBySources(
+    applySessionMetadata(sessions, management.metadata, management.groupFilter),
+    sourceFilter,
+  )
   const chosen = selectedSessions(management.selection, applySessionMetadata(sessions, management.metadata, ""))
   const [loadingWorkdirs, setLoadingWorkdirs] = useState<Set<string>>(() => new Set())
   const [limits, setLimits] = useState<Map<string, number>>(() => new Map())
@@ -198,8 +210,17 @@ export function ProjectTree({
   const visited = useRef(new Set<string>())
   const visible = useRef(expanded)
   visible.current = expanded
+  const appliedFilter = useRef(sourceFilter)
 
   useEffect(() => setSessions(cachedSessions()), [deletion])
+
+  // Changing the source filter hides rows; a selection that still spans hidden
+  // sessions would let a later bulk action target sessions the reader cannot see.
+  useEffect(() => {
+    if (appliedFilter.current === sourceFilter) return
+    appliedFilter.current = sourceFilter
+    management.clearSelection()
+  }, [sourceFilter, management])
 
   useEffect(() => {
     generation.current = revision
@@ -353,22 +374,31 @@ export function ProjectTree({
     )
   }
 
+  const narrowed = query.trim() !== "" || sourceFilter.length > 0
+
   return (
     <nav className="flex h-full min-h-0 flex-col" aria-label={t("workdirs.title")}>
       <div className="flex shrink-0 flex-col gap-2 px-3 pt-3 pb-2">
         <div className="flex items-center gap-2 text-[12px] font-semibold">
           <span>{t("tree.title")}</span>
           <span className="rounded-full bg-bg-2 px-1.5 text-[10.5px] leading-4.25 font-medium text-fg-dim tabular-nums">
-            {query.trim() === "" ? allProjects.length : `${String(projects.length)} / ${String(allProjects.length)}`}
+            {narrowed ? `${String(projects.length)} / ${String(allProjects.length)}` : String(allProjects.length)}
           </span>
-          <button
-            type="button"
-            className="ci-btn ci-btn--quiet ms-auto active:bg-hover"
-            disabled={management.busy}
-            onClick={management.toggleEditing}
-          >
-            {t(management.editing ? "management.done" : "management.edit")}
-          </button>
+          <div className="ms-auto flex items-center gap-1">
+            {sourceFilter.length === 0 ? null : (
+              <button type="button" className="ci-btn ci-btn--quiet active:bg-hover" onClick={onClearSourceFilter}>
+                {t("tree.clearSourceFilter")}
+              </button>
+            )}
+            <button
+              type="button"
+              className="ci-btn ci-btn--quiet active:bg-hover"
+              disabled={management.busy}
+              onClick={management.toggleEditing}
+            >
+              {t(management.editing ? "management.done" : "management.edit")}
+            </button>
+          </div>
         </div>
         <ManagementControls
           state={management}
@@ -403,7 +433,11 @@ export function ProjectTree({
       >
         {projects.length === 0 ? (
           <p className="m-0 px-2 py-3 text-[12px] leading-relaxed text-fg-dim">
-            {allProjects.length === 0 ? t("tree.emptyAll") : t("tree.noMatch", { query: query.trim() })}
+            {allProjects.length === 0
+              ? t("tree.emptyAll")
+              : sourceFilter.length > 0 && sourceProjects.length === 0
+                ? t("tree.noSourceMatch")
+                : t("tree.noMatch", { query: query.trim() })}
           </p>
         ) : null}
         {rows.map((row, index) => {

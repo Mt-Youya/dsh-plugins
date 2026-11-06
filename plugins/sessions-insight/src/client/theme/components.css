@@ -207,7 +207,8 @@
 .ci-btn,
 .ci-icon-btn,
 .ci-row,
-.ci-search {
+.ci-search,
+.ci-src-toggle {
   appearance: none;
   margin: 0;
   border: 1px solid transparent;
@@ -301,6 +302,42 @@
   color: var(--color-fg-dim);
 }
 
+/* A source pill that also filters the tree. It keeps the toolbar pill's shape
+   and size; the brand colour arrives as an inline custom property, and the
+   pressed state adds an underline so "on" is not colour-only. */
+.ci-src-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  block-size: 24px;
+  padding-inline: 6px 8px;
+  border-color: var(--color-line-soft);
+  border-radius: 999px;
+  background: var(--color-bg-1);
+  font-size: 11px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ci-src-toggle:hover {
+  background: var(--color-bg-2);
+}
+
+.ci-src-toggle[aria-pressed="true"] {
+  border-color: color-mix(in oklch, var(--ci-src-brand) 55%, transparent);
+  background: color-mix(in oklch, var(--ci-src-brand) 14%, var(--color-bg-1));
+}
+
+.ci-src-toggle[aria-pressed="true"]:hover {
+  background: color-mix(in oklch, var(--ci-src-brand) 20%, var(--color-bg-1));
+}
+
+.ci-src-toggle[aria-pressed="true"] .ci-src-toggle__label {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* One selectable row skin for the tree and the turn strip. */
 .ci-row {
   display: block;
@@ -322,7 +359,8 @@
 .ci-row:focus-visible,
 .ci-btn:focus-visible,
 .ci-icon-btn:focus-visible,
-.ci-search:focus-visible {
+.ci-search:focus-visible,
+.ci-src-toggle:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: -2px;
 }
@@ -395,6 +433,7 @@
   .ci-icon-btn,
   .ci-row,
   .ci-search,
+  .ci-src-toggle,
   .ci-chevron {
     transition: none;
   }

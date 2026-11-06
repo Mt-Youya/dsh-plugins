@@ -199,3 +199,66 @@ export function filterProjects(projects: readonly TreeProject[], query: string):
   if (needle === "") return [...projects]
   return projects.filter((project) => project.workdir.toLowerCase().includes(needle))
 }
+
+/**
+ * Toggle one source in the toolbar's filter.
+ *
+ * The filter is a plain list because an empty list is the "all sources" state;
+ * the panel passes it straight down to both the toolbar and the tree.
+ * @param current - sources already selected.
+ * @param source - the source whose pill was clicked.
+ * @returns a new list, insertion order preserved.
+ */
+export function toggleSourceFilter(current: readonly ContextSource[], source: ContextSource): ContextSource[] {
+  return current.includes(source) ? current.filter((entry) => entry !== source) : [...current, source]
+}
+
+/**
+ * Keep projects that have sessions from the selected sources, and drop the
+ * per-source counts of the sources left out.
+ *
+ * Counts come from `/workdirs`, so a project can be judged without loading its
+ * sessions; the counts that remain are what the project row shows, keeping the
+ * badge row consistent with the filtered session list below it.
+ * @param projects - all projects, in display order.
+ * @param sources - selected sources; empty means "no source filter".
+ * @returns the matching projects, order preserved.
+ */
+export function filterProjectsBySources(
+  projects: readonly TreeProject[],
+  sources: readonly ContextSource[],
+): TreeProject[] {
+  if (sources.length === 0) return [...projects]
+  const wanted = new Set(sources)
+  const kept: TreeProject[] = []
+  for (const project of projects) {
+    const counts = project.counts.filter((count) => wanted.has(count.source) && count.sessions > 0)
+    if (counts.length === 0) continue
+    kept.push({ ...project, counts })
+  }
+  return kept
+}
+
+/**
+ * Keep only sessions from the selected sources.
+ *
+ * The map shape is kept so the tree's flatten step and the session management
+ * tools read filtered rows exactly as they read unfiltered ones.
+ * @param sessions - loaded sessions per workdir.
+ * @param sources - selected sources; empty means "no source filter".
+ * @returns the same map when there is no filter, otherwise a filtered copy.
+ */
+export function filterSessionsBySources(
+  sessions: ReadonlyMap<string, readonly TreeSession[]>,
+  sources: readonly ContextSource[],
+): ReadonlyMap<string, readonly TreeSession[]> {
+  if (sources.length === 0) return sessions
+  const wanted = new Set(sources)
+  const filtered = new Map<string, readonly TreeSession[]>()
+  for (const [workdir, list] of sessions)
+    filtered.set(
+      workdir,
+      list.filter((session) => wanted.has(session.source)),
+    )
+  return filtered
+}

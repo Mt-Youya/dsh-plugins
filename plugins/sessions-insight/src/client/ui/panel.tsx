@@ -26,6 +26,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import type { ReactElement } from "react"
 
 import type {
+  ContextSource,
   CostTurnValue,
   SessionMetadataValue,
   SessionSummary,
@@ -37,6 +38,7 @@ import type { Api, ApiFailure } from "../api.ts"
 import { createApi, failureText } from "../api.ts"
 import { LOCALE_NS, t } from "../locale/index.ts"
 import { compactTokens } from "../model/format.ts"
+import { toggleSourceFilter } from "../model/tree.ts"
 import { clientListCache } from "../state/list-cache.ts"
 import { SettingsStore, useSettings } from "../state/settings.ts"
 import { applySessionMetadata, sameSession, useSessionDetail } from "../state/use-session-detail.ts"
@@ -134,6 +136,13 @@ export function ContextInsightPanel({
   const [handoffFor, setHandoffFor] = useState<SessionRef | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [reading, setReading] = useState(true)
+  // Source filter shared by the toolbar pills and the project tree; empty = all.
+  const [sourceFilter, setSourceFilter] = useState<ContextSource[]>([])
+  const toggleSource = useCallback(
+    (source: ContextSource) => setSourceFilter((current) => toggleSourceFilter(current, source)),
+    [],
+  )
+  const clearSourceFilter = useCallback(() => setSourceFilter([]), [])
 
   // ⌘K / Ctrl+K anywhere in the page.
   useEffect(() => {
@@ -329,6 +338,8 @@ export function ContextInsightPanel({
         api={api}
         workdirs={boot.workdirs}
         selected={selected}
+        sourceFilter={sourceFilter}
+        onClearSourceFilter={clearSourceFilter}
         onSelect={(next) => {
           setSelected(next)
           setPendingJump(null)
@@ -421,6 +432,8 @@ export function ContextInsightPanel({
       >
         <Toolbar
           sources={sourceEntries}
+          activeSources={sourceFilter}
+          onToggleSource={toggleSource}
           busy={reading || refreshing}
           sidebarOpen={sidebarOpen}
           onToggleSidebar={() => setSidebarOpen((open) => !open)}

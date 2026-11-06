@@ -23,8 +23,8 @@ A **Sessions Insight** panel for the DSH Web GUI. It parses session logs from **
 
 **The workdir is the only axis; the source is just a badge.** `workdir → session → turn`
 
-- **Toolbar**: each source's availability and session count (an unreadable source dims, hover for the reason), search, refresh, and a toggle for the project column.
-- **Project tree**: grouped by workdir, with a filter; sessions hang under their project with a source mark, time and file size. The list reads file headers only and parses a session when you open it, so the first open of a big file pays the decode cost.
+- **Toolbar**: each source's availability and session count (an unreadable source dims, hover for the reason). Clicking a source pill shows only that source's projects and sessions; click several to combine them, click again to clear. Search, refresh and the project-column toggle sit on the right.
+- **Project tree**: grouped by workdir, filterable by path and by the toolbar's source pills; sessions hang under their project with a source mark, time and file size. The list reads file headers only and parses a session when you open it, so the first open of a big file pays the decode cost.
 - **Session head**: title, source and path, then four stat tiles: current context (share of the window, amber above 80%), peak (and the turn it hit), turns (with compactions and tool calls), and cost.
 - **Turn column**: the "cumulative level" chart plots each turn's total context, dashed verticals mark compactions, and clicking a point opens that turn. Below it, one row per turn: the user's words, token count, composition bar, time, tool calls, scaling factor and cost, aligned column by column. Turns load 40 at a time, with "load more turns" at the bottom.
 - **Detail column**: "Turn N" and the user's words stay pinned at the top; beneath them come the context composition (every part carries an `exact` / `estimate` badge), compactions, tool calls (folded to one-line summaries, failed ones open themselves) and subagent sessions.

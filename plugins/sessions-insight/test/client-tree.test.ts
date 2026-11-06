@@ -3,10 +3,13 @@ import { describe, expect, it } from "vitest"
 import {
   buildProjects,
   DEFAULT_SESSION_LIMIT,
+  filterProjectsBySources,
+  filterSessionsBySources,
   flattenTree,
   nextIndex,
   readExpanded,
   sessionKey,
+  toggleSourceFilter,
   type TreeSession,
   writeExpanded,
 } from "../src/client/model/tree.ts"
@@ -194,5 +197,68 @@ describe("persisted expansion", () => {
         ["/a"],
       ),
     ).not.toThrow()
+  })
+})
+
+describe("source filter", () => {
+  const sessions = new Map<string, TreeSession[]>([
+    [
+      "/Users/me/postgraduate",
+      [
+        session("claude", "p-c", "/Users/me/postgraduate"),
+        session("dsh", "p-d", "/Users/me/postgraduate"),
+        session("codex", "p-x", "/Users/me/postgraduate"),
+      ],
+    ],
+    ["/Users/me/auto-chat", [session("claude", "a-c", "/Users/me/auto-chat")]],
+  ])
+
+  it("toggles a source in and out, keeping the click order", () => {
+    const both = toggleSourceFilter(toggleSourceFilter([], "dsh"), "claude")
+    expect(both).toEqual(["dsh", "claude"])
+    expect(toggleSourceFilter(both, "dsh")).toEqual(["claude"])
+    expect(toggleSourceFilter([], "codex")).toEqual(["codex"])
+    expect(toggleSourceFilter(["claude"], "claude")).toEqual([])
+  })
+
+  it("keeps only projects with sessions from the selected sources and drops the other counts", () => {
+    expect(filterProjectsBySources(PROJECTS, [])).toEqual(PROJECTS)
+    const dsh = filterProjectsBySources(PROJECTS, ["dsh"])
+    expect(dsh.map((project) => project.workdir)).toEqual(["/Users/me/postgraduate"])
+    expect(dsh[0]?.counts).toEqual([{ source: "dsh", sessions: 115 }])
+
+    const claude = filterProjectsBySources(PROJECTS, ["claude"])
+    expect(claude.map((project) => project.workdir)).toEqual(["/Users/me/postgraduate", "/Users/me/auto-chat"])
+    expect(claude[1]?.counts).toEqual([{ source: "claude", sessions: 2 }])
+
+    const both = filterProjectsBySources(PROJECTS, ["codex", "claude"])
+    expect(both.map((project) => project.workdir)).toEqual(["/Users/me/postgraduate", "/Users/me/auto-chat"])
+    expect(both[0]?.counts).toEqual([
+      { source: "claude", sessions: 8 },
+      { source: "codex", sessions: 5 },
+    ])
+  })
+
+  it("passes sessions through untouched without a filter and narrows them with one", () => {
+    expect(filterSessionsBySources(sessions, [])).toBe(sessions)
+    const claude = filterSessionsBySources(sessions, ["claude"])
+    expect([...claude.keys()]).toEqual(["/Users/me/postgraduate", "/Users/me/auto-chat"])
+    expect(claude.get("/Users/me/postgraduate")?.map((row) => row.id)).toEqual(["p-c"])
+    expect(claude.get("/Users/me/auto-chat")?.map((row) => row.id)).toEqual(["a-c"])
+  })
+
+  it("feeds the flattened tree only the rows of the chosen source", () => {
+    const rows = flatten({
+      projects: filterProjectsBySources(PROJECTS, ["dsh"]),
+      sessions: filterSessionsBySources(sessions, ["dsh"]),
+      expanded: new Set(["/Users/me/postgraduate", "/Users/me/auto-chat"]),
+      loading: new Set<string>(),
+      selected: null,
+      limits: new Map(),
+    })
+    expect(rows.filter((row) => row.kind === "project")).toHaveLength(1)
+    expect(
+      rows.filter((row) => row.kind === "session").map((row) => (row.kind === "session" ? row.session.id : "")),
+    ).toEqual(["p-d"])
   })
 })

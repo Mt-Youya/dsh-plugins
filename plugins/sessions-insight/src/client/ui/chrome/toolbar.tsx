@@ -6,12 +6,16 @@
  * in their tooltip) when a corpus is unreadable — one failing source never
  * blanks the page, so the bar is where that failure stays visible.
  *
+ * A readable pill is also the panel's source filter: clicking it narrows the
+ * project tree to that source, clicking again removes it. The count always
+ * stays the unfiltered corpus size, so the reader can see what is left out.
+ *
  * @module @cyrusdoyle/dsh-sessions-insight/client/toolbar
  */
 
 import type { ReactElement } from "react"
 
-import type { SourceStatus } from "../../../protocol.ts"
+import type { ContextSource, SourceStatus } from "../../../protocol.ts"
 import { t } from "../../locale/index.ts"
 import { BrandMark, Glyph, SOURCE_MARKS, SourceIcon } from "../shared/icons.tsx"
 import { Kbd } from "../shared/primitives.tsx"
@@ -30,33 +34,54 @@ export function reasonText(reason: string | undefined): string | undefined {
 }
 
 /**
- * Per-source availability pills.
+ * Per-source availability pills; a readable pill is also its source's filter.
  * @param props.sources - one entry per announced source.
+ * @param props.activeSources - sources currently kept by the filter.
+ * @param props.onToggleSource - flip one source in or out of the filter.
  * @returns the pill list.
  */
-function SourceStrip({ sources }: { sources: SourceStatus[] }): ReactElement {
+function SourceStrip({
+  sources,
+  activeSources,
+  onToggleSource,
+}: {
+  sources: SourceStatus[]
+  activeSources: readonly ContextSource[]
+  onToggleSource: (source: ContextSource) => void
+}): ReactElement {
   return (
     <ul className="m-0 hidden min-w-0 list-none items-center gap-1.5 p-0 @4xl:flex" aria-label={t("sources.title")}>
       {sources.map((entry) => {
         const mark = SOURCE_MARKS[entry.source]
-        const tip = entry.available
-          ? `${mark.label.zh} · ${t("sources.available")} · ${entry.root ?? ""}`
-          : `${mark.label.zh} · ${t("sources.unavailable")} · ${entry.errorDetail ?? reasonText(entry.reason) ?? ""}`
+        const active = activeSources.includes(entry.source)
+        if (!entry.available)
+          return (
+            <li
+              key={entry.source}
+              className="inline-flex h-6 items-center gap-1.5 rounded-full border border-dashed border-line ps-1.5 pe-2 text-[11px] whitespace-nowrap opacity-60"
+              title={`${mark.label.zh} · ${t("sources.unavailable")} · ${entry.errorDetail ?? reasonText(entry.reason) ?? ""}`}
+            >
+              <SourceIcon source={entry.source} size={12} />
+              <span className="font-medium text-fg">{mark.label.zh}</span>
+              <span className="text-fg-dim tabular-nums">{t("sources.unavailable")}</span>
+            </li>
+          )
+        const action = active ? t("sources.filterActive") : t("sources.filterHint")
         return (
-          <li
-            key={entry.source}
-            className={
-              entry.available
-                ? "inline-flex h-6 items-center gap-1.5 rounded-full border border-line-soft bg-bg-1 ps-1.5 pe-2 text-[11px] whitespace-nowrap"
-                : "inline-flex h-6 items-center gap-1.5 rounded-full border border-dashed border-line ps-1.5 pe-2 text-[11px] whitespace-nowrap opacity-60"
-            }
-            title={tip}
-          >
-            <SourceIcon source={entry.source} size={12} />
-            <span className="font-medium text-fg">{mark.label.zh}</span>
-            <span className="text-fg-dim tabular-nums">
-              {entry.available ? String(entry.sessions ?? "—") : t("sources.unavailable")}
-            </span>
+          <li key={entry.source}>
+            <button
+              type="button"
+              className="ci-src-toggle"
+              style={{ ["--ci-src-brand" as string]: mark.brand }}
+              aria-pressed={active}
+              aria-label={`${mark.label.zh} · ${action}`}
+              title={`${mark.label.zh} · ${action} · ${entry.root ?? ""}`}
+              onClick={() => onToggleSource(entry.source)}
+            >
+              <SourceIcon source={entry.source} size={12} />
+              <span className="ci-src-toggle__label font-medium">{mark.label.zh}</span>
+              <span className="text-fg-dim tabular-nums">{String(entry.sessions ?? "—")}</span>
+            </button>
           </li>
         )
       })}
@@ -67,6 +92,8 @@ function SourceStrip({ sources }: { sources: SourceStatus[] }): ReactElement {
 /**
  * The bar.
  * @param props.sources - source statuses; empty while booting.
+ * @param props.activeSources - sources currently kept by the filter.
+ * @param props.onToggleSource - flip one source in or out of the filter.
  * @param props.busy - true while a read is in flight; spins the refresh glyph.
  * @param props.sidebarOpen - whether the project column is shown.
  * @param props.onToggleSidebar - show/hide the project column.
@@ -76,6 +103,8 @@ function SourceStrip({ sources }: { sources: SourceStatus[] }): ReactElement {
  */
 export function Toolbar({
   sources,
+  activeSources,
+  onToggleSource,
   busy,
   sidebarOpen,
   onToggleSidebar,
@@ -84,6 +113,8 @@ export function Toolbar({
   onSettings,
 }: {
   sources: SourceStatus[]
+  activeSources: readonly ContextSource[]
+  onToggleSource: (source: ContextSource) => void
   busy: boolean
   sidebarOpen: boolean
   onToggleSidebar: () => void
@@ -107,7 +138,7 @@ export function Toolbar({
         <BrandMark size={24} />
         <h1 className="m-0 text-[13.5px] font-semibold whitespace-nowrap">{t("entry.label")}</h1>
       </div>
-      <SourceStrip sources={sources} />
+      <SourceStrip sources={sources} activeSources={activeSources} onToggleSource={onToggleSource} />
       <div className="ms-auto flex min-w-0 items-center gap-1.5">
         {onSettings === undefined ? null : (
           <button type="button" className="ci-btn active:bg-bg-3" onClick={onSettings} aria-label={t("settings.title")}>

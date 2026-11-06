@@ -36,6 +36,8 @@ export const en: Record<ContextInsightKey, string> = {
   "tree.emptyAll":
     "No readable sessions in any source yet. Check the DSH / Claude / Codex directories, or press Refresh.",
   "tree.showAll": "Show all {count}",
+  "tree.clearSourceFilter": "Clear source filter",
+  "tree.noSourceMatch": "No projects have sessions from the selected sources.",
   "sessions.untitled": "Untitled session",
   "sessions.actions": "Session actions",
   "sessions.delete": "Delete session",
@@ -123,6 +125,8 @@ export const en: Record<ContextInsightKey, string> = {
   "sources.available": "readable",
   "sources.unavailable": "unavailable",
   "sources.sessions": "{count} sessions",
+  "sources.filterHint": "Click to filter to this source (multi-select)",
+  "sources.filterActive": "Filtering by this source; click to remove",
   "sources.reason.adapter-pending": "adapter not ready",
   "sources.reason.root-missing": "root missing",
   "sources.reason.root-unreadable": "root unreadable",
