@@ -131,3 +131,13 @@ Follow [`docs/RELEASE.md`](./docs/RELEASE.md): the member and the collection sha
 ## License
 
 [MIT](./LICENSE)
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=Mt-Youya%2Fdsh-plugins">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Mt-Youya/dsh-plugins&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Mt-Youya/dsh-plugins&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Mt-Youya/dsh-plugins&type=date&legend=top-left" />
+ </picture>
+</a>
