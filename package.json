@@ -1,6 +1,6 @@
 {
   "name": "@cyrusdoyle/dsh-plugins",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DeepSeek Harness plugin collection: installs and registers the plugins listed in cordis.patch.yml (currently Sessions Insight). Also the workspace root they are built from.",
   "keywords": [
     "chatgpt",
