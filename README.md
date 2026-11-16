@@ -5,6 +5,7 @@ English | [简体中文](./README.zh.md)
 A plugin collection for DeepSeek Harness (DSH). Install this one bundle to get every plugin listed below; each plugin can also be installed on its own.
 
 ![The Sessions Insight panel](plugins/sessions-insight/docs/images/01-merged-tree.png)
+[![Listed on dsh-plugin.org](https://dsh-plugin.org/badges/listed.svg)](https://dsh-plugin.org/plugins/mt-youya/dsh-plugins)
 
 ## Plugins
 
