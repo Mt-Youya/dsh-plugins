@@ -17,7 +17,7 @@
 
 `/health` 和版本检查报的是**生效包**的版本——装组合包报组合包的 `package.json`，单装成员包报成员包的。因为两个包一起 bump，这两个数字始终相同。
 
-[`release` workflow](../.github/workflows/release.yml) 用 npm Trusted Publishing（GitHub OIDC，仓库不存 token、不需要 2FA）把这些步骤跑完；workflow 不可用时按下面的手工流程操作。
+[`release` workflow](../.github/workflows/release.yml) 用 npm Trusted Publishing（GitHub OIDC，仓库不存 token、不需要 2FA）把这些步骤跑完：发布两个包、补 `v<版本号>` tag（缺失时）、创建对应的 GitHub Release。触发方式：**Actions → release → Run workflow**，或 `gh workflow run release --ref main`。workflow 不可用时按下面的手工流程操作。
 
 ## 一次性准备
 
@@ -55,10 +55,10 @@ pnpm install
 ```
 
 ```bash
-npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && node scripts/build-css.mjs plugins/sessions-insight && npx tsdown --minify && node scripts/check-bundle.mjs plugins/sessions-insight && node scripts/check-bundle.mjs .
+pnpm lint:check && pnpm fmt:check && npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && pnpm --filter @cyrusdoyle/dsh-sessions-insight build && node scripts/build-css.mjs plugins/sessions-insight && npx tsdown --minify && git diff --exit-code -- plugins/sessions-insight/lib plugins/sessions-insight/src/client/theme/generated.css.ts && node scripts/check-bundle.mjs plugins/sessions-insight && node scripts/check-bundle.mjs .
 ```
 
-CSS 构建必须排在 `tsdown` 之前：组合包把编译好的样式内联进自己的 `lib/`，顺序反过来会发出旧样式。
+顺序与 `ci.yml` 一致：lint 和格式检查在类型检查之前，成员包先重建、集合包后重建，且重建后的 `lib/` 必须与提交内容逐字节一致。CSS 构建必须排在 `tsdown` 之前：组合包把编译好的样式内联进自己的 `lib/`，顺序反过来会发出旧样式。
 
 ### 3. 两个包升到同一个版本
 
@@ -77,12 +77,14 @@ pnpm version 0.0.3 --no-git-tag-version
 ### 4. 提交并打 tag
 
 ```bash
-git commit -am "release: dsh-sessions-insight 0.0.3, dsh-plugins 0.0.3"
+git commit -am "chore(release): 0.0.3"
 ```
 
 ```bash
-git tag dsh-sessions-insight@0.0.3 && git tag dsh-plugins@0.0.3
+git tag v0.0.3
 ```
+
+每个版本只打一个 tag，命名为 `v<版本号>`：workflow 用它创建同名的 GitHub Release。
 
 ### 5. 预演
 
@@ -152,7 +154,17 @@ npm view @cyrusdoyle/dsh-plugins dependencies --registry=https://registry.npmjs.
 git push && git push --tags
 ```
 
-### 10. 等镜像同步，再安装验证
+### 10. GitHub Release
+
+workflow 会自己补 `v<版本号>` tag 并创建 GitHub Release。手工发布时，两个包都上了 registry 之后同样补一步：
+
+```bash
+gh release create v0.0.3 --title v0.0.3 --generate-notes
+```
+
+想带上前几个 Release 那样的安装说明就用 `--notes-file`，`--generate-notes` 仍会把变更日志附在后面。
+
+### 11. 等镜像同步，再安装验证
 
 npmmirror 通常几分钟内同步。想立刻同步，打开 <https://npmmirror.com/package/@cyrusdoyle/dsh-plugins> 点「同步」，成员包同理。
 

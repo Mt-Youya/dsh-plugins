@@ -17,7 +17,7 @@ This repository publishes two packages and nothing else:
 
 `/health` and the version check report the version of the **effective package** — the collection reports the collection's `package.json`, a standalone member install reports the member's. Because the two are bumped together, both numbers are the same.
 
-The [`release` workflow](../.github/workflows/release.yml) runs all of this with npm Trusted Publishing (GitHub OIDC, no token, no 2FA prompt). The manual path is documented below for when the workflow is not available.
+The [`release` workflow](../.github/workflows/release.yml) runs all of this with npm Trusted Publishing (GitHub OIDC, no token, no 2FA prompt): it publishes both packages, creates the `v<version>` tag when it is missing, and opens the matching GitHub Release. Start it from **Actions → release → Run workflow**, or with `gh workflow run release --ref main`. The manual path is documented below for when the workflow is not available.
 
 ## One-time setup
 
@@ -55,10 +55,10 @@ pnpm install
 ```
 
 ```bash
-npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && node scripts/build-css.mjs plugins/sessions-insight && npx tsdown --minify && node scripts/check-bundle.mjs plugins/sessions-insight && node scripts/check-bundle.mjs .
+pnpm lint:check && pnpm fmt:check && npx tsc --noEmit && npx tsc --noEmit -p tsconfig.client.json && npx vitest run && pnpm --filter @cyrusdoyle/dsh-sessions-insight build && node scripts/build-css.mjs plugins/sessions-insight && npx tsdown --minify && git diff --exit-code -- plugins/sessions-insight/lib plugins/sessions-insight/src/client/theme/generated.css.ts && node scripts/check-bundle.mjs plugins/sessions-insight && node scripts/check-bundle.mjs .
 ```
 
-The CSS build must come before `tsdown`: the collection embeds the compiled stylesheet into its own `lib/`, so building in the other order ships a stale one.
+This is the same order as `ci.yml`: lint and format run before the type checks, the member is rebuilt before the collection, and the rebuilt `lib/` must match what is committed. The CSS build must come before `tsdown`: the collection embeds the compiled stylesheet into its own `lib/`, so building in the other order ships a stale one.
 
 ### 3. Bump both versions to the same number
 
@@ -77,12 +77,14 @@ The version the plugin's `/health` reports and the version the update check comp
 ### 4. Commit and tag
 
 ```bash
-git commit -am "release: dsh-sessions-insight 0.0.3, dsh-plugins 0.0.3"
+git commit -am "chore(release): 0.0.3"
 ```
 
 ```bash
-git tag dsh-sessions-insight@0.0.3 && git tag dsh-plugins@0.0.3
+git tag v0.0.3
 ```
+
+One tag per release, named `v<version>`: the workflow creates the same tag and the GitHub Release from it.
 
 ### 5. Dry run
 
@@ -152,7 +154,17 @@ Both `version` values must be the same number, and the collection's `dependencie
 git push && git push --tags
 ```
 
-### 10. Wait for the mirror, then install
+### 10. GitHub Release
+
+The workflow creates the `v<version>` tag and the GitHub Release itself. When publishing by hand, do the same once both packages are on the registry:
+
+```bash
+gh release create v0.0.3 --title v0.0.3 --generate-notes
+```
+
+Use `--notes-file` to prepend custom install instructions; `--generate-notes` appends GitHub's changelog either way.
+
+### 11. Wait for the mirror, then install
 
 npmmirror usually syncs within minutes. To sync right away, open <https://npmmirror.com/package/@cyrusdoyle/dsh-plugins> and press "Sync"; do the same for the member.
 

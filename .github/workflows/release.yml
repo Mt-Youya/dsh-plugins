@@ -1,15 +1,19 @@
-# 一键发布到 npm。
+# 一键发布到 npm 与 GitHub Releases。
 #
 # 认证走 npm Trusted Publishing（GitHub OIDC）：本 workflow 只在
 # npm 包的 Trusted Publisher 里绑定之后才会被 registry 接受，
 # 仓库里不存任何 npm token，也不需要 2FA 交互。
+#
+# GitHub Release 是发布的一部分：npm 两个包发完后，这里补齐 `v<version>`
+# tag 与对应的 Release。tag 已存在就直接用，Release 已存在就跳过，
+# 所以重跑是幂等的。
 name: release
 
 on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 concurrency:
@@ -43,14 +47,20 @@ jobs:
           fi
           echo "shared version: $collection"
 
+      # 与 ci.yml 的门禁保持同一顺序：lint 和 fmt 不过时宁可不在 registry 上留版本。
       - name: Gates
         run: |
+          pnpm lint:check
+          pnpm fmt:check
           npx tsc --noEmit
           npx tsc --noEmit -p tsconfig.client.json
           npx vitest run
           # 集合包把插件源码内联进自己的 lib/，CSS 必须先于 tsdown 生成，否则产物带着旧样式。
+          pnpm --filter @cyrusdoyle/dsh-sessions-insight build
           node scripts/build-css.mjs plugins/sessions-insight
           npx tsdown --minify
+          # 成员包的 lib/ 随源码入库；重建后必须与提交内容一致，否则发布的是没入库的字节。
+          git diff --exit-code -- plugins/sessions-insight/lib plugins/sessions-insight/src/client/theme/generated.css.ts
           node scripts/check-bundle.mjs plugins/sessions-insight
           node scripts/check-bundle.mjs .
 
@@ -100,3 +110,60 @@ jobs:
       - name: Publish collection
         if: steps.published.outputs.collection_hit == ''
         run: npm publish "$RUNNER_TEMP"/npm-release/collection/*.tgz --registry=https://registry.npmjs.org/ --loglevel=verbose
+
+      # GitHub Release 与 npm 发布同一次跑完：tag 缺失就补在本次 dispatch 的提交上，
+      # Release 缺失就用同一份说明创建。已存在则跳过，重跑不会产生重复条目。
+      # 注意：补 tag 时 tag 指向 dispatch 的 ref；发布提交不是 HEAD 时先手工
+      # `git tag v<version> <release commit> && git push origin v<version>`。
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          tag="v$version"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "GitHub Release $tag already exists; nothing to do."
+            exit 0
+          fi
+          git fetch --tags --quiet
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "tag $tag already exists at $(git rev-list -n 1 "$tag")"
+          else
+            git tag "$tag"
+            git push origin "refs/tags/$tag"
+            echo "created tag $tag at $(git rev-parse HEAD)"
+          fi
+          cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
+          ## English
+
+          Sessions Insight __VERSION__ ships as a standalone plugin and as the Cyrus Plugins collection. Both packages contain the same plugin; install one of them:
+
+          ```sh
+          dsh plugin --profile web add @cyrusdoyle/dsh-sessions-insight
+          # or
+          dsh plugin --profile web add @cyrusdoyle/dsh-plugins
+          ```
+
+          Use the profile that matches your DSH installation. Requires DSH 0.2.1-rc.5 or newer and Node.js 24.22.1 or newer. See the [plugin README](__REPO__/tree/__TAG__/plugins/sessions-insight) for features and known limitations.
+
+          ## 中文
+
+          Sessions Insight __VERSION__ 提供独立插件和 Cyrus Plugins 组合包两种安装方式。两个包包含同一个插件，安装其中一个即可：
+
+          ```sh
+          dsh plugin --profile web add @cyrusdoyle/dsh-sessions-insight
+          # 或
+          dsh plugin --profile web add @cyrusdoyle/dsh-plugins
+          ```
+
+          使用你本机 DSH 对应的 profile。需要 DSH 0.2.1-rc.5 或更高、Node.js 24.22.1 或更高。功能与已知限制见[插件 README](__REPO__/tree/__TAG__/plugins/sessions-insight)。
+          NOTES
+          sed -i \
+            -e "s|__VERSION__|$version|g" \
+            -e "s|__TAG__|$tag|g" \
+            -e "s|__REPO__|$GITHUB_SERVER_URL/$GITHUB_REPOSITORY|g" \
+            "$RUNNER_TEMP/release-notes.md"
+          gh release create "$tag" \
+            --title "$tag" \
+            --notes-file "$RUNNER_TEMP/release-notes.md" \
+            --generate-notes
