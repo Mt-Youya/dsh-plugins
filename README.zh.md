@@ -10,7 +10,7 @@
 
 | 插件                                                              | npm 包                       | 做什么                                                                                                        |
 | ----------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| [会话洞察（Sessions Insight）](./plugins/sessions-insight/README.zh.md) | `@cyrusdoyle/dsh-sessions-insight` | 把 Claude Code / DSH / Codex 三源会话每一轮实际喂给模型的上下文拆开看：构成、工具调用、压缩点、费用，支持确认后删除会话 |
+| [会话洞察（Sessions Insight）](./plugins/sessions-insight/README.zh.md) | `@cyrusdoyle/dsh-sessions-insight` | 把 Claude Code / DSH / Codex 以及 Cursor / Pi / Antigravity / VS Code 系 / Cline·Roo 会话每一轮实际喂给模型的上下文拆开看：构成、工具调用、压缩点、费用，支持确认后删除会话 |
 
 ## 安装
 
@@ -67,7 +67,7 @@ node scripts/build-css.mjs plugins/sessions-insight && npx tsdown --minify
 | `/`（仓库根）                | 组合包：`cordis.patch.yml`、`locale/`、自己的 `lib/` | **是**，`@cyrusdoyle/dsh-plugins`         |
 | `plugins/sessions-insight`    | 会话洞察插件：宿主半边 + 浏览器半边          | **是**，`@cyrusdoyle/dsh-sessions-insight` |
 | `packages/session-contract`  | 统一 IR、线上类型与解码守卫                    | 否                                   |
-| `packages/session-readers`   | Claude Code / Codex / DSH 三源适配             | 否                                   |
+| `packages/session-readers`   | Claude Code / Codex / DSH 适配 + 五个 harness 家族读取器 | 否                          |
 | `packages/plugin-kit`        | 插件无关的 JSON 信封与 URL 约定                | 否                                   |
 | `packages/plugin-kit-host`   | 宿主半边管线：路由表、同源门、信封、LRU        | 否                                   |
 | `packages/plugin-kit-client` | 浏览器半边管线：解码 fetch、样式注入、槽位注册 | 否                                   |
@@ -122,7 +122,7 @@ pnpm screenshots
 
 - [`docs/RELEASE.zh.md`](./docs/RELEASE.zh.md) — npm 发布步骤
 - [`docs/PLAN.md`](docs/PLAN.md) — 决策与里程碑
-- [`docs/IR.md`](docs/IR.md) — 三源统一的轮次 IR（adapter 契约）
+- [`docs/IR.md`](docs/IR.md) — 所有来源统一的轮次 IR（adapter 契约）
 - [`docs/API.md`](docs/API.md) — 宿主路由契约
 - [`docs/HANDOFF.md`](docs/HANDOFF.md) — 交接链路契约
 - [`docs/adr/`](docs/adr/)— 架构决策记录

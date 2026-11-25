@@ -1,5 +1,6 @@
 import { type ReactElement, useEffect, useId, useRef, useState } from "react"
 
+import { isDeletableSource } from "../../../protocol.ts"
 import { t } from "../../locale/index.ts"
 import { sessionKey, type TreeSession } from "../../model/tree.ts"
 import type { SessionManagementState } from "../../state/use-session-management.ts"
@@ -78,6 +79,9 @@ export function SessionManagement({
   state: SessionManagementState
   selected: readonly TreeSession[]
 }): ReactElement {
+  // Read-only families (Cursor, VS Code, Antigravity, Cline) have no delete
+  // route; offering one would always fail after the confirmation.
+  const allDeletable = selected.every((session) => isDeletableSource(session.source))
   return (
     <>
       {state.editing ? (
@@ -116,7 +120,8 @@ export function SessionManagement({
             <button
               type="button"
               className="ci-btn text-err active:bg-hover"
-              disabled={state.busy || selected.length === 0}
+              disabled={state.busy || selected.length === 0 || !allDeletable}
+              title={allDeletable ? undefined : t("management.deleteReadOnly")}
               onClick={() => void state.deleteSessions(selected)}
             >
               {t(state.busy ? "management.saving" : "management.delete")}

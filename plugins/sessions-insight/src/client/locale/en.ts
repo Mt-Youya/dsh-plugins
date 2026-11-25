@@ -34,7 +34,7 @@ export const en: Record<ContextInsightKey, string> = {
   "tree.title": "Projects",
   "tree.loadingIndex": "Reading the three session indexes\u2026",
   "tree.emptyAll":
-    "No readable sessions in any source yet. Check the DSH / Claude / Codex directories, or press Refresh.",
+    "No readable sessions in any source yet. Check the directories of the sources you use, or press Refresh.",
   "tree.showAll": "Show all {count}",
   "tree.clearSourceFilter": "Clear source filter",
   "tree.noSourceMatch": "No projects have sessions from the selected sources.",

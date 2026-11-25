@@ -1,9 +1,17 @@
 # IR 契约
 
-`packages/session-contract/src/ir.ts` 的唯一真相（线上类型与守卫在 `packages/session-contract/src/types.ts` 与 `packages/session-contract/src/guards/`）。三个 adapter 都产出它，所有视图只读它。字段一旦定稿，改动要过 ADR。
+`packages/session-contract/src/ir.ts` 的唯一真相（线上类型与守卫在 `packages/session-contract/src/types.ts` 与 `packages/session-contract/src/guards/`）。每个 adapter 都产出它，所有视图只读它。字段一旦定稿，改动要过 ADR。
 
 ```ts
-type Source = "claude" | "dsh" | "codex"
+type Source =
+  | "claude"
+  | "dsh"
+  | "codex"
+  | "cursor"
+  | "pi"
+  | "antigravity"
+  | "vscode" // 家族徽标：沿用 chatSessions 的 VS Code 及其派生
+  | "cline" // 家族徽标：Cline 与 Roo Code
 type Precision = "exact" | "estimate"
 type Basis = "usage" | "harness-projection" | "chars-per-token" | "byte-length"
 
@@ -101,9 +109,20 @@ interface Session {
 
 `Session.dataQuality` 与 `Turn` 级标记都是**字符串**，不带常量表；按前缀分组渲染即可。已经出现的词根：
 
-`uuid-`（去重）/ `sidechain-`（侧链）/ `prompt-snapshot-`（快照缺失·陈旧·沿用）/ `attribution-`（对账·残差·过计·估算轮次）/ `turn-`（无 usage·无 turn 事件）/ `compaction-`（值不自洽·摘要接续）/ `projection-`（陈旧·无行）/ `usage-`（总计不符）/ `bad-frames:` / `invalid-lines:` / `context-above-model-window` / `reasoning-encrypted` / `history-segment-chain`。
+`uuid-`（去重）/ `sidechain-`（侧链）/ `prompt-snapshot-`（快照缺失·陈旧·沿用）/ `attribution-`（对账·残差·过计·估算轮次·prompt 不可得）/ `turn-`（无 usage·无 turn 事件）/ `compaction-`（值不自洽·摘要接续·值靠估算）/ `projection-`（陈旧·无行）/ `usage-`（总计不符·与轮次对不齐）/ `bad-frames:` / `invalid-lines:` / `context-above-model-window` / `reasoning-encrypted` / `history-segment-chain` / `bubbles-missing` / `composer-order-derived` / `log-truncated` / `history-missing` / `model-unknown` / `branch-entries-skipped` / `steps-unclassified` / `log-without-turns` / `tool-call-unfinished` / `tool-result-without-call` / `usage-alignment-partial` / `forked-session`。
+
+harness 家族（cursor / pi / antigravity / vscode / cline）额外恒定记 `attribution-prompt-unknown`：这些工具不落盘完整 prompt，系统提示与工具定义无法归因。
 
 渲染规则：**前缀是分类，冒号后是参数**；面板不得把未知字符串当成错误吞掉，原样展示。
+
+## harness 家族的口气
+
+后接入的五个来源共用 `packages/session-readers/src/harness/turns.ts` 一个折叠器，因为它们共享同一个约束：**日志里只有对话，没有 prompt**。所以：
+
+- `parts` 只含 `history`、`user-input`、`assistant-output`、`thinking`、`tool-results`；`system-prompt`、`tool-definitions`、`memory-instructions` 一律不填，记 `attribution-prompt-unknown`；
+- 有 usage 时 `total` 取日志的上下文大小，差额进 `residual`（正负都如实保留，负值另记 `attribution-over-counted`）；
+- 无 usage 时按第 6 条回落为 `Σparts` 估算并记 `turn-without-usage`，`windowSize` 留空；
+- 永远不做等比缩放：缺的是整类（prompt 前缀），不是测量误差。
 
 ## 对账（reconcile）的边界
 

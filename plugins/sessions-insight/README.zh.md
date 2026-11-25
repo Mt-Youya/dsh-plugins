@@ -2,9 +2,9 @@
 
 # 会话洞察 · dsh-sessions-insight（Sessions Insight）
 
-DSH Web GUI 的「会话洞察」面板：解析 **Claude Code / DSH / Codex** 三个来源的会话日志，把**模型每一轮实际收到的上下文**拆开给人看——系统提示、工具定义、记忆与指令、历史、工具结果、图片各占多少，以及每个数字是精确的 usage 还是按字符折算的估算。
+DSH Web GUI 的「会话洞察」面板：解析 **Claude Code / DSH / Codex** 以及 **Cursor / Pi / Antigravity / VS Code 系 / Cline·Roo** 的会话日志，把**模型每一轮实际收到的上下文**拆开给人看——系统提示、工具定义、记忆与指令、历史、工具结果、图片各占多少，以及每个数字是精确的 usage 还是按字符折算的估算。
 
-![三源合并视图：左侧工作目录、中间会话与轮次、右侧单轮构成](docs/images/01-merged-tree.png)
+![多源合并视图：左侧工作目录、中间会话与轮次、右侧单轮构成](docs/images/01-merged-tree.png)
 
 > 洞察读取不改写源日志；会话行支持右键「删除会话」，确认后永久删除该会话原始日志。
 
@@ -15,7 +15,7 @@ DSH Web GUI 的「会话洞察」面板：解析 **Claude Code / DSH / Codex** �
 - 这一轮 392K 的上下文里，工具 schema 占了 95% 还是 5%？历史又被压缩换掉了多少？
 - 同一个会话在第 7 轮之后为什么突变——压缩点在哪，前后窗口各是多少？
 - 这个 29,018 是日志里的 usage，还是 chars/token 折算？每个数值都带 `精确` / `估算` 徽标与口径。
-- 三个来源里，某个工作目录一共有多少会话、多少轮、最近一次是什么时候？
+- 所有来源里，某个工作目录一共有多少会话、多少轮、最近一次是什么时候？
 
 ![单轮构成与工具明细](docs/images/02-dsh-session.png)
 
@@ -23,7 +23,7 @@ DSH Web GUI 的「会话洞察」面板：解析 **Claude Code / DSH / Codex** �
 
 **工作目录是唯一主轴，来源只是徽标。** `工作目录 → 会话 → 轮次`
 
-- **顶栏**：三个来源各自的可读状态和会话数（读不到会变暗，悬停看原因）；点某个来源胶囊就只看该来源的项目与会话，可多选，再点取消。右侧是搜索、刷新、收起左栏。
+- **顶栏**：每个来源各自的可读状态和会话数（读不到会变暗，悬停看原因）；点某个来源胶囊就只看该来源的项目与会话，可多选，再点取消。右侧是搜索、刷新、收起左栏。
 - **左栏项目树**：按工作目录分组，可以按路径筛选，也可以由顶栏的来源胶囊按来源筛选；会话挂在项目下，带来源标记、时间和文件大小。列表只读文件头，点开会话才解析正文，所以大文件首开要等解压与解码。
 - **会话头部**：标题、来源、路径，以及四个指标卡：当前上下文（占窗口的比例，超过 80% 变黄）、峰值（出现在第几轮）、轮次（压缩点与工具调用数）、费用。
 - **轮次列**：顶部「累计水位」折线是每轮总上下文的走势，虚线竖条是压缩点，点任一点跳到那一轮。下面每行一轮：用户输入、token 数、构成条、时间、工具调用数、缩放系数和费用，各列上下对齐。每页 40 轮，底部「加载更多轮次」。
@@ -59,15 +59,29 @@ DSH Web GUI 的「会话洞察」面板：解析 **Claude Code / DSH / Codex** �
 
 设置表单需要 **DSH 0.2.1-rc.5+**（`configForms` 与 `plugins.bundle.config` 槽位）；旧宿主上会显示原因和「重试」按钮，而不是永久只读页。
 
-## 三源与读取位置
+## 来源与读取位置
 
-| 来源        | 默认根目录           | 覆盖用的环境变量                  |
-| ----------- | -------------------- | --------------------------------- |
-| Claude Code | `~/.claude/projects` | `DSH_CONTEXT_INSIGHT_CLAUDE_ROOT` |
-| DSH         | `~/.dsh/sessions`    | `DSH_CONTEXT_INSIGHT_DSH_ROOT`    |
-| Codex       | `~/.codex/sessions`  | `DSH_CONTEXT_INSIGHT_CODEX_ROOT`  |
+| 来源         | 格式                             | 默认根目录                                                       | 覆盖用的环境变量                                          |
+| ------------ | -------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------- |
+| Claude Code  | JSONL transcript                 | `~/.claude/projects`                                             | `DSH_CONTEXT_INSIGHT_CLAUDE_ROOT`                         |
+| DSH          | 多帧 zstd 日志                   | `~/.dsh/sessions`                                                | `DSH_CONTEXT_INSIGHT_DSH_ROOT`                            |
+| Codex        | rollout JSONL 链                 | `~/.codex/sessions`                                              | `DSH_CONTEXT_INSIGHT_CODEX_ROOT`                          |
+| Cursor       | `cursorDiskKV` SQLite            | `~/Library/Application Support/Cursor/User`                      | `DSH_CONTEXT_INSIGHT_CURSOR_USER`                         |
+| Pi           | JSONL 会话树                     | `~/.pi/agent/sessions`                                           | `DSH_CONTEXT_INSIGHT_PI_SESSIONS`                         |
+| Antigravity  | `brain/<id>` transcript          | `~/.gemini/antigravity{,-ide,-cli}`                              | `DSH_CONTEXT_INSIGHT_ANTIGRAVITY`                         |
+| VS Code 系   | `chatSessions` JSONL 变更日志    | `<appData>/Code/User`、`Code - Insiders`、`VSCodium` 等          | `DSH_CONTEXT_INSIGHT_VSCODE_USER`                         |
+| Cline / Roo  | `tasks/<id>` 目录                | `<appData>/<app>/User/globalStorage/<ext-id>/tasks`              | `DSH_CONTEXT_INSIGHT_CLINE_TASKS` / `…_ROO_TASKS`         |
 
-某个来源缺失或不可读不影响其余来源：顶部只把该源标为「不可用」，并给出原因（根目录不存在 / 不可读 / 适配器异常）。
+某个来源缺失或不可读不影响其余来源：顶部只把该源标为「不可用」，并给出原因（根目录不存在 / 不可读 / 适配器异常）。`VS Code 系` 是一个家族徽标：Copilot Chat、Kiro、Trae、Qoder 里凡是沿用 `chatSessions` 布局的安装都会被它读到，读不到的安装只会显示为「不可用」。
+
+后五个来源都是**只读**的，且日志里没有完整 prompt：系统提示与工具定义不可得，所以每轮的分区只覆盖对话本身，差额如实留在「未知」；没有 usage 的轮次按 IR 规则回落为估算并记 `turn-without-usage`。具体到各家：
+
+- **Cursor** 的 `tokenCount` 在真实数据里几乎全是 0（实测 275 个气泡只有 3 个非 0），所以多数轮次没有精确总量；
+- **Antigravity** 优先读 `brain/<id>/.system_generated/logs/transcript_full.jsonl`；没有 transcript 的旧版本回退到 `conversations/<id>.db` 里的 protobuf 步骤，字段号是逆向所得，未知字段按 wire type 跳过；
+- **VS Code 系** 的 `promptTokens` / `completionTokens` 可能缺省，缺省即按无 usage 处理，不会把 0 当成真实值；
+- **Cline / Roo** 的用量只存在于 `ui_messages.json` 的 `api_req_started`，`tokensIn` 已含缓存读写，解析时先减去 `cacheReads`/`cacheWrites` 再作为 `input`。
+
+Kiro / Trae / Qoder 的原生格式不是 `chatSessions`（分别是 `.chat` / `workspace-sessions` JSON、`solo-lite:*` 云端键、`aicoding-*` 键），因此不在这张表里；要接它们需要新增一个家族读取器，见 [ADR 0011](../../docs/adr/0011-storage-family-sources.md)。
 
 ## 安装
 
@@ -133,7 +147,7 @@ curl -sS http://127.0.0.1:<port>/api/dsh-sessions-insight/health
 
 ## 权限与安全边界
 
-- **确认删除**：三个来源的会话行均可右键删除，确认后删除原始日志并刷新列表。Codex 共用日志时拒绝删除；附属文件和宿主全局索引保留。
+- **确认删除**：只有 Claude / DSH / Codex 的会话行可右键删除，确认后删除原始日志并刷新列表。Codex 共用日志时拒绝删除；附属文件和宿主全局索引保留。后接入的 Cursor / Pi / Antigravity / VS Code 系 / Cline 只读，删除请求返回 `session-deletion-unavailable`——它们的数据库属于正在运行的应用，插件不写入。
 - **插件自身不落盘**：不建索引、不写缓存文件；设置存在宿主的配置表单里；辅助功能的查询结果只在内存里（30s / 1h TTL）。进程内 LRU 以 `source + id + mtime + size` 失效。
 - **路径白名单**：所有路径参数先解析、再做 `realpath` 校验，必须仍落在三个白名单根目录之内——挡掉 `..` 与符号链接逃逸。
 - **同源校验**：每条路由都是 `kind:'exact'`，先过 Origin/Host 门：`Sec-Fetch-Site: cross-site` 直接 403，`Origin` 与 `Host` 不一致 403；不带 `Origin` 的同源 GET 放行。`/settings` 只读；`/balance` 额外只接受 loopback 来源，且 `HEAD` 返回 405。
@@ -164,7 +178,7 @@ curl -sS http://127.0.0.1:<port>/api/dsh-sessions-insight/health
 
 ```
 src/
-├── index.ts          宿主入口：装配三源、注册路由（唯一碰 cordis 的文件）
+├── index.ts          宿主入口：装配全部来源、注册路由（唯一碰 cordis 的文件）
 ├── config.ts         六个开关的 schemastery 配置与 live ref 读取
 ├── protocol.ts       本包的线上契约出口：转出 protocol/ 与契约包的 IR / 类型 / 守卫
 ├── protocol/         按功能拆分的路由路径与线上载荷（paths、management、insights、ai-title、settings、utilities）
@@ -173,7 +187,7 @@ src/
 ├── host/             宿主半边
 │   ├── http/         同源门、信封、路由表与每条路由一个处理器（routes.ts + *-route.ts）、列表缓存、限速
 │   ├── management/   用户标题与分组（元数据存储）、AI 拟标题、元数据投影
-│   ├── sources/      三源装配、工作目录归并、快照索引、路径白名单
+│   ├── sources/      来源装配、工作目录归并、快照索引、路径白名单、harness 家族
 │   ├── utilities/    余额与版本检查：凭据引用、HTTPS 客户端、semver
 │   ├── views/        search / cost / pricing / brief / insights
 │   └── handoff/      交接状态机（accepted ≠ 成功）
@@ -194,7 +208,7 @@ src/
 packages/
 ├── plugin-kit/         零依赖底座：JSON 信封、URL 拼法
 ├── session-contract/   统一 IR、线上类型、guards            → plugin-kit
-├── session-readers/    Claude / Codex / DSH 三源适配与计量   → session-contract
+├── session-readers/    Claude / Codex / DSH 适配 + harness 家族读取器与计量 → session-contract
 ├── plugin-kit-host/    路由表、同源门、信封、LRU             → plugin-kit
 └── plugin-kit-client/  解码 fetch、样式注入、槽位注册         → plugin-kit
 ```
@@ -239,7 +253,7 @@ dsh try --host 127.0.0.1 --port 49744 --no-open     # 独立端口 boot
 
 - `docs/RELEASE.md` — npm 发布步骤
 - `docs/PLAN.md` — 决策与里程碑
-- `docs/IR.md` — 三源统一的轮次 IR（adapter 契约）
+- `docs/IR.md` — 所有来源统一的轮次 IR（adapter 契约）
 - `docs/API.md` — 宿主路由契约
 - `docs/HANDOFF.md` — 交接链路契约
 - `docs/adr` — 架构决策记录

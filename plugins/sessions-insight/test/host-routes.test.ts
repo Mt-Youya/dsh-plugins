@@ -9,7 +9,14 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { createRoutes } from "../src/host/http/routes.ts"
 import type { WebRoute } from "../src/host/http/server.ts"
 import { ClaudeSource } from "../src/host/sources/claude.ts"
-import { isSessionDetail, SESSION_PATH, SESSIONS_PATH, SOURCES_PATH, WORKDIRS_PATH } from "../src/protocol.ts"
+import {
+  CONTEXT_SOURCES,
+  isSessionDetail,
+  SESSION_PATH,
+  SESSIONS_PATH,
+  SOURCES_PATH,
+  WORKDIRS_PATH,
+} from "../src/protocol.ts"
 
 const WORKDIR = "/tmp/example-project"
 
@@ -133,12 +140,13 @@ describe("routes over a real corpus", () => {
     const sources = (
       body.value as { sources: { source: string; available: boolean; reason?: string; sessions?: number }[] }
     ).sources
-    expect(sources.map((entry) => entry.source)).toEqual(["claude", "dsh", "codex"])
+    expect(sources.map((entry) => entry.source)).toEqual([...CONTEXT_SOURCES])
     expect(sources[0]).toMatchObject({ source: "claude", available: true, sessions: 1 })
-    // Only Claude is configured in this fixture; the other two report a missing
-    // corpus rather than pretending an adapter is pending.
-    expect(sources[1]).toMatchObject({ source: "dsh", available: false, reason: "root-missing" })
-    expect(sources[2]).toMatchObject({ source: "codex", available: false, reason: "root-missing" })
+    // Only Claude is configured in this fixture; every other announced source
+    // reports a missing corpus rather than pretending an adapter is pending.
+    for (const entry of sources.slice(1)) {
+      expect(entry).toMatchObject({ available: false, reason: "root-missing" })
+    }
   })
 
   it("aggregates workdirs from the transcript cwd", async () => {

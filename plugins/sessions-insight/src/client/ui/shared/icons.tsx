@@ -28,10 +28,35 @@ export const SOURCE_MARKS: Record<ContextSource, SourceMark> = {
   claude: { brand: "#D97757", text: "color-mix(in srgb, #D97757 62%, white)", label: { zh: "Claude", en: "Claude" } },
   codex: { brand: "#10A37F", text: "color-mix(in srgb, #10A37F 62%, white)", label: { zh: "Codex", en: "Codex" } },
   dsh: { brand: "#4D6BFE", text: "color-mix(in srgb, #4D6BFE 62%, white)", label: { zh: "DSH", en: "DSH" } },
+  cursor: { brand: "#8B8B8B", text: "color-mix(in srgb, #8B8B8B 62%, white)", label: { zh: "Cursor", en: "Cursor" } },
+  pi: { brand: "#22C55E", text: "color-mix(in srgb, #22C55E 62%, white)", label: { zh: "Pi", en: "Pi" } },
+  antigravity: {
+    brand: "#4285F4",
+    text: "color-mix(in srgb, #4285F4 62%, white)",
+    label: { zh: "Antigravity", en: "Antigravity" },
+  },
+  // A family badge, not one app: Copilot Chat, Kiro, Trae and Qoder all store
+  // their conversations in the same `chatSessions` JSON.
+  vscode: {
+    brand: "#007ACC",
+    text: "color-mix(in srgb, #007ACC 62%, white)",
+    label: { zh: "VS Code 系", en: "VS Code" },
+  },
+  // One reader serves both extensions because Roo Code keeps Cline's task
+  // layout; the label says so instead of picking one of the two names.
+  cline: {
+    brand: "#F59E0B",
+    text: "color-mix(in srgb, #F59E0B 62%, white)",
+    label: { zh: "Cline / Roo", en: "Cline / Roo" },
+  },
 }
 
 /**
- * The glyph for one source: sun, hexagon, waveform.
+ * The glyph for one source: sun, hexagon, waveform, caret, pi, orbit, angle
+ * brackets, robot.
+ *
+ * Each family gets its own silhouette so the mark survives greyscale and colour
+ * blindness; the brand colour is a second channel, never the only one.
  * @param props.source - which corpus.
  * @param props.size - pixel size.
  * @param props.tone - 'brand' paints the brand colour, 'inherit' follows text.
@@ -68,6 +93,52 @@ export function SourceIcon({
           strokeLinejoin="round"
         />
         <path d="M5.4 6.2L8 8.6l2.6-2.4M8 8.6v3.2" fill="none" stroke={color} strokeWidth="1.2" strokeLinecap="round" />
+      </svg>
+    )
+  }
+  if (source === "cursor") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M3.6 2.4l8.8 5-3.6 1.2-1.2 3.6z" fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+  if (source === "pi") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <g stroke={color} strokeWidth="1.5" strokeLinecap="round">
+          <path d="M3.4 5.6h9.2M5.6 5.6v6.6M10.4 5.6v6.6" />
+        </g>
+      </svg>
+    )
+  }
+  if (source === "antigravity") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M8 2.6l5 9.2H3z" fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
+        <circle cx="8" cy="8.6" r="1.4" fill={color} />
+      </svg>
+    )
+  }
+  if (source === "vscode") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <g fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 3.6L10 8l-5 4.4" />
+          <path d="M11.4 5.2v5.6" />
+        </g>
+      </svg>
+    )
+  }
+  if (source === "cline") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <g fill="none" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3.2" y="5.2" width="9.6" height="7.2" rx="1.6" />
+          <path d="M8 5.2V2.8" />
+          <circle cx="8" cy="2.4" r="0.8" />
+          <path d="M6 8.6v1.2M10 8.6v1.2" />
+        </g>
       </svg>
     )
   }

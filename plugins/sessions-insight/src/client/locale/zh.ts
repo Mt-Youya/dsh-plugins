@@ -32,7 +32,7 @@ export const zh = {
   "list.refreshing": "刷新中…",
   "tree.title": "项目",
   "tree.loadingIndex": "正在读取三源会话索引…",
-  "tree.emptyAll": "三个来源都还没有可读的会话。检查 DSH / Claude / Codex 目录是否存在，或点右上角「刷新」。",
+  "tree.emptyAll": "还没有任何来源的可读会话。检查你在用的那些来源目录是否存在，或点右上角「刷新」。",
   "tree.showAll": "显示全部 {count} 条",
   "tree.clearSourceFilter": "清除来源筛选",
   "tree.noSourceMatch": "所选来源下没有可显示的项目。",

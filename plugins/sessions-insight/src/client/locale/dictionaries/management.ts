@@ -17,6 +17,8 @@ export const MANAGEMENT_ZH = {
   "management.aiUnavailable": "AI 命名接口尚未连接",
   "management.move": "移至分组",
   "management.delete": "删除",
+  "management.deleteReadOnly":
+    "所选会话里有只读来源（Cursor / Pi / Antigravity / VS Code 系 / Cline·Roo），插件不会删除它们的日志。",
   "management.deleteConfirm": "确定删除 {count} 条会话？这会永久删除原始日志，无法撤销。",
   "management.cancel": "取消",
   "management.save": "保存",
@@ -55,6 +57,8 @@ export const MANAGEMENT_EN: Record<keyof typeof MANAGEMENT_ZH, string> = {
   "management.aiUnavailable": "AI naming API is not connected yet",
   "management.move": "Move to group",
   "management.delete": "Delete",
+  "management.deleteReadOnly":
+    "The selection includes a read-only source (Cursor / Pi / Antigravity / VS Code / Cline·Roo); their logs are never deleted.",
   "management.deleteConfirm":
     "Delete {count} sessions? Original logs will be permanently deleted. This cannot be undone.",
   "management.cancel": "Cancel",

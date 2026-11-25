@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest"
 import type { ParsedSession, SearchCandidate, SessionSource, SourceFailure } from "../src/host/sources/source.ts"
 import { searchSessions } from "../src/host/views/search.ts"
 import type { ContextSource, SegmentInfo, SessionSummary, SourceStatus, WorkdirEntry } from "../src/protocol.ts"
-import { isSearchValue, parseSearchQuery } from "../src/protocol.ts"
+import { CONTEXT_SOURCES, isSearchValue, parseSearchQuery } from "../src/protocol.ts"
 
 const WORKDIR = "/Users/example/project"
 
@@ -87,7 +87,7 @@ describe("search request decoding", () => {
   it("defaults to every source and clamps the limit", () => {
     expect(parseSearchQuery(new URLSearchParams("q=shard"))).toEqual({
       q: "shard",
-      sources: ["claude", "dsh", "codex"],
+      sources: [...CONTEXT_SOURCES],
       limit: 30,
       tier: "fast",
       cursor: 0,

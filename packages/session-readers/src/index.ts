@@ -69,3 +69,22 @@ export { parseLogLine } from "./dsh/records.ts"
 export { LIST_META_BYTE_LIMIT, LIST_META_FRAME_LIMIT, readDshListMeta } from "./dsh/listmeta.ts"
 export type { DshListMeta } from "./dsh/listmeta.ts"
 export { isProjectionFresh, parseProjection } from "./dsh/projection.ts"
+
+export { HarnessSessionBuilder } from "./harness/turns.ts"
+export type { HarnessEntry, HarnessFacts, HarnessModel } from "./harness/turns.ts"
+
+export { readPiSession } from "./harness/pi/session.ts"
+export { condensesOf, readClineTask, usagesOfUi, workdirOfHistory } from "./harness/cline/session.ts"
+export { decodeChatFile, readVscodeChat } from "./harness/vscode/session.ts"
+export { readCursorComposer } from "./harness/cursor/session.ts"
+export type { CursorBubble, CursorComposerInput } from "./harness/cursor/session.ts"
+export {
+  modelOfExecutor,
+  readAntigravityConversation,
+  readAntigravityTranscript,
+  userRequestOf,
+  STEP_CHECKPOINT,
+  STEP_PLANNER_RESPONSE,
+  STEP_USER_INPUT,
+} from "./harness/antigravity/session.ts"
+export type { AntigravityConversation, AntigravityStep } from "./harness/antigravity/session.ts"

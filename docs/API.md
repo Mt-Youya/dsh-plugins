@@ -20,7 +20,7 @@ type Envelope<T> = { ok: true; value: T } | { ok: false; error: string; detail?:
 | GET/HEAD | `/api/dsh-sessions-insight/settings`           | 读取生效中的 6 个设置开关                | 只读；设置写入由宿主 `configForms` 负责；每次请求重读，不是挂载快照               |
 | GET      | `/api/dsh-sessions-insight/balance`            | DeepSeek 余额（默认关闭）                | **HEAD 返回 405**；仅 loopback；query 白名单；缓存 30s，失败不缓存；每 60s 最多 6 次触发 provider/账号请求，超出 429 |
 | GET/HEAD | `/api/dsh-sessions-insight/version`            | 生效包版本 vs registry 最新版（默认关闭） | **HEAD 只回 passive peek，不发网络请求**；成功 TTL 1h、failed TTL 5min             |
-| GET  | `/api/dsh-sessions-insight/sources`                  | 三源可用性、根路径、会话数、最后扫描时间 | 单源缺失不报错，返回 `available:false` 与原因                     |
+| GET  | `/api/dsh-sessions-insight/sources`                  | 全部来源的可用性、根路径、会话数、最后扫描时间 | 单源缺失不报错，返回 `available:false` 与原因                     |
 | GET  | `/api/dsh-sessions-insight/workdirs`                 | 工作目录聚合（导航主轴）                 | 每项含 `workdir`、按来源分组的会话数与最近时间                    |
 | GET  | `/api/dsh-sessions-insight/sessions?workdir=`        | 轻量会话列表                             | **不解析正文**；DSH 走 projcache、Claude/Codex 只读文件头与 mtime |
 | GET  | `/api/dsh-sessions-insight/session?source=&id=`      | 单会话 IR                                | 按 `turnOffset/turnLimit` 分页；`dataQuality` 必须原样透出        |

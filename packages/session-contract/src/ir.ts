@@ -2,14 +2,23 @@
  * The one IR every adapter produces and every view reads.
  *
  * Field-for-field the contract in docs/IR.md; changing a field is an ADR, not
- * an edit, because three adapters and five views depend on these names.
+ * an edit, because every adapter and five views depend on these names.
  *
  * @see docs/IR.md
  * @see docs/adr/0001-turn-as-first-class.md
+ * @see docs/adr/0011-storage-family-sources.md
  */
 
-/** Every host a session can come from, in the order the panel renders them. */
-export const CONTEXT_SOURCES = ["claude", "dsh", "codex"] as const
+/**
+ * Every host a session can come from, in the order the panel renders them.
+ *
+ * The later entries are storage *families*, not single apps: `vscode` covers
+ * every VS Code-derived IDE whose chats live in `chatSessions` JSON, and
+ * `cline` covers the Cline/Roo Code task stores. A family badge is honest about
+ * what the reader can promise, and adding another app to it is a profile entry
+ * rather than a new adapter.
+ */
+export const CONTEXT_SOURCES = ["claude", "dsh", "codex", "cursor", "pi", "antigravity", "vscode", "cline"] as const
 
 /** Which host produced a session. */
 export type Source = (typeof CONTEXT_SOURCES)[number]

@@ -1,5 +1,6 @@
 import { type ReactElement, useEffect, useRef, useState } from "react"
 
+import { isDeletableSource } from "../../../protocol.ts"
 import { type Api, failureText } from "../../api.ts"
 import { t } from "../../locale/index.ts"
 import { formatBytes, formatShortTime } from "../../model/format.ts"
@@ -249,15 +250,17 @@ export function SessionRow({
             {t("management.move")}
           </button>
         ) : null}
-        <button
-          type="button"
-          role="menuitem"
-          className="flex w-full cursor-pointer items-center gap-2 rounded-[5px] px-2 py-1.5 text-err hover:bg-hover focus:bg-hover"
-          onClick={() => void remove()}
-        >
-          <Glyph name="trash" size={14} />
-          {t("sessions.delete")}
-        </button>
+        {isDeletableSource(row.session.source) ? (
+          <button
+            type="button"
+            role="menuitem"
+            className="flex w-full cursor-pointer items-center gap-2 rounded-[5px] px-2 py-1.5 text-err hover:bg-hover focus:bg-hover"
+            onClick={() => void remove()}
+          >
+            <Glyph name="trash" size={14} />
+            {t("sessions.delete")}
+          </button>
+        ) : null}
       </div>
     </div>
   )

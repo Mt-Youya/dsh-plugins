@@ -4,11 +4,13 @@ import {
   browserUrl,
   CONTEXT_SOURCES,
   DEFAULT_TURN_LIMIT,
+  DELETABLE_SOURCES,
   HEALTH_PATH,
   HEALTH_URL,
   type HealthOk,
   isAttribution,
   isContextSource,
+  isDeletableSource,
   isHealthResponse,
   isHealthValue,
   isMeasure,
@@ -189,5 +191,16 @@ describe("turn and session detail guards", () => {
     expect(isSessionDetail({ ...detail, meta: { cached: "no" } })).toBe(false)
     expect(isSessionDetail({ ...detail, session: { ...detail.session, source: "claude-code" } })).toBe(false)
     void measure
+  })
+})
+
+describe("deletion vocabulary", () => {
+  it("keeps the harness families read-only", () => {
+    expect([...DELETABLE_SOURCES]).toEqual(["claude", "dsh", "codex"])
+    for (const source of CONTEXT_SOURCES) {
+      expect(isDeletableSource(source)).toBe(DELETABLE_SOURCES.includes(source as "claude"))
+    }
+    expect(isDeletableSource("cursor")).toBe(false)
+    expect(isDeletableSource("cline")).toBe(false)
   })
 })

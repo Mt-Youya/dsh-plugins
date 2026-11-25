@@ -11,7 +11,7 @@ A plugin collection for DeepSeek Harness (DSH). Install this one bundle to get e
 
 | Plugin                                                 | npm package                  | What it does                                                                                                                                  |
 | ------------------------------------------------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Sessions Insight](./plugins/sessions-insight/README.md) | `@cyrusdoyle/dsh-sessions-insight` | Opens up what each turn of a Claude Code, DSH or Codex session actually fed the model: composition, tool calls, compactions, cost. Includes confirmed session deletion. |
+| [Sessions Insight](./plugins/sessions-insight/README.md) | `@cyrusdoyle/dsh-sessions-insight` | Opens up what each turn of a Claude Code, DSH, Codex, Cursor, Pi, Antigravity, VS Code or Cline·Roo session actually fed the model: composition, tool calls, compactions, cost. Includes confirmed session deletion for the three built-in sources. |
 
 ## Install
 
@@ -68,7 +68,7 @@ This is a pnpm monorepo. Only the collection and `plugins/*` are published; the 
 | `/` (root)                   | The collection bundle: `cordis.patch.yml`, `locale/`, its own `lib/`      | **yes**, `@cyrusdoyle/dsh-plugins`         |
 | `plugins/sessions-insight`    | The Sessions Insight plugin: host half and browser half                       | **yes**, `@cyrusdoyle/dsh-sessions-insight` |
 | `packages/session-contract`  | The unified IR, wire types and their guards                               | no                                    |
-| `packages/session-readers`   | Claude Code / Codex / DSH readers                                         | no                                    |
+| `packages/session-readers`   | Claude Code / Codex / DSH readers plus five harness families              | no                                    |
 | `packages/plugin-kit`        | Plugin-agnostic JSON envelope and URL spelling                            | no                                    |
 | `packages/plugin-kit-host`   | Host-half plumbing: route table, same-origin gate, envelope, LRU          | no                                    |
 | `packages/plugin-kit-client` | Browser-half plumbing: decoding fetch, style injection, slot registration | no                                    |

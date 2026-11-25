@@ -2,7 +2,7 @@ English | [简体中文](./README.zh.md)
 
 # Sessions Insight · dsh-sessions-insight
 
-A **Sessions Insight** panel for the DSH Web GUI. It parses session logs from **Claude Code, DSH and Codex** and shows what the model actually received on each turn — system prompt, tool definitions, memory & instructions, history, tool results, images — and marks every number as an exact usage figure or a character-based estimate.
+A **Sessions Insight** panel for the DSH Web GUI. It parses session logs from **Claude Code, DSH, Codex** and the newer **Cursor / Pi / Antigravity / VS Code / Cline·Roo** families and shows what the model actually received on each turn — system prompt, tool definitions, memory & instructions, history, tool results, images — and marks every number as an exact usage figure or a character-based estimate.
 
 ![Merged three-source view: workdirs on the left, sessions and turns in the middle, one turn's composition on the right](docs/images/01-merged-tree.png)
 
@@ -15,7 +15,7 @@ A **Sessions Insight** panel for the DSH Web GUI. It parses session logs from **
 - Of this turn's 392K window, how much is tool schemas, and how much is history?
 - Why does the window jump after turn 7 — where is the compaction point, and what were the sizes before and after?
 - Is 29,018 a usage figure from the log or a chars/token estimate? Every value carries an `exact` / `estimate` badge plus its basis.
-- Across all three sources, how many sessions and turns does a workdir hold, and when was it last touched?
+- Across all readable sources, how many sessions and turns does a workdir hold, and when was it last touched?
 
 ![Turn composition and tool details](docs/images/02-dsh-session.png)
 
@@ -61,13 +61,27 @@ The settings form needs **DSH 0.2.1-rc.5+** (`configForms` plus the `plugins.bun
 
 ## Sources and their roots
 
-| Source      | Default root         | Override                          |
-| ----------- | -------------------- | --------------------------------- |
-| Claude Code | `~/.claude/projects` | `DSH_CONTEXT_INSIGHT_CLAUDE_ROOT` |
-| DSH         | `~/.dsh/sessions`    | `DSH_CONTEXT_INSIGHT_DSH_ROOT`    |
-| Codex       | `~/.codex/sessions`  | `DSH_CONTEXT_INSIGHT_CODEX_ROOT`  |
+| Source      | Format                         | Default root                                                | Override                                          |
+| ----------- | ------------------------------ | ----------------------------------------------------------- | ------------------------------------------------- |
+| Claude Code | JSONL transcript               | `~/.claude/projects`                                        | `DSH_CONTEXT_INSIGHT_CLAUDE_ROOT`                 |
+| DSH         | multi-frame zstd log           | `~/.dsh/sessions`                                           | `DSH_CONTEXT_INSIGHT_DSH_ROOT`                    |
+| Codex       | rollout JSONL chain            | `~/.codex/sessions`                                         | `DSH_CONTEXT_INSIGHT_CODEX_ROOT`                  |
+| Cursor      | `cursorDiskKV` SQLite          | `~/Library/Application Support/Cursor/User`                 | `DSH_CONTEXT_INSIGHT_CURSOR_USER`                 |
+| Pi          | JSONL session tree             | `~/.pi/agent/sessions`                                      | `DSH_CONTEXT_INSIGHT_PI_SESSIONS`                 |
+| Antigravity | `brain/<id>` transcript        | `~/.gemini/antigravity{,-ide,-cli}`                         | `DSH_CONTEXT_INSIGHT_ANTIGRAVITY`                 |
+| VS Code     | `chatSessions` JSONL log       | `<appData>/Code/User`, `Code - Insiders`, `VSCodium`, …     | `DSH_CONTEXT_INSIGHT_VSCODE_USER`                 |
+| Cline / Roo | `tasks/<id>` directory         | `<appData>/<app>/User/globalStorage/<ext-id>/tasks`         | `DSH_CONTEXT_INSIGHT_CLINE_TASKS` / `…_ROO_TASKS` |
 
-A missing or unreadable source never takes the others down: the strip at the top marks just that source "unavailable" and gives the reason (root missing / unreadable / adapter error).
+A missing or unreadable source never takes the others down: the strip at the top marks just that source "unavailable" and gives the reason (root missing / unreadable / adapter error). `VS Code` is a family badge: any VS Code-derived install that keeps the `chatSessions` layout (Copilot Chat, and some Kiro/Trae/Qoder builds) is read by it.
+
+The five newer sources are **read-only** and their logs never contain the full prompt: system prompt and tool schemas are unknown, so a turn's slices cover only the conversation itself and the rest stays an explicit "unknown"; turns without usage fall back to the estimated total and say `turn-without-usage`. Per source:
+
+- **Cursor** zeroes `tokenCount` on almost every real bubble (3 of 275 measured), so most turns have no exact anchor;
+- **Antigravity** reads `brain/<id>/.system_generated/logs/transcript_full.jsonl` first and falls back to the protobuf steps in `conversations/<id>.db` on older builds (reverse-engineered field numbers, unknown fields skipped by wire type);
+- **VS Code** may omit `promptTokens` / `completionTokens`; a missing count is no usage, never a zero;
+- **Cline / Roo** record usage only in `api_req_started`, and `tokensIn` already includes the cache buckets, so the reader subtracts `cacheReads` / `cacheWrites` before treating the rest as `input`.
+
+Kiro / Trae / Qoder do not use the `chatSessions` layout (`.chat` / `workspace-sessions` JSON, `solo-lite:*` cloud keys, `aicoding-*` keys respectively), so they are intentionally absent; each needs a new family reader — see [ADR 0011](../../docs/adr/0011-storage-family-sources.md).
 
 ## Install
 
@@ -164,7 +178,7 @@ This package owns the plugin's two halves; the capabilities live in the workspac
 
 ```
 src/
-├── index.ts          host entry: assembles the three sources, registers the routes (the only file that touches cordis)
+├── index.ts          host entry: assembles every source, registers the routes (the only file that touches cordis)
 ├── config.ts         settings schema and live-ref reader for the six switches
 ├── protocol.ts       this plugin's wire entry: re-exports protocol/ plus the contract package's IR, types and guards
 ├── protocol/         route paths and wire payloads per feature (paths, management, insights, ai-title, settings, utilities)
@@ -173,7 +187,7 @@ src/
 ├── host/             host half
 │   ├── http/         same-origin gate, envelope, route table and one handler per route (routes.ts + *-route.ts), list cache, rate limit
 │   ├── management/   user titles and groups (metadata store), AI title generation, metadata projection
-│   ├── sources/      the three sources, workdir merge, snapshot index, path allowlist
+│   ├── sources/      source assembly, workdir merge, snapshot index, path allowlist, harness families
 │   ├── utilities/    balance and version checks: credential refs, HTTPS client, semver
 │   ├── views/        search / cost / pricing / brief / insights
 │   └── handoff/      handoff state machine (accepted ≠ success)

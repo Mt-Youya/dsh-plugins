@@ -12,3 +12,5 @@ lib/
 coverage/
 
 .agent-sessions/
+
+/.scratch/harness-research/

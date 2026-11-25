@@ -43,7 +43,7 @@ export function isHealthValue(value: unknown): value is HealthValue {
  * @returns true when the value is a member of {@link CONTEXT_SOURCES}.
  */
 export function isContextSource(value: unknown): value is ContextSource {
-  return value === "claude" || value === "dsh" || value === "codex"
+  return typeof value === "string" && (CONTEXT_SOURCES as readonly string[]).includes(value)
 }
 
 /**

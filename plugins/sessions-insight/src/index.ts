@@ -30,6 +30,7 @@ import { ClaudeSource } from "./host/sources/claude.ts"
 import { CodexSource } from "./host/sources/codex.ts"
 import { observeSession } from "./host/sources/dsh-events.ts"
 import { DshSource } from "./host/sources/dsh.ts"
+import { harnessSourcesFrom } from "./host/sources/harness/index.ts"
 import { claudeRootFrom, codexRootFrom, dshRootFrom, hostSessionsRoot } from "./host/sources/paths.ts"
 import type { SessionSource } from "./host/sources/source.ts"
 import { BalanceReader, type UtilityServices } from "./host/utilities/balance.ts"
@@ -65,6 +66,8 @@ export { cleanTitle, firstInputOf, snippetAround } from "./host/sources/source.t
 export { ClaudeSource } from "./host/sources/claude.ts"
 export { CodexSource } from "./host/sources/codex.ts"
 export { DshSource, canonicalDshId, decodeBucketName, readDshHeaderFacts } from "./host/sources/dsh.ts"
+export { harnessSourcesFrom } from "./host/sources/harness/index.ts"
+export type { HarnessCorpus, HarnessRow, HarnessScan } from "./host/sources/harness/index.ts"
 export {
   claudeRootFrom,
   codexRootFrom,
@@ -158,7 +161,10 @@ export function handleHealth(req: IncomingMessage, res: ServerResponse): void {
 }
 
 /**
- * Build the three readers for one Host environment.
+ * Build every reader for one Host environment.
+ *
+ * The three built-in adapters own their record flows; the harness families
+ * (Cursor, pi, Antigravity, VS Code, Cline/Roo) share one generic reader.
  * @param env - process environment, so tests and alt installs relocate roots.
  * @returns one reader per source, in CONTEXT_SOURCES order.
  */
@@ -167,6 +173,7 @@ export function createSources(env: NodeJS.ProcessEnv = process.env): SessionSour
     new ClaudeSource({ root: claudeRootFrom(env) }),
     new CodexSource({ root: codexRootFrom(env) }),
     new DshSource({ root: dshRootFrom(env) }),
+    ...harnessSourcesFrom(env),
   ]
 }
 
